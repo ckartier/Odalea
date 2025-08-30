@@ -1,0 +1,1184 @@
+{
+  "species": [
+    {
+      "id": "dog",
+      "name": {
+        "en": "Dog",
+        "fr": "Chien"
+      },
+      "emoji": "🐕",
+      "category": "domestic",
+      "breeds": [
+        {
+          "id": "golden_retriever",
+          "name": {
+            "en": "Golden Retriever",
+            "fr": "Golden Retriever"
+          },
+          "characteristics": {
+            "size": "large",
+            "energy": "high",
+            "grooming": "medium",
+            "training": "easy"
+          }
+        },
+        {
+          "id": "labrador",
+          "name": {
+            "en": "Labrador Retriever",
+            "fr": "Labrador Retriever"
+          },
+          "characteristics": {
+            "size": "large",
+            "energy": "high",
+            "grooming": "low",
+            "training": "easy"
+          }
+        },
+        {
+          "id": "french_bulldog",
+          "name": {
+            "en": "French Bulldog",
+            "fr": "Bouledogue Français"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "medium",
+            "grooming": "low",
+            "training": "medium"
+          }
+        },
+        {
+          "id": "german_shepherd",
+          "name": {
+            "en": "German Shepherd",
+            "fr": "Berger Allemand"
+          },
+          "characteristics": {
+            "size": "large",
+            "energy": "high",
+            "grooming": "high",
+            "training": "easy"
+          }
+        },
+        {
+          "id": "poodle",
+          "name": {
+            "en": "Poodle",
+            "fr": "Caniche"
+          },
+          "characteristics": {
+            "size": "medium",
+            "energy": "medium",
+            "grooming": "high",
+            "training": "easy"
+          }
+        },
+        {
+          "id": "chihuahua",
+          "name": {
+            "en": "Chihuahua",
+            "fr": "Chihuahua"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "medium",
+            "grooming": "low",
+            "training": "difficult"
+          }
+        },
+        {
+          "id": "border_collie",
+          "name": {
+            "en": "Border Collie",
+            "fr": "Border Collie"
+          },
+          "characteristics": {
+            "size": "medium",
+            "energy": "high",
+            "grooming": "medium",
+            "training": "easy"
+          }
+        },
+        {
+          "id": "mixed_breed",
+          "name": {
+            "en": "Mixed Breed",
+            "fr": "Race Mixte"
+          },
+          "characteristics": {
+            "size": "medium",
+            "energy": "medium",
+            "grooming": "medium",
+            "training": "medium"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cat",
+      "name": {
+        "en": "Cat",
+        "fr": "Chat"
+      },
+      "emoji": "🐱",
+      "category": "domestic",
+      "breeds": [
+        {
+          "id": "persian",
+          "name": {
+            "en": "Persian",
+            "fr": "Persan"
+          },
+          "characteristics": {
+            "size": "medium",
+            "energy": "low",
+            "grooming": "high",
+            "training": "medium"
+          }
+        },
+        {
+          "id": "siamese",
+          "name": {
+            "en": "Siamese",
+            "fr": "Siamois"
+          },
+          "characteristics": {
+            "size": "medium",
+            "energy": "high",
+            "grooming": "low",
+            "training": "easy"
+          }
+        },
+        {
+          "id": "maine_coon",
+          "name": {
+            "en": "Maine Coon",
+            "fr": "Maine Coon"
+          },
+          "characteristics": {
+            "size": "large",
+            "energy": "medium",
+            "grooming": "high",
+            "training": "easy"
+          }
+        },
+        {
+          "id": "british_shorthair",
+          "name": {
+            "en": "British Shorthair",
+            "fr": "British Shorthair"
+          },
+          "characteristics": {
+            "size": "medium",
+            "energy": "low",
+            "grooming": "low",
+            "training": "medium"
+          }
+        },
+        {
+          "id": "ragdoll",
+          "name": {
+            "en": "Ragdoll",
+            "fr": "Ragdoll"
+          },
+          "characteristics": {
+            "size": "large",
+            "energy": "low",
+            "grooming": "medium",
+            "training": "easy"
+          }
+        },
+        {
+          "id": "bengal",
+          "name": {
+            "en": "Bengal",
+            "fr": "Bengal"
+          },
+          "characteristics": {
+            "size": "medium",
+            "energy": "high",
+            "grooming": "low",
+            "training": "medium"
+          }
+        },
+        {
+          "id": "domestic_shorthair",
+          "name": {
+            "en": "Domestic Shorthair",
+            "fr": "Chat de Gouttière"
+          },
+          "characteristics": {
+            "size": "medium",
+            "energy": "medium",
+            "grooming": "low",
+            "training": "medium"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rabbit",
+      "name": {
+        "en": "Rabbit",
+        "fr": "Lapin"
+      },
+      "emoji": "🐰",
+      "category": "domestic",
+      "breeds": [
+        {
+          "id": "holland_lop",
+          "name": {
+            "en": "Holland Lop",
+            "fr": "Holland Lop"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "medium",
+            "grooming": "medium",
+            "training": "medium"
+          }
+        },
+        {
+          "id": "netherland_dwarf",
+          "name": {
+            "en": "Netherland Dwarf",
+            "fr": "Nain Néerlandais"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "high",
+            "grooming": "low",
+            "training": "medium"
+          }
+        },
+        {
+          "id": "flemish_giant",
+          "name": {
+            "en": "Flemish Giant",
+            "fr": "Géant des Flandres"
+          },
+          "characteristics": {
+            "size": "giant",
+            "energy": "low",
+            "grooming": "medium",
+            "training": "easy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "bird",
+      "name": {
+        "en": "Bird",
+        "fr": "Oiseau"
+      },
+      "emoji": "🦜",
+      "category": "bird",
+      "breeds": [
+        {
+          "id": "budgerigar",
+          "name": {
+            "en": "Budgerigar",
+            "fr": "Perruche Ondulée"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "high",
+            "grooming": "low",
+            "training": "easy"
+          }
+        },
+        {
+          "id": "cockatiel",
+          "name": {
+            "en": "Cockatiel",
+            "fr": "Calopsitte"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "medium",
+            "grooming": "low",
+            "training": "easy"
+          }
+        },
+        {
+          "id": "african_grey",
+          "name": {
+            "en": "African Grey Parrot",
+            "fr": "Perroquet Gris du Gabon"
+          },
+          "characteristics": {
+            "size": "medium",
+            "energy": "medium",
+            "grooming": "low",
+            "training": "easy"
+          }
+        },
+        {
+          "id": "canary",
+          "name": {
+            "en": "Canary",
+            "fr": "Canari"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "medium",
+            "grooming": "low",
+            "training": "medium"
+          }
+        }
+      ]
+    },
+    {
+      "id": "hamster",
+      "name": {
+        "en": "Hamster",
+        "fr": "Hamster"
+      },
+      "emoji": "🐹",
+      "category": "domestic",
+      "breeds": [
+        {
+          "id": "syrian_hamster",
+          "name": {
+            "en": "Syrian Hamster",
+            "fr": "Hamster Doré"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "high",
+            "grooming": "low",
+            "training": "medium"
+          }
+        },
+        {
+          "id": "dwarf_hamster",
+          "name": {
+            "en": "Dwarf Hamster",
+            "fr": "Hamster Nain"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "high",
+            "grooming": "low",
+            "training": "difficult"
+          }
+        }
+      ]
+    },
+    {
+      "id": "guinea_pig",
+      "name": {
+        "en": "Guinea Pig",
+        "fr": "Cochon d'Inde"
+      },
+      "emoji": "🐹",
+      "category": "domestic",
+      "breeds": [
+        {
+          "id": "american_guinea_pig",
+          "name": {
+            "en": "American Guinea Pig",
+            "fr": "Cochon d'Inde Américain"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "medium",
+            "grooming": "low",
+            "training": "easy"
+          }
+        },
+        {
+          "id": "peruvian_guinea_pig",
+          "name": {
+            "en": "Peruvian Guinea Pig",
+            "fr": "Cochon d'Inde Péruvien"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "medium",
+            "grooming": "high",
+            "training": "easy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ferret",
+      "name": {
+        "en": "Ferret",
+        "fr": "Furet"
+      },
+      "emoji": "🦦",
+      "category": "exotic",
+      "breeds": [
+        {
+          "id": "domestic_ferret",
+          "name": {
+            "en": "Domestic Ferret",
+            "fr": "Furet Domestique"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "high",
+            "grooming": "medium",
+            "training": "medium"
+          }
+        }
+      ]
+    },
+    {
+      "id": "fish",
+      "name": {
+        "en": "Fish",
+        "fr": "Poisson"
+      },
+      "emoji": "🐠",
+      "category": "aquatic",
+      "breeds": [
+        {
+          "id": "goldfish",
+          "name": {
+            "en": "Goldfish",
+            "fr": "Poisson Rouge"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "low",
+            "grooming": "low",
+            "training": "difficult"
+          }
+        },
+        {
+          "id": "betta",
+          "name": {
+            "en": "Betta Fish",
+            "fr": "Poisson Combattant"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "medium",
+            "grooming": "low",
+            "training": "difficult"
+          }
+        },
+        {
+          "id": "angelfish",
+          "name": {
+            "en": "Angelfish",
+            "fr": "Poisson-Ange"
+          },
+          "characteristics": {
+            "size": "medium",
+            "energy": "medium",
+            "grooming": "low",
+            "training": "difficult"
+          }
+        }
+      ]
+    },
+    {
+      "id": "turtle",
+      "name": {
+        "en": "Turtle",
+        "fr": "Tortue"
+      },
+      "emoji": "🐢",
+      "category": "reptile",
+      "breeds": [
+        {
+          "id": "red_eared_slider",
+          "name": {
+            "en": "Red-Eared Slider",
+            "fr": "Tortue de Floride"
+          },
+          "characteristics": {
+            "size": "medium",
+            "energy": "low",
+            "grooming": "low",
+            "training": "difficult"
+          }
+        },
+        {
+          "id": "hermann_tortoise",
+          "name": {
+            "en": "Hermann's Tortoise",
+            "fr": "Tortue d'Hermann"
+          },
+          "characteristics": {
+            "size": "medium",
+            "energy": "low",
+            "grooming": "low",
+            "training": "difficult"
+          }
+        }
+      ]
+    },
+    {
+      "id": "snake",
+      "name": {
+        "en": "Snake",
+        "fr": "Serpent"
+      },
+      "emoji": "🐍",
+      "category": "reptile",
+      "breeds": [
+        {
+          "id": "ball_python",
+          "name": {
+            "en": "Ball Python",
+            "fr": "Python Royal"
+          },
+          "characteristics": {
+            "size": "medium",
+            "energy": "low",
+            "grooming": "low",
+            "training": "difficult"
+          }
+        },
+        {
+          "id": "corn_snake",
+          "name": {
+            "en": "Corn Snake",
+            "fr": "Serpent des Blés"
+          },
+          "characteristics": {
+            "size": "medium",
+            "energy": "low",
+            "grooming": "low",
+            "training": "difficult"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chinchilla",
+      "name": {
+        "en": "Chinchilla",
+        "fr": "Chinchilla"
+      },
+      "emoji": "🐭",
+      "category": "exotic",
+      "breeds": [
+        {
+          "id": "standard_chinchilla",
+          "name": {
+            "en": "Standard Chinchilla",
+            "fr": "Chinchilla Standard"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "high",
+            "grooming": "high",
+            "training": "medium"
+          }
+        }
+      ]
+    },
+    {
+      "id": "hedgehog",
+      "name": {
+        "en": "Hedgehog",
+        "fr": "Hérisson"
+      },
+      "emoji": "🦔",
+      "category": "exotic",
+      "breeds": [
+        {
+          "id": "african_pygmy_hedgehog",
+          "name": {
+            "en": "African Pygmy Hedgehog",
+            "fr": "Hérisson Pygmée d'Afrique"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "medium",
+            "grooming": "low",
+            "training": "difficult"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sugar_glider",
+      "name": {
+        "en": "Sugar Glider",
+        "fr": "Phalanger Volant"
+      },
+      "emoji": "🐿️",
+      "category": "exotic",
+      "breeds": [
+        {
+          "id": "standard_sugar_glider",
+          "name": {
+            "en": "Standard Sugar Glider",
+            "fr": "Phalanger Volant Standard"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "high",
+            "grooming": "medium",
+            "training": "difficult"
+          }
+        }
+      ]
+    },
+    {
+      "id": "horse",
+      "name": {
+        "en": "Horse",
+        "fr": "Cheval"
+      },
+      "emoji": "🐴",
+      "category": "large_animal",
+      "breeds": [
+        {
+          "id": "arabian",
+          "name": {
+            "en": "Arabian",
+            "fr": "Arabe"
+          },
+          "characteristics": {
+            "size": "large",
+            "energy": "high",
+            "grooming": "high",
+            "training": "medium"
+          }
+        },
+        {
+          "id": "quarter_horse",
+          "name": {
+            "en": "Quarter Horse",
+            "fr": "Quarter Horse"
+          },
+          "characteristics": {
+            "size": "large",
+            "energy": "medium",
+            "grooming": "medium",
+            "training": "easy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "goat",
+      "name": {
+        "en": "Goat",
+        "fr": "Chèvre"
+      },
+      "emoji": "🐐",
+      "category": "farm_animal",
+      "breeds": [
+        {
+          "id": "nigerian_dwarf",
+          "name": {
+            "en": "Nigerian Dwarf",
+            "fr": "Chèvre Naine du Nigeria"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "high",
+            "grooming": "medium",
+            "training": "medium"
+          }
+        }
+      ]
+    },
+    {
+      "id": "lizard",
+      "name": {
+        "en": "Lizard",
+        "fr": "Lézard"
+      },
+      "emoji": "🦎",
+      "category": "reptile",
+      "breeds": [
+        {
+          "id": "bearded_dragon",
+          "name": {
+            "en": "Bearded Dragon",
+            "fr": "Dragon Barbu"
+          },
+          "characteristics": {
+            "size": "medium",
+            "energy": "medium",
+            "grooming": "low",
+            "training": "medium"
+          }
+        },
+        {
+          "id": "leopard_gecko",
+          "name": {
+            "en": "Leopard Gecko",
+            "fr": "Gecko Léopard"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "low",
+            "grooming": "low",
+            "training": "medium"
+          }
+        },
+        {
+          "id": "iguana",
+          "name": {
+            "en": "Green Iguana",
+            "fr": "Iguane Vert"
+          },
+          "characteristics": {
+            "size": "large",
+            "energy": "medium",
+            "grooming": "medium",
+            "training": "difficult"
+          }
+        }
+      ]
+    },
+    {
+      "id": "axolotl",
+      "name": {
+        "en": "Axolotl",
+        "fr": "Axolotl"
+      },
+      "emoji": "🦎",
+      "category": "aquatic",
+      "breeds": [
+        {
+          "id": "leucistic_axolotl",
+          "name": {
+            "en": "Leucistic Axolotl",
+            "fr": "Axolotl Leucistique"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "low",
+            "grooming": "medium",
+            "training": "difficult"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tarantula",
+      "name": {
+        "en": "Tarantula",
+        "fr": "Mygale"
+      },
+      "emoji": "🕷️",
+      "category": "exotic",
+      "breeds": [
+        {
+          "id": "chilean_rose_hair",
+          "name": {
+            "en": "Chilean Rose Hair",
+            "fr": "Mygale du Chili"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "low",
+            "grooming": "low",
+            "training": "difficult"
+          }
+        }
+      ]
+    },
+    {
+      "id": "hermit_crab",
+      "name": {
+        "en": "Hermit Crab",
+        "fr": "Bernard-l'Hermite"
+      },
+      "emoji": "🦀",
+      "category": "exotic",
+      "breeds": [
+        {
+          "id": "purple_pincher",
+          "name": {
+            "en": "Purple Pincher",
+            "fr": "Bernard-l'Hermite Violet"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "low",
+            "grooming": "low",
+            "training": "difficult"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rat",
+      "name": {
+        "en": "Rat",
+        "fr": "Rat"
+      },
+      "emoji": "🐀",
+      "category": "domestic",
+      "breeds": [
+        {
+          "id": "fancy_rat",
+          "name": {
+            "en": "Fancy Rat",
+            "fr": "Rat Domestique"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "high",
+            "grooming": "medium",
+            "training": "easy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "mouse",
+      "name": {
+        "en": "Mouse",
+        "fr": "Souris"
+      },
+      "emoji": "🐭",
+      "category": "domestic",
+      "breeds": [
+        {
+          "id": "fancy_mouse",
+          "name": {
+            "en": "Fancy Mouse",
+            "fr": "Souris Domestique"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "high",
+            "grooming": "low",
+            "training": "medium"
+          }
+        }
+      ]
+    },
+    {
+      "id": "gerbil",
+      "name": {
+        "en": "Gerbil",
+        "fr": "Gerbille"
+      },
+      "emoji": "🐭",
+      "category": "domestic",
+      "breeds": [
+        {
+          "id": "mongolian_gerbil",
+          "name": {
+            "en": "Mongolian Gerbil",
+            "fr": "Gerbille de Mongolie"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "high",
+            "grooming": "low",
+            "training": "medium"
+          }
+        }
+      ]
+    },
+    {
+      "id": "pony",
+      "name": {
+        "en": "Pony",
+        "fr": "Poney"
+      },
+      "emoji": "🐴",
+      "category": "large_animal",
+      "breeds": [
+        {
+          "id": "shetland_pony",
+          "name": {
+            "en": "Shetland Pony",
+            "fr": "Poney Shetland"
+          },
+          "characteristics": {
+            "size": "medium",
+            "energy": "medium",
+            "grooming": "high",
+            "training": "medium"
+          }
+        }
+      ]
+    },
+    {
+      "id": "donkey",
+      "name": {
+        "en": "Donkey",
+        "fr": "Âne"
+      },
+      "emoji": "🫏",
+      "category": "farm_animal",
+      "breeds": [
+        {
+          "id": "miniature_donkey",
+          "name": {
+            "en": "Miniature Donkey",
+            "fr": "Âne Miniature"
+          },
+          "characteristics": {
+            "size": "medium",
+            "energy": "low",
+            "grooming": "medium",
+            "training": "medium"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sheep",
+      "name": {
+        "en": "Sheep",
+        "fr": "Mouton"
+      },
+      "emoji": "🐑",
+      "category": "farm_animal",
+      "breeds": [
+        {
+          "id": "babydoll_sheep",
+          "name": {
+            "en": "Babydoll Sheep",
+            "fr": "Mouton Babydoll"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "low",
+            "grooming": "high",
+            "training": "easy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cockatoo",
+      "name": {
+        "en": "Cockatoo",
+        "fr": "Cacatoès"
+      },
+      "emoji": "🦜",
+      "category": "bird",
+      "breeds": [
+        {
+          "id": "umbrella_cockatoo",
+          "name": {
+            "en": "Umbrella Cockatoo",
+            "fr": "Cacatoès à Huppe Blanche"
+          },
+          "characteristics": {
+            "size": "large",
+            "energy": "high",
+            "grooming": "medium",
+            "training": "medium"
+          }
+        }
+      ]
+    },
+    {
+      "id": "mynah",
+      "name": {
+        "en": "Mynah Bird",
+        "fr": "Mainate"
+      },
+      "emoji": "🐦",
+      "category": "bird",
+      "breeds": [
+        {
+          "id": "hill_mynah",
+          "name": {
+            "en": "Hill Mynah",
+            "fr": "Mainate Religieux"
+          },
+          "characteristics": {
+            "size": "medium",
+            "energy": "medium",
+            "grooming": "low",
+            "training": "easy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "frog",
+      "name": {
+        "en": "Frog",
+        "fr": "Grenouille"
+      },
+      "emoji": "🐸",
+      "category": "amphibian",
+      "breeds": [
+        {
+          "id": "white_tree_frog",
+          "name": {
+            "en": "White's Tree Frog",
+            "fr": "Rainette de White"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "low",
+            "grooming": "low",
+            "training": "difficult"
+          }
+        }
+      ]
+    },
+    {
+      "id": "scorpion",
+      "name": {
+        "en": "Scorpion",
+        "fr": "Scorpion"
+      },
+      "emoji": "🦂",
+      "category": "exotic",
+      "breeds": [
+        {
+          "id": "emperor_scorpion",
+          "name": {
+            "en": "Emperor Scorpion",
+            "fr": "Scorpion Empereur"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "low",
+            "grooming": "low",
+            "training": "difficult"
+          }
+        }
+      ]
+    },
+    {
+      "id": "snail",
+      "name": {
+        "en": "Snail",
+        "fr": "Escargot"
+      },
+      "emoji": "🐌",
+      "category": "exotic",
+      "breeds": [
+        {
+          "id": "giant_african_snail",
+          "name": {
+            "en": "Giant African Land Snail",
+            "fr": "Escargot Géant d'Afrique"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "low",
+            "grooming": "low",
+            "training": "difficult"
+          }
+        }
+      ]
+    },
+    {
+      "id": "fennec",
+      "name": {
+        "en": "Fennec Fox",
+        "fr": "Fennec"
+      },
+      "emoji": "🦊",
+      "category": "exotic",
+      "breeds": [
+        {
+          "id": "fennec_fox",
+          "name": {
+            "en": "Fennec Fox",
+            "fr": "Fennec"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "high",
+            "grooming": "medium",
+            "training": "difficult"
+          }
+        }
+      ]
+    },
+    {
+      "id": "monkey",
+      "name": {
+        "en": "Monkey",
+        "fr": "Singe"
+      },
+      "emoji": "🐒",
+      "category": "exotic",
+      "breeds": [
+        {
+          "id": "capuchin_monkey",
+          "name": {
+            "en": "Capuchin Monkey",
+            "fr": "Singe Capucin"
+          },
+          "characteristics": {
+            "size": "medium",
+            "energy": "high",
+            "grooming": "high",
+            "training": "difficult"
+          }
+        }
+      ]
+    },
+    {
+      "id": "monitor_lizard",
+      "name": {
+        "en": "Monitor Lizard",
+        "fr": "Varan"
+      },
+      "emoji": "🦎",
+      "category": "reptile",
+      "breeds": [
+        {
+          "id": "savannah_monitor",
+          "name": {
+            "en": "Savannah Monitor",
+            "fr": "Varan des Savanes"
+          },
+          "characteristics": {
+            "size": "large",
+            "energy": "medium",
+            "grooming": "medium",
+            "training": "difficult"
+          }
+        }
+      ]
+    },
+    {
+      "id": "insect",
+      "name": {
+        "en": "Insect",
+        "fr": "Insecte"
+      },
+      "emoji": "🐛",
+      "category": "exotic",
+      "breeds": [
+        {
+          "id": "stick_insect",
+          "name": {
+            "en": "Stick Insect",
+            "fr": "Phasme"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "low",
+            "grooming": "low",
+            "training": "difficult"
+          }
+        },
+        {
+          "id": "praying_mantis",
+          "name": {
+            "en": "Praying Mantis",
+            "fr": "Mante Religieuse"
+          },
+          "characteristics": {
+            "size": "small",
+            "energy": "medium",
+            "grooming": "low",
+            "training": "difficult"
+          }
+        }
+      ]
+    }
+  ]
+}

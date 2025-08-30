@@ -1,0 +1,1345 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  ScrollView, 
+  TouchableOpacity,
+  FlatList,
+  RefreshControl,
+  Alert,
+  Platform,
+  SafeAreaView,
+  Switch,
+} from 'react-native';
+import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { COLORS, SHADOWS } from '@/constants/colors';
+import PetCard from '@/components/PetCard';
+import Badge from '@/components/Badge';
+import Button from '@/components/Button';
+import PhotoUploader from '@/components/PhotoUploader';
+import { useAuth as useUser } from '@/hooks/auth-store';
+import { useBadges } from '@/hooks/badges-store';
+import { useChallenges } from '@/hooks/challenges-store';
+import { usePremium } from '@/hooks/premium-store';
+import { useCatSitter } from '@/hooks/cat-sitter-store';
+import { 
+  LogOut, 
+  MapPin, 
+  Phone, 
+  Plus, 
+  Settings, 
+  Shield, 
+  Star, 
+  User as UserIcon,
+  Users,
+  Camera,
+  Trophy,
+  Heart,
+  Euro,
+  Calendar,
+  MessageCircle,
+  Award,
+  TrendingUp,
+  CheckCircle,
+  XCircle,
+  ArrowRight,
+} from 'lucide-react-native';
+
+export default function ProfileScreen() {
+  const router = useRouter();
+  const { user, signOut, updateUser } = useUser();
+  const { getUnlockedBadges } = useBadges();
+  const { getUserActiveChallenges, getUserCompletedChallenges } = useChallenges();
+  const { isPremium } = usePremium();
+  const {
+    profile: catSitterProfile,
+    bookingRequests,
+    messages: catSitterMessages,
+    createProfile,
+    toggleAvailability,
+    respondToBooking,
+    getUnreadMessagesCount,
+    getPendingBookingsCount,
+  } = useCatSitter();
+  
+  const [refreshing, setRefreshing] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState<string | undefined>(user?.photo);
+  const [selectedCatSitterTab, setSelectedCatSitterTab] = useState<'overview' | 'bookings' | 'messages'>('overview');
+  
+  // Update profile photo when user changes
+  useEffect(() => {
+    setProfilePhoto(user?.photo);
+  }, [user?.photo]);
+  
+  // Create cat-sitter profile if needed
+  useEffect(() => {
+    if (user && user.isCatSitter && !catSitterProfile) {
+      createProfile(user.id, {
+        hourlyRate: 15,
+        description: 'Passionné(e) par les animaux, je propose mes services de garde avec amour et attention.',
+        services: ['Pet Sitting', 'Feeding', 'Playing'],
+        petTypes: ['Cats', 'Dogs'],
+        languages: ['French'],
+      });
+    }
+  }, [user, catSitterProfile, createProfile]);
+  
+  const unlockedBadges = getUnlockedBadges();
+  const activeChallenges = user ? getUserActiveChallenges(user.id) : [];
+  const completedChallenges = user ? getUserCompletedChallenges(user.id) : [];
+  
+  // Mock friends data - in real app this would come from a friends store
+  const mockFriends = [
+    { id: '1', firstName: 'Léo', lastName: 'Duval', pseudo: 'leo_duval', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face' },
+    { id: '2', firstName: 'Claire', lastName: 'Martin', pseudo: 'claire_martin', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face' },
+  ];
+  
+  const onRefresh = async () => {
+    setRefreshing(true);
+    // Simulate refresh
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setRefreshing(false);
+  };
+  
+  const handleAddPet = () => {
+    router.push('/pet/add');
+  };
+  
+  const handleEditProfile = () => {
+    router.push('/profile/edit');
+  };
+  
+  const handlePhotoChange = async (uri: string | null) => {
+    if (user) {
+      console.log('Updating profile photo:', uri);
+      setProfilePhoto(uri || undefined);
+      // Update user profile photo
+      const result = await updateUser({ ...user, photo: uri || undefined });
+      if (result.success) {
+        console.log('Profile photo updated successfully');
+      } else {
+        console.error('Failed to update profile photo:', result.error);
+        Alert.alert('Erreur', 'Impossible de mettre à jour la photo de profil.');
+      }
+    }
+  };
+  
+  const handleSignOut = async () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Sign Out', 
+          style: 'destructive',
+          onPress: async () => {
+            await signOut();
+            router.replace('/splash');
+          },
+        },
+      ]
+    );
+  };
+  
+  const handleToggleAvailability = async () => {
+    const result = await toggleAvailability();
+    if (result.success) {
+      Alert.alert(
+        'Statut mis à jour',
+        `Vous êtes maintenant ${catSitterProfile?.isActive ? 'indisponible' : 'disponible'}`
+      );
+    }
+  };
+  
+  const handleBookingResponse = async (bookingId: string, response: 'accepted' | 'declined') => {
+    const booking = bookingRequests.find(b => b.id === bookingId);
+    if (!booking) return;
+
+    const message = response === 'accepted' 
+      ? `J'accepte votre demande pour garder ${booking.petName}. Merci de votre confiance !`
+      : `Je ne peux malheureusement pas accepter votre demande pour ${booking.petName}. Désolé(e) !`;
+
+    const result = await respondToBooking(bookingId, response, message);
+    if (result.success) {
+      Alert.alert(
+        'Réponse envoyée',
+        `Vous avez ${response === 'accepted' ? 'accepté' : 'refusé'} la demande.`
+      );
+    }
+  };
+  
+  if (!user) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>Loading profile...</Text>
+      </View>
+    );
+  }
+  
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="dark" />
+      
+      {/* Fixed Header */}
+      <View style={styles.fixedHeader}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.headerName}>@{user.pseudo}</Text>
+          <Text style={styles.friendsCount}>{mockFriends.length} amis</Text>
+        </View>
+        
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={[styles.headerButton, SHADOWS.small]}
+            onPress={() => router.push('/cat-sitter')}
+          >
+            <Heart size={20} color={COLORS.primary} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.headerButton, SHADOWS.small]}
+            onPress={() => router.push('/friends')}
+          >
+            <Users size={20} color={COLORS.primary} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.headerButton, SHADOWS.small]}
+            onPress={handleEditProfile}
+          >
+            <Settings size={20} color={COLORS.primary} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.headerButton, SHADOWS.small]}
+            onPress={handleSignOut}
+          >
+            <LogOut size={20} color={COLORS.error} />
+          </TouchableOpacity>
+        </View>
+      </View>
+      
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {/* Profile Info */}
+        <View style={styles.profileSection}>
+          <View style={styles.profilePhotoContainer}>
+            <PhotoUploader
+              value={profilePhoto || undefined}
+              onChange={handlePhotoChange}
+              placeholder="Photo de profil"
+              style={styles.profilePhotoUploader}
+            >
+              <TouchableOpacity style={styles.cameraOverlay}>
+                <Camera size={20} color={COLORS.white} />
+              </TouchableOpacity>
+            </PhotoUploader>
+          </View>
+          
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailItem}>
+              <MapPin size={16} color={COLORS.darkGray} />
+              <Text style={styles.detailText}>{user.city}</Text>
+            </View>
+            
+            <View style={styles.detailItem}>
+              <Phone size={16} color={COLORS.darkGray} />
+              <Text style={styles.detailText}>+{user.countryCode} {user.phoneNumber}</Text>
+            </View>
+          </View>
+        </View>
+        
+        {/* Membership Status */}
+        <TouchableOpacity 
+          style={[styles.membershipCard, SHADOWS.medium]}
+          onPress={() => router.push('/premium')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.membershipInfo}>
+            {isPremium ? (
+              <View style={styles.premiumIconContainer}>
+                <Star size={24} color={COLORS.accent} fill={COLORS.accent} />
+              </View>
+            ) : (
+              <Shield size={24} color={COLORS.darkGray} />
+            )}
+            <View>
+              <Text style={styles.membershipTitle}>
+                {isPremium ? 'Membre Premium' : 'Compte Gratuit'}
+              </Text>
+              <Text style={styles.membershipSubtitle}>
+                {isPremium 
+                  ? 'Profitez de toutes les fonctionnalités premium' 
+                  : 'Passez à Premium pour supprimer les pubs'}
+              </Text>
+            </View>
+          </View>
+          
+          {!isPremium ? (
+            <Button
+              title="Passer à Premium"
+              onPress={() => router.push('/premium')}
+              variant="primary"
+              size="small"
+            />
+          ) : (
+            <Text style={styles.managePremiumText}>Gérer</Text>
+          )}
+        </TouchableOpacity>
+        
+        {/* Friends Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Mes amis</Text>
+          <TouchableOpacity onPress={() => router.push('/friends')}>
+            <Text style={styles.seeAllText}>Voir tout</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <FlatList
+          data={mockFriends}
+          renderItem={({ item }) => (
+            <TouchableOpacity 
+              style={[styles.friendItem, SHADOWS.small]}
+              onPress={() => router.push(`/messages/${item.id}`)}
+            >
+              <Image source={{ uri: item.avatar }} style={styles.friendAvatar} />
+              <View style={styles.friendInfo}>
+                <Text style={styles.friendName}>@{item.pseudo}</Text>
+                <Text style={styles.friendAction}>Envoyer un message</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+          keyExtractor={item => item.id}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.friendsList}
+        />
+        
+        {/* My Pets Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Mes animaux</Text>
+          <TouchableOpacity onPress={handleAddPet}>
+            <Plus size={20} color={COLORS.maleAccent} />
+          </TouchableOpacity>
+        </View>
+        
+        {user.pets.length > 0 ? (
+          <FlatList
+            data={user.pets}
+            renderItem={({ item }) => <PetCard pet={item} style={styles.petCard} />}
+            keyExtractor={item => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.petsContainer}
+          />
+        ) : (
+          <TouchableOpacity
+            style={[styles.addPetCard, SHADOWS.small]}
+            onPress={handleAddPet}
+          >
+            <Plus size={32} color={COLORS.maleAccent} />
+            <Text style={styles.addPetText}>Ajoutez votre premier animal</Text>
+          </TouchableOpacity>
+        )}
+        
+        {/* Challenges Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Mes défis</Text>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/challenges')}>
+            <Text style={styles.seeAllText}>Voir tout</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.challengesContainer}>
+          <View style={styles.challengesSummary}>
+            <View style={styles.challengeStatItem}>
+              <Trophy size={20} color={COLORS.accent} />
+              <Text style={styles.challengeStatNumber}>{completedChallenges.length}</Text>
+              <Text style={styles.challengeStatLabel}>Terminés</Text>
+            </View>
+            <View style={styles.challengeStatItem}>
+              <Trophy size={20} color={COLORS.primary} />
+              <Text style={styles.challengeStatNumber}>{activeChallenges.length}</Text>
+              <Text style={styles.challengeStatLabel}>En cours</Text>
+            </View>
+          </View>
+        </View>
+        
+        {/* Badges Section */}
+        {unlockedBadges.length > 0 && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Vos badges</Text>
+              <TouchableOpacity onPress={() => router.push('/badges')}>
+                <Text style={styles.seeAllText}>Voir tout</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <FlatList
+              data={unlockedBadges}
+              renderItem={({ item }) => (
+                <Badge badge={item} style={styles.badge} />
+              )}
+              keyExtractor={item => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.badgesContainer}
+            />
+          </>
+        )}
+        
+        {/* Cat-Sitter Dashboard */}
+        {user.isCatSitter && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Dashboard Cat-Sitter</Text>
+            </View>
+            
+            {/* Cat-Sitter Tab Navigation */}
+            <View style={styles.catSitterTabNavigation}>
+              <TouchableOpacity
+                style={[styles.catSitterTabButton, selectedCatSitterTab === 'overview' && styles.activeCatSitterTab]}
+                onPress={() => setSelectedCatSitterTab('overview')}
+              >
+                <TrendingUp size={18} color={selectedCatSitterTab === 'overview' ? COLORS.primary : COLORS.darkGray} />
+                <Text style={[styles.catSitterTabText, selectedCatSitterTab === 'overview' && styles.activeCatSitterTabText]}>
+                  Vue d'ensemble
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.catSitterTabButton, selectedCatSitterTab === 'bookings' && styles.activeCatSitterTab]}
+                onPress={() => setSelectedCatSitterTab('bookings')}
+              >
+                <Calendar size={18} color={selectedCatSitterTab === 'bookings' ? COLORS.primary : COLORS.darkGray} />
+                <Text style={[styles.catSitterTabText, selectedCatSitterTab === 'bookings' && styles.activeCatSitterTabText]}>
+                  Demandes
+                </Text>
+                {getPendingBookingsCount() > 0 && (
+                  <View style={styles.catSitterBadge}>
+                    <Text style={styles.catSitterBadgeText}>{getPendingBookingsCount()}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.catSitterTabButton, selectedCatSitterTab === 'messages' && styles.activeCatSitterTab]}
+                onPress={() => setSelectedCatSitterTab('messages')}
+              >
+                <MessageCircle size={18} color={selectedCatSitterTab === 'messages' ? COLORS.primary : COLORS.darkGray} />
+                <Text style={[styles.catSitterTabText, selectedCatSitterTab === 'messages' && styles.activeCatSitterTabText]}>
+                  Messages
+                </Text>
+                {getUnreadMessagesCount() > 0 && (
+                  <View style={styles.catSitterBadge}>
+                    <Text style={styles.catSitterBadgeText}>{getUnreadMessagesCount()}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+            
+            {/* Cat-Sitter Content */}
+            <View style={[styles.catSitterContent, SHADOWS.medium]}>
+              {selectedCatSitterTab === 'overview' && (
+                <View>
+                  {/* Stats Grid */}
+                  <View style={styles.catSitterStatsGrid}>
+                    <View style={[styles.catSitterStatCard, SHADOWS.small]}>
+                      <View style={styles.catSitterStatIcon}>
+                        <Euro size={20} color={COLORS.success} />
+                      </View>
+                      <Text style={styles.catSitterStatValue}>{catSitterProfile?.hourlyRate || 0}€/h</Text>
+                      <Text style={styles.catSitterStatLabel}>Tarif horaire</Text>
+                    </View>
+
+                    <View style={[styles.catSitterStatCard, SHADOWS.small]}>
+                      <View style={styles.catSitterStatIcon}>
+                        <Star size={20} color={COLORS.accent} />
+                      </View>
+                      <Text style={styles.catSitterStatValue}>{catSitterProfile?.rating || 0}</Text>
+                      <Text style={styles.catSitterStatLabel}>Note moyenne</Text>
+                    </View>
+
+                    <View style={[styles.catSitterStatCard, SHADOWS.small]}>
+                      <View style={styles.catSitterStatIcon}>
+                        <Users size={20} color={COLORS.primary} />
+                      </View>
+                      <Text style={styles.catSitterStatValue}>{catSitterProfile?.totalBookings || 0}</Text>
+                      <Text style={styles.catSitterStatLabel}>Réservations</Text>
+                    </View>
+
+                    <View style={[styles.catSitterStatCard, SHADOWS.small]}>
+                      <View style={styles.catSitterStatIcon}>
+                        <Award size={20} color={COLORS.catSitter} />
+                      </View>
+                      <Text style={styles.catSitterStatValue}>{catSitterProfile?.reviewCount || 0}</Text>
+                      <Text style={styles.catSitterStatLabel}>Avis clients</Text>
+                    </View>
+                  </View>
+                  
+                  {/* Availability Toggle */}
+                  <View style={styles.catSitterAvailabilityCard}>
+                    <View style={styles.catSitterAvailabilityHeader}>
+                      <View>
+                        <Text style={styles.catSitterAvailabilityTitle}>Statut de disponibilité</Text>
+                        <Text style={styles.catSitterAvailabilitySubtitle}>
+                          {catSitterProfile?.isActive ? 'Vous acceptez de nouvelles demandes' : 'Vous n&apos;acceptez pas de nouvelles demandes'}
+                        </Text>
+                      </View>
+                      <Switch
+                        value={catSitterProfile?.isActive || false}
+                        onValueChange={handleToggleAvailability}
+                        trackColor={{ false: COLORS.lightGray, true: COLORS.success }}
+                        thumbColor={catSitterProfile?.isActive ? COLORS.white : COLORS.mediumGray}
+                      />
+                    </View>
+                  </View>
+                  
+                  {/* Quick Actions */}
+                  <View style={styles.catSitterQuickActions}>
+                    <TouchableOpacity 
+                      style={styles.catSitterActionButton}
+                      onPress={() => setSelectedCatSitterTab('bookings')}
+                    >
+                      <View style={styles.catSitterActionIcon}>
+                        <Calendar size={18} color={COLORS.primary} />
+                      </View>
+                      <View style={styles.catSitterActionContent}>
+                        <Text style={styles.catSitterActionTitle}>Demandes en attente</Text>
+                        <Text style={styles.catSitterActionSubtitle}>{getPendingBookingsCount()} nouvelles demandes</Text>
+                      </View>
+                      <ArrowRight size={18} color={COLORS.darkGray} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                      style={styles.catSitterActionButton}
+                      onPress={() => setSelectedCatSitterTab('messages')}
+                    >
+                      <View style={styles.catSitterActionIcon}>
+                        <MessageCircle size={18} color={COLORS.primary} />
+                      </View>
+                      <View style={styles.catSitterActionContent}>
+                        <Text style={styles.catSitterActionTitle}>Messages non lus</Text>
+                        <Text style={styles.catSitterActionSubtitle}>{getUnreadMessagesCount()} nouveaux messages</Text>
+                      </View>
+                      <ArrowRight size={18} color={COLORS.darkGray} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                      style={styles.catSitterActionButton}
+                      onPress={() => router.push('/cat-sitter-settings')}
+                    >
+                      <View style={styles.catSitterActionIcon}>
+                        <Settings size={18} color={COLORS.primary} />
+                      </View>
+                      <View style={styles.catSitterActionContent}>
+                        <Text style={styles.catSitterActionTitle}>Paramètres du profil</Text>
+                        <Text style={styles.catSitterActionSubtitle}>Modifier vos informations</Text>
+                      </View>
+                      <ArrowRight size={18} color={COLORS.darkGray} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+              
+              {selectedCatSitterTab === 'bookings' && (
+                <View>
+                  <Text style={styles.catSitterSectionTitle}>Demandes de réservation</Text>
+                  
+                  {bookingRequests.length === 0 ? (
+                    <View style={styles.catSitterEmptyState}>
+                      <Calendar size={40} color={COLORS.mediumGray} />
+                      <Text style={styles.catSitterEmptyStateText}>Aucune demande pour le moment</Text>
+                    </View>
+                  ) : (
+                    bookingRequests.slice(0, 3).map((booking) => (
+                      <View key={booking.id} style={[styles.catSitterBookingCard, SHADOWS.small]}>
+                        <View style={styles.catSitterBookingHeader}>
+                          <Image source={{ uri: booking.clientAvatar }} style={styles.catSitterClientAvatar} />
+                          <View style={styles.catSitterBookingInfo}>
+                            <Text style={styles.catSitterClientName}>{booking.clientName}</Text>
+                            <Text style={styles.catSitterPetInfo}>{booking.petName} • {booking.petType}</Text>
+                            <Text style={styles.catSitterBookingDates}>
+                              {booking.startDate} - {booking.endDate}
+                            </Text>
+                          </View>
+                          <View style={styles.catSitterBookingPrice}>
+                            <Text style={styles.catSitterPriceAmount}>{booking.totalPrice}€</Text>
+                            <Text style={styles.catSitterPriceDetails}>{booking.totalHours}h</Text>
+                          </View>
+                        </View>
+
+                        <Text style={styles.catSitterBookingMessage} numberOfLines={2}>{booking.message}</Text>
+
+                        <View style={styles.catSitterBookingActions}>
+                          {booking.status === 'pending' ? (
+                            <>
+                              <TouchableOpacity
+                                style={[styles.catSitterBookingActionButton, styles.catSitterDeclineButton]}
+                                onPress={() => handleBookingResponse(booking.id, 'declined')}
+                              >
+                                <XCircle size={14} color={COLORS.white} />
+                                <Text style={styles.catSitterDeclineButtonText}>Refuser</Text>
+                              </TouchableOpacity>
+                              
+                              <TouchableOpacity
+                                style={[styles.catSitterBookingActionButton, styles.catSitterAcceptButton]}
+                                onPress={() => handleBookingResponse(booking.id, 'accepted')}
+                              >
+                                <CheckCircle size={14} color={COLORS.white} />
+                                <Text style={styles.catSitterAcceptButtonText}>Accepter</Text>
+                              </TouchableOpacity>
+                            </>
+                          ) : (
+                            <View style={[styles.catSitterStatusBadge, 
+                              booking.status === 'accepted' ? styles.catSitterAcceptedBadge : 
+                              booking.status === 'declined' ? styles.catSitterDeclinedBadge : styles.catSitterCompletedBadge
+                            ]}>
+                              <Text style={styles.catSitterStatusBadgeText}>
+                                {booking.status === 'accepted' ? 'Acceptée' :
+                                 booking.status === 'declined' ? 'Refusée' : 'Terminée'}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    ))
+                  )}
+                  
+                  {bookingRequests.length > 3 && (
+                    <TouchableOpacity 
+                      style={styles.catSitterViewAllButton}
+                      onPress={() => router.push('/cat-sitter-dashboard')}
+                    >
+                      <Text style={styles.catSitterViewAllButtonText}>Voir toutes les demandes</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+              
+              {selectedCatSitterTab === 'messages' && (
+                <View>
+                  <Text style={styles.catSitterSectionTitle}>Messages</Text>
+                  
+                  {catSitterMessages.length === 0 ? (
+                    <View style={styles.catSitterEmptyState}>
+                      <MessageCircle size={40} color={COLORS.mediumGray} />
+                      <Text style={styles.catSitterEmptyStateText}>Aucun message</Text>
+                    </View>
+                  ) : (
+                    catSitterMessages.slice(0, 3).map((message) => (
+                      <TouchableOpacity
+                        key={message.id}
+                        style={[styles.catSitterMessageCard, SHADOWS.small, !message.isRead && styles.catSitterUnreadMessage]}
+                        onPress={() => router.push(`/messages/${message.fromId}`)}
+                      >
+                        <Image source={{ uri: message.fromAvatar }} style={styles.catSitterMessageAvatar} />
+                        <View style={styles.catSitterMessageContent}>
+                          <View style={styles.catSitterMessageHeader}>
+                            <Text style={styles.catSitterMessageSender}>{message.fromName}</Text>
+                            <Text style={styles.catSitterMessageTime}>
+                              {new Date(message.timestamp).toLocaleDateString()}
+                            </Text>
+                          </View>
+                          <Text style={styles.catSitterMessageText} numberOfLines={2}>
+                            {message.message}
+                          </Text>
+                          {message.bookingId && (
+                            <Text style={styles.catSitterMessageBooking}>Réservation liée</Text>
+                          )}
+                        </View>
+                        {!message.isRead && <View style={styles.catSitterUnreadDot} />}
+                      </TouchableOpacity>
+                    ))
+                  )}
+                  
+                  {catSitterMessages.length > 3 && (
+                    <TouchableOpacity 
+                      style={styles.catSitterViewAllButton}
+                      onPress={() => router.push('/cat-sitter-dashboard')}
+                    >
+                      <Text style={styles.catSitterViewAllButtonText}>Voir tous les messages</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </View>
+          </>
+        )}
+        
+        {/* Account Info */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Informations du compte</Text>
+        </View>
+        
+        <View style={[styles.infoCard, SHADOWS.small]}>
+          <View style={styles.infoItem}>
+            <UserIcon size={18} color={COLORS.darkGray} />
+            <Text style={styles.infoLabel}>Email</Text>
+            <Text style={styles.infoValue} numberOfLines={1}>{user.email}</Text>
+          </View>
+          
+          <View style={styles.divider} />
+          
+          <View style={styles.infoItem}>
+            <MapPin size={18} color={COLORS.darkGray} />
+            <Text style={styles.infoLabel}>Ville</Text>
+            <Text style={styles.infoValue} numberOfLines={1}>{user.city}</Text>
+          </View>
+          
+          <View style={styles.divider} />
+          
+          <View style={styles.infoItem}>
+            <Star size={18} color={COLORS.darkGray} />
+            <Text style={styles.infoLabel}>Membre depuis</Text>
+            <Text style={styles.infoValue}>
+              {new Date(user.createdAt).toLocaleDateString('fr-FR')}
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.white,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fixedHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.mediumGray,
+    paddingTop: Platform.OS === 'ios' ? 12 : 16,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerName: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: COLORS.black,
+  },
+  friendsCount: {
+    fontSize: 14,
+    color: COLORS.darkGray,
+    marginTop: 2,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.mediumGray,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 40,
+  },
+  profileSection: {
+    marginBottom: 24,
+    alignItems: 'center',
+  },
+  profilePhotoContainer: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  profilePhotoUploader: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  cameraOverlay: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: COLORS.primary,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.white,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  nameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    marginBottom: 8,
+  },
+  name: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+    color: COLORS.black,
+    marginRight: 8,
+  },
+  badgeContainer: {
+    backgroundColor: COLORS.maleAccent,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  badgeText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  detailsContainer: {
+    gap: 4,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  detailText: {
+    fontSize: 14,
+    color: COLORS.darkGray,
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.mediumGray,
+  },
+  membershipCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+  },
+  premiumIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  membershipInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  membershipTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: COLORS.black,
+    marginBottom: 2,
+  },
+  membershipSubtitle: {
+    fontSize: 12,
+    color: COLORS.darkGray,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    marginTop: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    color: COLORS.black,
+  },
+  seeAllText: {
+    fontSize: 14,
+    color: COLORS.maleAccent,
+  },
+  petsContainer: {
+    paddingRight: 16,
+    gap: 12,
+  },
+  petCard: {
+    marginRight: 12,
+  },
+  addPetCard: {
+    width: 160,
+    height: 220,
+    borderRadius: 16,
+    backgroundColor: COLORS.default,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.mediumGray,
+    borderStyle: 'dashed',
+  },
+  addPetText: {
+    fontSize: 16,
+    fontWeight: '500' as const,
+    color: COLORS.maleAccent,
+    marginTop: 8,
+  },
+  badgesContainer: {
+    paddingRight: 16,
+    gap: 16,
+  },
+  badge: {
+    marginRight: 12,
+  },
+  infoCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 16,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    minHeight: 40,
+  },
+  infoLabel: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+    color: COLORS.black,
+    marginLeft: 10,
+    width: 90,
+  },
+  infoValue: {
+    flex: 1,
+    fontSize: 14,
+    color: COLORS.darkGray,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.mediumGray,
+  },
+  friendsList: {
+    paddingRight: 16,
+    gap: 12,
+  },
+  friendItem: {
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    width: 120,
+    marginRight: 12,
+  },
+  friendAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginBottom: 8,
+  },
+  friendInfo: {
+    alignItems: 'center',
+  },
+  friendName: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: COLORS.black,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  friendAction: {
+    fontSize: 12,
+    color: COLORS.primary,
+    textAlign: 'center',
+  },
+  challengesContainer: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    ...SHADOWS.small,
+  },
+  challengesSummary: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  challengeStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  challengeStatNumber: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+    color: COLORS.black,
+    marginTop: 8,
+  },
+  challengeStatLabel: {
+    fontSize: 12,
+    color: COLORS.darkGray,
+    marginTop: 4,
+  },
+  managePremiumText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+    color: COLORS.primary,
+  },
+  // Cat-Sitter Dashboard Styles
+  catSitterTabNavigation: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+    ...SHADOWS.small,
+  },
+  catSitterTabButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    position: 'relative',
+    gap: 6,
+  },
+  activeCatSitterTab: {
+    backgroundColor: COLORS.primary,
+  },
+  catSitterTabText: {
+    fontSize: 12,
+    color: COLORS.darkGray,
+    fontWeight: '500' as const,
+  },
+  activeCatSitterTabText: {
+    color: COLORS.white,
+    fontWeight: '600' as const,
+  },
+  catSitterBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 4,
+    backgroundColor: COLORS.error,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  catSitterBadgeText: {
+    color: COLORS.white,
+    fontSize: 10,
+    fontWeight: '600' as const,
+  },
+  catSitterContent: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+  },
+  catSitterStatsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  catSitterStatCard: {
+    backgroundColor: COLORS.screenBackground,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    width: '48%',
+  },
+  catSitterStatIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  catSitterStatValue: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: COLORS.black,
+    marginBottom: 2,
+  },
+  catSitterStatLabel: {
+    fontSize: 12,
+    color: COLORS.darkGray,
+    textAlign: 'center',
+  },
+  catSitterAvailabilityCard: {
+    backgroundColor: COLORS.screenBackground,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  catSitterAvailabilityHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  catSitterAvailabilityTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: COLORS.black,
+    marginBottom: 2,
+  },
+  catSitterAvailabilitySubtitle: {
+    fontSize: 12,
+    color: COLORS.darkGray,
+  },
+  catSitterQuickActions: {
+    gap: 12,
+  },
+  catSitterActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.screenBackground,
+    borderRadius: 12,
+  },
+  catSitterActionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  catSitterActionContent: {
+    flex: 1,
+  },
+  catSitterActionTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: COLORS.black,
+    marginBottom: 2,
+  },
+  catSitterActionSubtitle: {
+    fontSize: 12,
+    color: COLORS.darkGray,
+  },
+  catSitterSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: COLORS.black,
+    marginBottom: 12,
+  },
+  catSitterEmptyState: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  catSitterEmptyStateText: {
+    fontSize: 14,
+    color: COLORS.darkGray,
+    marginTop: 12,
+  },
+  catSitterBookingCard: {
+    backgroundColor: COLORS.screenBackground,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+  },
+  catSitterBookingHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  catSitterClientAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 10,
+  },
+  catSitterBookingInfo: {
+    flex: 1,
+  },
+  catSitterClientName: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: COLORS.black,
+    marginBottom: 2,
+  },
+  catSitterPetInfo: {
+    fontSize: 12,
+    color: COLORS.darkGray,
+    marginBottom: 2,
+  },
+  catSitterBookingDates: {
+    fontSize: 12,
+    color: COLORS.primary,
+  },
+  catSitterBookingPrice: {
+    alignItems: 'flex-end',
+  },
+  catSitterPriceAmount: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: COLORS.success,
+  },
+  catSitterPriceDetails: {
+    fontSize: 10,
+    color: COLORS.darkGray,
+  },
+  catSitterBookingMessage: {
+    fontSize: 12,
+    color: COLORS.darkGray,
+    lineHeight: 16,
+    marginBottom: 8,
+  },
+  catSitterBookingActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  catSitterBookingActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 4,
+  },
+  catSitterAcceptButton: {
+    backgroundColor: COLORS.success,
+  },
+  catSitterAcceptButtonText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  catSitterDeclineButton: {
+    backgroundColor: COLORS.error,
+  },
+  catSitterDeclineButtonText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  catSitterStatusBadge: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  catSitterAcceptedBadge: {
+    backgroundColor: COLORS.available,
+  },
+  catSitterDeclinedBadge: {
+    backgroundColor: COLORS.busy,
+  },
+  catSitterCompletedBadge: {
+    backgroundColor: COLORS.mediumGray,
+  },
+  catSitterStatusBadgeText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  catSitterMessageCard: {
+    backgroundColor: COLORS.screenBackground,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  catSitterUnreadMessage: {
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.primary,
+  },
+  catSitterMessageAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 10,
+  },
+  catSitterMessageContent: {
+    flex: 1,
+  },
+  catSitterMessageHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  catSitterMessageSender: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: COLORS.black,
+  },
+  catSitterMessageTime: {
+    fontSize: 10,
+    color: COLORS.darkGray,
+  },
+  catSitterMessageText: {
+    fontSize: 12,
+    color: COLORS.darkGray,
+    lineHeight: 16,
+    marginBottom: 2,
+  },
+  catSitterMessageBooking: {
+    fontSize: 10,
+    color: COLORS.primary,
+    fontStyle: 'italic',
+  },
+  catSitterUnreadDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.primary,
+    marginLeft: 6,
+    marginTop: 6,
+  },
+  catSitterViewAllButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  catSitterViewAllButtonText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+});
