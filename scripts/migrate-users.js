@@ -74,6 +74,15 @@ async function run() {
     batch = db.batch();
   };
 
+  // Aggregated dry‑run report
+  const report = {
+    usersTotal: usersSnap.size,
+    usersNeedingVisibility: 0,
+    usersWithSensitive: 0,
+    fieldsOccurrences: Object.fromEntries(SENSITIVE_FIELDS.map((k) => [k, 0])),
+    examples: [],
+  };
+
   for (const doc of usersSnap.docs) {
     examined += 1;
     const userId = doc.id;
@@ -86,6 +95,7 @@ async function run() {
       if (Object.prototype.hasOwnProperty.call(data, key)) {
         sensitive[key] = data[key];
         hasSensitive = true;
+        report.fieldsOccurrences[key] += 1;
       }
     }
 
@@ -94,19 +104,20 @@ async function run() {
 
     // Move sensitive fields
     if (hasSensitive) {
+      report.usersWithSensitive += 1;
       const privateRef = db.collection('users_private').doc(userId);
-      // Merge into users_private
       if (APPLY) batch.set(privateRef, { ...sensitive, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
       toWrite += 1;
 
-      // Remove from users
       for (const key of Object.keys(sensitive)) {
         deletes[key] = admin.firestore.FieldValue.delete();
       }
     }
 
     // Ensure profileVisibility default if missing
-    if (!('profileVisibility' in data) || data.profileVisibility == null || data.profileVisibility === '') {
+    const needsVisibility = !('profileVisibility' in data) || data.profileVisibility == null || data.profileVisibility === '';
+    if (needsVisibility) {
+      report.usersNeedingVisibility += 1;
       updates['profileVisibility'] = DEFAULT_VISIBILITY;
     }
 
@@ -119,6 +130,16 @@ async function run() {
       const userRef = db.collection('users').doc(userId);
       if (APPLY) batch.set(userRef, { ...deletes, ...updates }, { merge: true });
       toWrite += 1;
+
+      if (report.examples.length < 10) {
+        report.examples.push({
+          userId,
+          move: Object.keys(sensitive),
+          set: needsVisibility ? { profileVisibility: DEFAULT_VISIBILITY } : {},
+          update: Object.keys(updates),
+          delete: Object.keys(deletes),
+        });
+      }
     }
 
     if (toWrite >= 400) { // keep margin below 500 writes/commit
@@ -132,6 +153,18 @@ async function run() {
     console.log('⏩ committing final batch...');
     await commitBatch();
   }
+
+  // Print dry‑run summary
+  console.log('—— Dry‑run summary ——');
+  console.log(JSON.stringify({
+    apply: APPLY,
+    defaultVisibility: DEFAULT_VISIBILITY,
+    usersTotal: report.usersTotal,
+    usersWithSensitive: report.usersWithSensitive,
+    usersNeedingVisibility: report.usersNeedingVisibility,
+    fieldsOccurrences: report.fieldsOccurrences,
+    examples: report.examples,
+  }, null, 2));
 
   console.log('✅ Migration finished');
   console.log('   documents scanned:', examined);
