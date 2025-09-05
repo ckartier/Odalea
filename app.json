@@ -23,8 +23,12 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow $(PRODUCT_NAME) to use your location.",
         "NSLocationAlwaysUsageDescription": "Allow $(PRODUCT_NAME) to use your location.",
         "NSLocationWhenInUseUsageDescription": "Allow $(PRODUCT_NAME) to use your location.",
-        "UIBackgroundModes": [
-          "location"
+        "UIBackgroundModes": ["location"],
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLName": "google-oauth",
+            "CFBundleURLSchemes": ["$(EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID)"]
+          }
         ]
       }
     },
@@ -81,9 +85,7 @@
           "icon": "./local/assets/notification_icon.png",
           "color": "#ffffff",
           "defaultChannel": "default",
-          "sounds": [
-            "./local/assets/notification_sound.wav"
-          ],
+          "sounds": ["./local/assets/notification_sound.wav"],
           "enableBackgroundRemoteNotifications": false
         }
       ]
