@@ -1678,11 +1678,11 @@ export const challengeService = {
         return { id: d.id, ...data } as any;
       });
     } catch (e) {
-      console.error('❌ Error getting participations:', e);
       if (isPermissionDenied(e)) {
-        console.log('🔒 Returning empty participations due to permission rules');
+        console.warn('🔒 getParticipations permission-denied; returning empty array');
         return [] as any[];
       }
+      console.error('❌ Error getting participations (unexpected):', e);
       throw e;
     }
   },
@@ -1703,8 +1703,12 @@ export const challengeService = {
       });
       return Object.entries(agg).map(([userId, totalPoints]) => ({ userId, totalPoints })).sort((a, b) => b.totalPoints - a.totalPoints);
     } catch (e) {
-      console.error('❌ Error building leaderboard:', e);
-      return [];
+      if (isPermissionDenied(e)) {
+        console.warn('🔒 getLeaderboard permission-denied; returning empty leaderboard');
+        return [] as Array<{ userId: string; totalPoints: number }>;
+      }
+      console.error('❌ Error building leaderboard (unexpected):', e);
+      throw e;
     }
   },
 
