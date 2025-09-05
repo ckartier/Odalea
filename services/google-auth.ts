@@ -107,11 +107,7 @@ class GoogleAuthService {
       const result = await request.promptAsync(
         {
           authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
-        },
-        {
-          useProxy: (Constants.appOwnership as any) === 'expo',
-          projectNameForProxy: Constants.expoConfig?.slug,
-        },
+        }
       );
 
       if (result.type !== 'success') return null;
