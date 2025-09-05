@@ -62,12 +62,54 @@ class GoogleAuthService {
   async signIn(): Promise<GoogleAuthResponse | null> {
     try {
       if (Platform.OS === 'web') {
-        const provider = new GoogleAuthProvider();
-        provider.addScope('profile');
-        provider.addScope('email');
-        const credResult = await signInWithPopup(auth, provider);
-        const u = credResult.user;
-        const token = await u.getIdToken();
+        if (!this.clientId) {
+          throw new Error('Google client ID missing');
+        }
+
+        const codeVerifier = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+        const codeChallengeRaw = await Crypto.digestStringAsync(
+          Crypto.CryptoDigestAlgorithm.SHA256,
+          codeVerifier,
+          { encoding: Crypto.CryptoEncoding.BASE64 },
+        );
+        const codeChallenge = codeChallengeRaw.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+
+        const request = new AuthSession.AuthRequest({
+          clientId: this.clientId,
+          scopes: ['openid', 'profile', 'email'],
+          responseType: AuthSession.ResponseType.Code,
+          redirectUri: this.redirectUri,
+          codeChallenge,
+          codeChallengeMethod: AuthSession.CodeChallengeMethod.S256,
+          extraParams: { access_type: 'offline', prompt: 'consent' },
+        });
+
+        const result = await request.promptAsync({
+          authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+        });
+
+        if (result.type !== 'success') return null;
+
+        const tokenResponse = await AuthSession.exchangeCodeAsync(
+          {
+            clientId: this.clientId,
+            code: result.params.code,
+            redirectUri: this.redirectUri,
+            extraParams: { code_verifier: codeVerifier },
+          },
+          { tokenEndpoint: 'https://oauth2.googleapis.com/token' },
+        );
+
+        if (!tokenResponse.idToken) {
+          throw new Error('No id_token returned by Google');
+        }
+
+        const credential = GoogleAuthProvider.credential(
+          tokenResponse.idToken,
+          tokenResponse.accessToken,
+        );
+        const firebaseResult = await signInWithCredential(auth, credential);
+        const u = firebaseResult.user;
         return {
           user: {
             id: u.uid,
@@ -77,8 +119,8 @@ class GoogleAuthService {
             given_name: (u.displayName ?? '').split(' ')[0] ?? '',
             family_name: (u.displayName ?? '').split(' ').slice(1).join(' ') ?? '',
           },
-          accessToken: token,
-          idToken: token,
+          accessToken: tokenResponse.accessToken ?? '',
+          idToken: tokenResponse.idToken,
         };
       }
 
