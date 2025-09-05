@@ -166,6 +166,10 @@ export const userService = {
       return qs.docs.map(d => ({ id: d.id, ...(d.data() as any) })) as User[];
     } catch (error) {
       console.error('❌ Error getting all users:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty user list due to permission rules');
+        return [] as User[];
+      }
       throw error;
     }
   }
@@ -222,6 +226,11 @@ export const petService = {
       throw error;
     }
   }
+};
+
+const isPermissionDenied = (e: unknown): boolean => {
+  const code = (e as any)?.code ?? '';
+  return typeof code === 'string' && code.includes('permission-denied');
 };
 
 // Mock data storage keys
@@ -911,6 +920,10 @@ export const professionalService = {
       return querySnapshot.docs.map(doc => doc.data()) as ProfessionalData[];
     } catch (error) {
       console.error('❌ Error getting verified professionals:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty professionals due to permission rules');
+        return [] as ProfessionalData[];
+      }
       throw error;
     }
   }
@@ -951,6 +964,10 @@ export const productService = {
       })) as Product[];
     } catch (error) {
       console.error('❌ Error getting products by category:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty products due to permission rules');
+        return [] as Product[];
+      }
       throw error;
     }
   },
@@ -974,6 +991,10 @@ export const productService = {
       })) as Product[];
     } catch (error) {
       console.error('❌ Error searching products:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty products due to permission rules');
+        return [] as Product[];
+      }
       throw error;
     }
   },
@@ -990,6 +1011,10 @@ export const productService = {
       return null;
     } catch (error) {
       console.error('❌ Error getting product:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning null product due to permission rules');
+        return null;
+      }
       throw error;
     }
   }
@@ -1066,6 +1091,10 @@ export const lostFoundService = {
       return qs.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() })) as any[];
     } catch (error) {
       console.error('❌ Error listing lost&found reports:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty lost&found list due to permission rules');
+        return [] as any[];
+      }
       return [] as any[];
     }
   },
@@ -1132,6 +1161,10 @@ export const petSitterService = {
       return null;
     } catch (error) {
       console.error('❌ Error fetching cat sitter profile:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning null cat sitter profile due to permission rules');
+        return null;
+      }
       return null;
     }
   },
@@ -1194,6 +1227,10 @@ export const orderService = {
       })) as Order[];
     } catch (error) {
       console.error('❌ Error getting customer orders:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty orders due to permission rules');
+        return [] as Order[];
+      }
       throw error;
     }
   },
@@ -1291,6 +1328,10 @@ export const messagingService = {
         .slice(-limitCount);
     } catch (error) {
       console.error('❌ Error getting messages:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty messages due to permission rules');
+        return [] as Message[];
+      }
       throw error;
     }
   },
@@ -1321,6 +1362,10 @@ export const messagingService = {
       return items.sort((a: any, b: any) => toMillis(b.updatedAt) - toMillis(a.updatedAt));
     } catch (error) {
       console.error('❌ Error getting conversations:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty conversations due to permission rules');
+        return [] as Conversation[];
+      }
       throw error;
     }
   }
@@ -1409,6 +1454,10 @@ export const badgeService = {
       })) as Badge[];
     } catch (error) {
       console.error('❌ Error getting badges:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty badges due to permission rules');
+        return [] as Badge[];
+      }
       throw error;
     }
   },
@@ -1492,6 +1541,10 @@ export const challengeService = {
       return filtered;
     } catch (error) {
       console.error('❌ Error getting active challenges:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty active challenges due to permission rules');
+        return [] as Challenge[];
+      }
       throw error;
     }
   },
@@ -1626,6 +1679,10 @@ export const challengeService = {
       });
     } catch (e) {
       console.error('❌ Error getting participations:', e);
+      if (isPermissionDenied(e)) {
+        console.log('🔒 Returning empty participations due to permission rules');
+        return [] as any[];
+      }
       throw e;
     }
   },
@@ -1681,6 +1738,10 @@ export const challengeService = {
       return qs.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
     } catch (error) {
       console.error('❌ Error getting challenge submissions:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty submissions due to permission rules');
+        return [] as any[];
+      }
       throw error;
     }
   }
@@ -1723,6 +1784,10 @@ export const notificationService = {
       })) as Notification[];
     } catch (error) {
       console.error('❌ Error getting user notifications:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty notifications due to permission rules');
+        return [] as Notification[];
+      }
       throw error;
     }
   },
@@ -1757,6 +1822,10 @@ export const animalDataService = {
       })) as AnimalSpecies[];
     } catch (error) {
       console.error('❌ Error getting animal species:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty species due to permission rules');
+        return [] as AnimalSpecies[];
+      }
       throw error;
     }
   },
@@ -1774,6 +1843,10 @@ export const animalDataService = {
       })) as AnimalBreed[];
     } catch (error) {
       console.error('❌ Error getting breeds:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty breeds due to permission rules');
+        return [] as AnimalBreed[];
+      }
       throw error;
     }
   },
@@ -1844,6 +1917,10 @@ export const bookingService = {
       })) as any[];
     } catch (error) {
       console.error('❌ Error getting user bookings:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty bookings due to permission rules');
+        return [] as any[];
+      }
       throw error;
     }
   },
@@ -1917,6 +1994,10 @@ export const healthService = {
       })) as any[];
     } catch (error) {
       console.error('❌ Error getting health records:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty health records due to permission rules');
+        return [] as any[];
+      }
       throw error;
     }
   },
@@ -1956,6 +2037,10 @@ export const healthService = {
       })) as any[];
     } catch (error) {
       console.error('❌ Error getting vaccinations:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty vaccinations due to permission rules');
+        return [] as any[];
+      }
       throw error;
     }
   }
@@ -2003,6 +2088,10 @@ export const reviewService = {
       return items.sort((a: any, b: any) => toMillis(b.createdAt) - toMillis(a.createdAt));
     } catch (error) {
       console.error('❌ Error getting reviews:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty reviews due to permission rules');
+        return [] as any[];
+      }
       throw error;
     }
   }
@@ -2044,6 +2133,10 @@ export const emergencyService = {
       })) as any[];
     } catch (error) {
       console.error('❌ Error getting emergency contacts:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty emergency contacts due to permission rules');
+        return [] as any[];
+      }
       throw error;
     }
   }
