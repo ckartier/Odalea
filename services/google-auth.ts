@@ -1,6 +1,7 @@
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import * as Crypto from 'expo-crypto';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { auth } from '@/services/firebase';
 import {
@@ -36,12 +37,26 @@ class GoogleAuthService {
     const ios = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
     const android = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? '';
 
+    // Choose the correct clientId based on platform
     this.clientId = (Platform.select({ ios, android, web, default: web }) ?? '') as string;
 
-    this.redirectUri = AuthSession.makeRedirectUri({
-      scheme: 'myapp',
-      path: 'auth',
-    });
+    // Prefer scheme from app.json; fall back to slug; final fallback to 'myapp'
+    const scheme = (Constants.expoConfig?.slug as string | undefined)
+      ?? (Constants.expoConfig?.scheme as string | undefined)
+      ?? 'myapp';
+
+    // Build redirect URI compatible with Expo Go and standalone
+    if (Platform.OS === 'web') {
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
+      this.redirectUri = `${origin}/auth`;
+    } else {
+      this.redirectUri = AuthSession.makeRedirectUri({
+        scheme,
+      });
+    }
+
+    console.log('[GoogleAuth] Using scheme:', scheme);
+    console.log('[GoogleAuth] Redirect URI:', this.redirectUri);
   }
 
   async signIn(): Promise<GoogleAuthResponse | null> {
@@ -86,12 +101,18 @@ class GoogleAuthService {
         redirectUri: this.redirectUri,
         codeChallenge,
         codeChallengeMethod: AuthSession.CodeChallengeMethod.S256,
-        extraParams: { access_type: 'offline' },
+        extraParams: { access_type: 'offline', prompt: 'consent' },
       });
 
-      const result = await request.promptAsync({
-        authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
-      });
+      const result = await request.promptAsync(
+        {
+          authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+        },
+        {
+          useProxy: (Constants.appOwnership as any) === 'expo',
+          projectNameForProxy: Constants.expoConfig?.slug,
+        },
+      );
 
       if (result.type !== 'success') return null;
 
