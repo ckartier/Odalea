@@ -3,6 +3,7 @@ import { getAuth, connectAuthEmulator, setPersistence, browserLocalPersistence }
 import { initializeFirestore, connectFirestoreEmulator, enableIndexedDbPersistence, enableNetwork, disableNetwork, setLogLevel } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Secure Firebase configuration using environment variables
 const rawConfig = {
@@ -47,14 +48,28 @@ if (getApps().length === 0) {
 
 // Initialize Firebase services
 const auth = getAuth(app);
-// Ensure stable web persistence to avoid credential issues on refresh
+// Ensure stable persistence according to platform
 if (Platform.OS === 'web') {
   try {
     setPersistence(auth, browserLocalPersistence)
       .then(() => console.log('🔐 Auth persistence set to browserLocalPersistence'))
       .catch((e) => console.warn('⚠️ Failed to set web auth persistence:', e?.message ?? String(e)));
   } catch (e) {
-    console.warn('⚠️ setPersistence threw:', (e as any)?.message ?? String(e));
+    console.warn('⚠️ setPersistence threw (web):', (e as any)?.message ?? String(e));
+  }
+} else {
+  try {
+    const rnAuth = require('firebase/auth/react-native');
+    const getReactNativePersistence: ((storage: typeof AsyncStorage) => any) | undefined = rnAuth?.getReactNativePersistence;
+    if (getReactNativePersistence) {
+      setPersistence(auth, getReactNativePersistence(AsyncStorage))
+        .then(() => console.log('🔐 Auth persistence set to React Native AsyncStorage'))
+        .catch((e: unknown) => console.warn('⚠️ Failed to set native auth persistence:', (e as any)?.message ?? String(e)));
+    } else {
+      console.warn('⚠️ getReactNativePersistence not available, using in-memory persistence');
+    }
+  } catch (e) {
+    console.warn('⚠️ setPersistence threw (native):', (e as any)?.message ?? String(e));
   }
 }
 const db = initializeFirestore(app, Platform.OS === 'web' ? {
