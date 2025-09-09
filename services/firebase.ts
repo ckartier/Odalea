@@ -79,6 +79,17 @@ const db = initializeFirestore(app, Platform.OS === 'web' ? {
   experimentalForceLongPolling: true,
   ignoreUndefinedProperties: true,
 });
+// Enable offline persistence as early as possible on web
+if (Platform.OS === 'web') {
+  enableIndexedDbPersistence(db)
+    .then(() => {
+      console.log('💾 Web persistence enabled');
+    })
+    .catch((error) => {
+      const msg = (error as any)?.message ?? String(error);
+      console.log('⚠️ Web persistence not available:', msg);
+    });
+}
 const storage = getStorage(app);
 
 // Connect to emulators in development (disabled for now to avoid connection issues)
@@ -121,15 +132,6 @@ export const disconnectFirestore = async () => {
 if (Platform.OS !== 'web') {
   enableNetwork(db).catch(error => {
     console.log('⚠️ Initial network enable failed:', error);
-  });
-}
-
-// Enable offline persistence for better reliability
-if (Platform.OS === 'web') {
-  enableIndexedDbPersistence(db).then(() => {
-    console.log('💾 Web persistence enabled');
-  }).catch((error) => {
-    console.log('⚠️ Web persistence not available:', error?.message ?? String(error));
   });
 }
 
