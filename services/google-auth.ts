@@ -37,13 +37,8 @@ class GoogleAuthService {
     const ios = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
     const android = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? '';
 
-    const fallbacks = {
-      web: web || ios || android || '',
-      ios: ios || web || android || '',
-      android: android || web || ios || '',
-    } as const;
-
-    this.clientId = (Platform.select({ ios: fallbacks.ios, android: fallbacks.android, web: fallbacks.web, default: fallbacks.web }) ?? '') as string;
+    const chosenClientId = web || ios || android || '';
+    this.clientId = chosenClientId;
 
     const scheme = (Constants.expoConfig?.scheme as string | undefined)
       ?? (Constants.expoConfig?.slug as string | undefined)
@@ -60,12 +55,14 @@ class GoogleAuthService {
 
     console.log('[GoogleAuth] Using scheme:', scheme);
     console.log('[GoogleAuth] Redirect URI:', this.redirectUri);
+    console.log('[GoogleAuth] Client ID present:', !!this.clientId);
   }
 
   async signIn(): Promise<GoogleAuthResponse | null> {
     try {
       if (Platform.OS === 'web') {
         if (!this.clientId) {
+          console.error('[GoogleAuth] Missing client ID. Ensure EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (preferred) or one of EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID / EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID is set in .env and that you restarted the dev server.');
           throw new Error('Google client ID missing');
         }
 
@@ -128,6 +125,7 @@ class GoogleAuthService {
       }
 
       if (!this.clientId) {
+        console.error('[GoogleAuth] Missing client ID. Ensure EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (preferred) or one of EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID / EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID is set in .env and that you restarted the dev server.');
         throw new Error('Google client ID missing');
       }
 
