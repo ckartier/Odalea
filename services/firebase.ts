@@ -1,6 +1,6 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator, setPersistence, browserLocalPersistence } from 'firebase/auth';
-import { initializeFirestore, connectFirestoreEmulator, enableIndexedDbPersistence, enableNetwork, disableNetwork, setLogLevel } from 'firebase/firestore';
+import { initializeFirestore, connectFirestoreEmulator, enableNetwork, disableNetwork, setLogLevel, persistentLocalCache } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -72,24 +72,21 @@ if (Platform.OS === 'web') {
     console.warn('⚠️ setPersistence threw (native):', (e as any)?.message ?? String(e));
   }
 }
-const db = initializeFirestore(app, Platform.OS === 'web' ? {
-  experimentalAutoDetectLongPolling: true,
-  ignoreUndefinedProperties: true,
-} : {
-  experimentalForceLongPolling: true,
-  ignoreUndefinedProperties: true,
-});
-// Enable offline persistence as early as possible on web
-if (Platform.OS === 'web') {
-  enableIndexedDbPersistence(db)
-    .then(() => {
-      console.log('💾 Web persistence enabled');
-    })
-    .catch((error) => {
-      const msg = (error as any)?.message ?? String(error);
-      console.log('⚠️ Web persistence not available:', msg);
-    });
-}
+const db = initializeFirestore(
+  app,
+  Platform.OS === 'web'
+    ? {
+        experimentalAutoDetectLongPolling: true,
+        ignoreUndefinedProperties: true,
+        localCache: persistentLocalCache(),
+      }
+    : {
+        experimentalForceLongPolling: true,
+        ignoreUndefinedProperties: true,
+        localCache: persistentLocalCache(),
+      },
+);
+// Persistence configured via persistentLocalCache above to avoid runtime conflicts
 const storage = getStorage(app);
 
 // Connect to emulators in development (disabled for now to avoid connection issues)
