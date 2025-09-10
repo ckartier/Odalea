@@ -37,18 +37,21 @@ class GoogleAuthService {
     const ios = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
     const android = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? '';
 
-    // Choose the correct clientId based on platform
-    this.clientId = (Platform.select({ ios, android, web, default: web }) ?? '') as string;
+    const fallbacks = {
+      web: web || ios || android || '',
+      ios: ios || web || android || '',
+      android: android || web || ios || '',
+    } as const;
 
-    // Prefer scheme from app.json; fall back to slug; final fallback to 'myapp'
-    const scheme = (Constants.expoConfig?.slug as string | undefined)
-      ?? (Constants.expoConfig?.scheme as string | undefined)
+    this.clientId = (Platform.select({ ios: fallbacks.ios, android: fallbacks.android, web: fallbacks.web, default: fallbacks.web }) ?? '') as string;
+
+    const scheme = (Constants.expoConfig?.scheme as string | undefined)
+      ?? (Constants.expoConfig?.slug as string | undefined)
       ?? 'myapp';
 
-    // Build redirect URI compatible with Expo Go and standalone
     if (Platform.OS === 'web') {
       const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
-      this.redirectUri = `${origin}/auth`;
+      this.redirectUri = `${origin}/`;
     } else {
       this.redirectUri = AuthSession.makeRedirectUri({
         scheme,
