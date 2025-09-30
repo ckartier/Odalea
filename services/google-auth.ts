@@ -37,7 +37,12 @@ class GoogleAuthService {
     const ios = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
     const android = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? '';
 
-    const chosenClientId = web || ios || android || '';
+    const chosenClientId = Platform.select<string>({
+      web: web || ios || android || '',
+      ios: ios || web || android || '',
+      android: android || web || ios || '',
+      default: web || ios || android || '',
+    }) ?? '';
     this.clientId = chosenClientId;
 
     const scheme = (Constants.expoConfig?.scheme as string | undefined)
@@ -45,7 +50,7 @@ class GoogleAuthService {
       ?? 'myapp';
 
     if (Platform.OS === 'web') {
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:19006';
       this.redirectUri = `${origin}/`;
     } else {
       this.redirectUri = AuthSession.makeRedirectUri({
@@ -56,6 +61,7 @@ class GoogleAuthService {
     console.log('[GoogleAuth] Using scheme:', scheme);
     console.log('[GoogleAuth] Redirect URI:', this.redirectUri);
     console.log('[GoogleAuth] Client ID present:', !!this.clientId);
+    console.log('[GoogleAuth] Platform:', Platform.OS);
   }
 
   async signIn(): Promise<GoogleAuthResponse | null> {
