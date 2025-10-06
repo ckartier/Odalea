@@ -195,6 +195,10 @@ export default function MapScreen() {
     incrementActionCount();
   };
 
+  const handleRegionChange = useCallback((r: Region) => {
+    setRegion(r);
+  }, []);
+
   const handlePetCardPress = () => {
     if (selectedPet) {
       incrementActionCount();
@@ -425,7 +429,7 @@ export default function MapScreen() {
       <StatusBar style="dark" />
 
       <MapView
-        provider={PROVIDER_GOOGLE}
+        provider={Platform.OS === 'android' ? (PROVIDER_GOOGLE as any) : undefined}
         style={styles.map}
         region={region}
         showsUserLocation={locationPermission}
@@ -434,6 +438,8 @@ export default function MapScreen() {
         zoomEnabled={true}
         rotateEnabled={false}
         pitchEnabled={false}
+        onRegionChange={Platform.OS === 'web' ? handleRegionChange : undefined}
+        onRegionChangeComplete={Platform.OS !== 'web' ? handleRegionChange : undefined}
         testID="map-view"
       >
         {filteredPets.map((pet, index) => (
