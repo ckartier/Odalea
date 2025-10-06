@@ -425,7 +425,7 @@ export default function MapScreen() {
       <StatusBar style="dark" />
 
       <MapView
-        {...(Platform.OS === 'web' ? { provider: PROVIDER_GOOGLE } : {})}
+        provider={PROVIDER_GOOGLE}
         style={styles.map}
         region={region}
         showsUserLocation={locationPermission}
