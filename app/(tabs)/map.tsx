@@ -24,6 +24,7 @@ import { Pet, User } from '@/types';
 import { Compass, Layers, Filter, Users, Heart, Search } from 'lucide-react-native';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { petService, userService } from '@/services/database';
+import { getBlurredUserLocation } from '@/services/location-privacy';
 
 // Type definitions for map region
 interface Region {
@@ -453,9 +454,9 @@ export default function MapScreen() {
       {Platform.OS === 'web' && (
         <View pointerEvents="box-none" style={styles.webOverlay} testID="web-marker-layer">
           {filteredUsers.map((u, idx) => {
-            const lat = u.location?.latitude ?? DEFAULT_LAT;
-            const lng = u.location?.longitude ?? DEFAULT_LNG;
-            const pos = projectPoint(lat, lng);
+            const originalLoc = { latitude: u.location?.latitude ?? DEFAULT_LAT, longitude: u.location?.longitude ?? DEFAULT_LNG };
+            const blurred = getBlurredUserLocation(u.id, originalLoc);
+            const pos = projectPoint(blurred.latitude, blurred.longitude);
             const left = Math.max(8, Math.min(width - 8, pos.left));
             const top = Math.max(8, Math.min(height - 8, pos.top));
             return (

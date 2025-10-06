@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import { User } from '@/types';
 import { Marker } from 'react-native-maps';
+import { getBlurredUserLocation } from '@/services/location-privacy';
 
 interface UserMarkerProps {
   user: User;
@@ -11,15 +12,20 @@ interface UserMarkerProps {
 }
 
 const UserMarker: React.FC<UserMarkerProps> = ({ user, onPress }) => {
-  if (!user.location) return null;
+  const blurredLocation = useMemo(() => {
+    if (!user.location) return null;
+    return getBlurredUserLocation(user.id, user.location);
+  }, [user.id, user.location]);
+
+  if (!user.location || !blurredLocation) return null;
 
   const markerColor = COLORS.primary;
 
   return (
     <Marker
       coordinate={{
-        latitude: user.location.latitude,
-        longitude: user.location.longitude,
+        latitude: blurredLocation.latitude,
+        longitude: blurredLocation.longitude,
       }}
       onPress={onPress}
     >

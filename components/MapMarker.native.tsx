@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import { Pet } from '@/types';
 import { Marker } from 'react-native-maps';
+import { getBlurredPetLocation } from '@/services/location-privacy';
 
 interface MapMarkerProps {
   pet: Pet & { owner?: any };
@@ -11,15 +12,20 @@ interface MapMarkerProps {
 }
 
 const MapMarker: React.FC<MapMarkerProps> = ({ pet, onPress }) => {
-  if (!pet.location) return null;
+  const blurredLocation = useMemo(() => {
+    if (!pet.location) return null;
+    return getBlurredPetLocation(pet.id, pet.location);
+  }, [pet.id, pet.location]);
+
+  if (!pet.location || !blurredLocation) return null;
 
   const markerColor = pet.gender === 'male' ? COLORS.male : COLORS.female;
 
   return (
     <Marker
       coordinate={{
-        latitude: pet.location.latitude,
-        longitude: pet.location.longitude,
+        latitude: blurredLocation.latitude,
+        longitude: blurredLocation.longitude,
       }}
       onPress={onPress}
     >
