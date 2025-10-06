@@ -120,18 +120,25 @@ export const [ShopContext, useShop] = createContextHook(() => {
     }) => {
       if (!user?.id) throw new Error('User not authenticated');
       
+      const firstProduct = orderData.items[0]?.product;
+      const sellerId = firstProduct?.sellerId || '';
+      const sellerName = firstProduct?.sellerName || 'Vendeur';
+      
       const order = {
         customerId: user.id,
         customerName: user.name || `${user.firstName} ${user.lastName}`.trim(),
         customerEmail: user.email || '',
         customerPhone: user.phoneNumber || '',
+        sellerId,
+        sellerName,
         shippingAddress: orderData.shippingAddress,
         items: orderData.items.map(item => ({
           productId: item.product.id,
           productName: item.product.name,
           price: item.product.price,
           quantity: item.quantity,
-          totalPrice: item.product.price * item.quantity
+          totalPrice: item.product.price * item.quantity,
+          sellerId: item.product.sellerId || ''
         })),
         totalAmount: orderData.totalAmount,
         status: 'pending' as const,
@@ -139,6 +146,28 @@ export const [ShopContext, useShop] = createContextHook(() => {
       };
       
       const orderId = await databaseService.order.createOrder(order);
+      
+      if (sellerId && sellerId !== user.id) {
+        try {
+          const existingConversations = await databaseService.messaging.getConversations(user.id);
+          const existingConv = existingConversations.find(conv => 
+            conv.participants.includes(sellerId) && conv.participants.includes(user.id)
+          );
+          
+          if (!existingConv) {
+            const conversationId = await databaseService.messaging.createConversation([user.id, sellerId]);
+            await databaseService.messaging.sendMessage({
+              senderId: user.id,
+              receiverId: sellerId,
+              content: `Bonjour, je viens de passer une commande (#${orderId.slice(-6)}). Merci!`,
+              conversationId
+            });
+          }
+        } catch (error) {
+          console.error('Error creating conversation:', error);
+        }
+      }
+      
       return { orderId, ...order };
     },
     onSuccess: () => {

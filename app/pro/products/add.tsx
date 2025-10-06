@@ -90,8 +90,9 @@ export default function AddProductScreen() {
     
     setLoading(true);
     try {
+      const productId = `product-${Date.now()}`;
       const newProduct = {
-        id: `product-${Date.now()}`,
+        id: productId,
         name: name.trim(),
         description: description.trim(),
         price: Number(price),
@@ -99,11 +100,18 @@ export default function AddProductScreen() {
         category: category.trim(),
         subcategory: subcategory.trim() || category.trim(),
         stock: Number(stock),
+        sellerId: user.id,
+        sellerName: professionalData.companyName,
+        sellerLogo: user.photo,
+        isVerified: professionalData.isVerified || false,
         isActive: true,
-        status: 'pending' as const,
+        status: 'approved' as const,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
+      
+      const { databaseService } = await import('@/services/database');
+      await databaseService.professionalProduct.saveProfessionalProduct(newProduct, user.id);
       
       const updatedProfessionalData = {
         ...professionalData,
@@ -117,7 +125,7 @@ export default function AddProductScreen() {
       if (result.success) {
         Alert.alert(
           'Produit ajouté',
-          'Votre produit a été soumis pour validation. Il sera visible une fois approuvé.',
+          'Votre produit a été ajouté avec succès et est maintenant visible dans la boutique.',
           [
             {
               text: 'OK',

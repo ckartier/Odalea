@@ -13,13 +13,16 @@ import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import Button from '@/components/Button';
 import { useShop } from '@/hooks/shop-store';
+import { useAuth } from '@/hooks/auth-store';
+import { databaseService } from '@/services/database';
 import { Product } from '@/types';
-import { Minus, Plus, ShoppingBag, Star } from 'lucide-react-native';
+import { Minus, Plus, ShoppingBag, Star, MessageCircle } from 'lucide-react-native';
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { getProduct, addToCart } = useShop();
+  const { user } = useAuth();
   
   const [product, setProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -150,6 +153,37 @@ export default function ProductDetailScreen() {
             icon={<ShoppingBag size={20} color={COLORS.white} />}
             style={styles.addButton}
           />
+          
+          {product.sellerId && product.sellerId !== user?.id && (
+            <TouchableOpacity
+              style={styles.contactButton}
+              onPress={async () => {
+                try {
+                  if (!user) {
+                    Alert.alert('Connexion requise', 'Veuillez vous connecter pour contacter le vendeur');
+                    return;
+                  }
+                  
+                  const existingConversations = await databaseService.messaging.getConversations(user.id);
+                  let conversationId = existingConversations.find(conv => 
+                    conv.participants.includes(product.sellerId!) && conv.participants.includes(user.id)
+                  )?.id;
+                  
+                  if (!conversationId) {
+                    conversationId = await databaseService.messaging.createConversation([user.id, product.sellerId!]);
+                  }
+                  
+                  router.push(`/messages/${conversationId}`);
+                } catch (error) {
+                  console.error('Error creating conversation:', error);
+                  Alert.alert('Erreur', 'Impossible de contacter le vendeur');
+                }
+              }}
+            >
+              <MessageCircle size={20} color={COLORS.primary} />
+              <Text style={styles.contactButtonText}>Contacter le vendeur</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -269,5 +303,24 @@ const styles = StyleSheet.create({
   },
   addButton: {
     marginTop: 8,
+  },
+  contactButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    marginTop: 12,
+    ...SHADOWS.small,
+  },
+  contactButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: COLORS.primary,
+    marginLeft: 8,
   },
 });

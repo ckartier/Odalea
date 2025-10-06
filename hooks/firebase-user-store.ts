@@ -171,6 +171,12 @@ export const [FirebaseUserContext, useFirebaseUser] = createContextHook(() => {
     lastName: string;
     phoneNumber?: string;
     countryCode?: string;
+    address?: string;
+    zipCode?: string;
+    city?: string;
+    isCatSitter?: boolean;
+    isProfessional?: boolean;
+    professionalData?: any;
   }) => {
     setAuthState((prev) => ({ ...prev, loading: true }));
 
@@ -196,19 +202,27 @@ export const [FirebaseUserContext, useFirebaseUser] = createContextHook(() => {
         email: userData.email,
         phoneNumber: userData.phoneNumber || '',
         countryCode: userData.countryCode || 'FR',
-        address: '',
-        zipCode: '',
-        city: '',
-        isCatSitter: false,
+        address: userData.address || '',
+        zipCode: userData.zipCode || '',
+        city: userData.city || '',
+        isCatSitter: userData.isCatSitter || false,
         isPremium: false,
         createdAt: Date.now(),
         pets: [],
-        isProfessional: false,
+        isProfessional: userData.isProfessional || false,
+        professionalData: userData.professionalData,
         isActive: true,
         profileComplete: false,
       };
 
       await databaseService.user.saveUser(newUser);
+
+      if (userData.isProfessional && userData.professionalData) {
+        await databaseService.professional.saveProfessional(
+          userCredential.user.uid,
+          userData.professionalData
+        );
+      }
 
       console.log('✅ User signed up successfully');
       return { success: true, user: userCredential.user } as const;
