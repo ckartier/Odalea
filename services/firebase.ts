@@ -74,17 +74,10 @@ if (Platform.OS === 'web') {
 }
 const db = initializeFirestore(
   app,
-  Platform.OS === 'web'
-    ? {
-        experimentalAutoDetectLongPolling: true,
-        ignoreUndefinedProperties: true,
-        localCache: persistentLocalCache(),
-      }
-    : {
-        experimentalForceLongPolling: true,
-        ignoreUndefinedProperties: true,
-        localCache: persistentLocalCache(),
-      },
+  {
+    ignoreUndefinedProperties: true,
+    localCache: persistentLocalCache(),
+  },
 );
 // Persistence configured via persistentLocalCache above to avoid runtime conflicts
 const storage = getStorage(app);
