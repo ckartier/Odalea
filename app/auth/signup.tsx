@@ -454,6 +454,42 @@ export default function SignUpScreen() {
           animalPhoto: isProfessional ? undefined : (animalPhoto || undefined),
         });
 
+        // Create cat-sitter profile if needed
+        if (isCatSitter && !isProfessional) {
+          try {
+            const { petSitterService } = await import('@/services/database');
+            await petSitterService.saveProfile(result.user.uid, {
+              isActive: true,
+              hourlyRate: 15,
+              description: '',
+              services: ['Pet Sitting'],
+              availability: {
+                monday: { start: '08:00', end: '18:00', available: true },
+                tuesday: { start: '08:00', end: '18:00', available: true },
+                wednesday: { start: '08:00', end: '18:00', available: true },
+                thursday: { start: '08:00', end: '18:00', available: true },
+                friday: { start: '08:00', end: '18:00', available: true },
+                saturday: { start: '09:00', end: '17:00', available: true },
+                sunday: { start: '10:00', end: '16:00', available: false },
+              },
+              photos: [],
+              experience: '1 year',
+              petTypes: ['Cats'],
+              languages: ['French'],
+              insurance: false,
+              emergencyContact: false,
+              responseTime: '< 2 hours',
+              totalBookings: 0,
+              rating: 5.0,
+              reviewCount: 0,
+              radiusKm: catSitterRadiusKm,
+            });
+            console.log('✅ Cat-sitter profile created');
+          } catch (err) {
+            console.error('❌ Error creating cat-sitter profile:', err);
+          }
+        }
+
         if (!isProfessional) {
           try {
             let coords: { latitude: number; longitude: number } | null = null;

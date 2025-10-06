@@ -83,7 +83,7 @@ export default function BookingScreen() {
   const { id } = useLocalSearchParams();
   const { t } = useI18n();
   const { user } = useAuth();
-  const { createBooking } = useBooking();
+  const { createBooking, updateBookingStatus } = useBooking();
 
   const [selectedService, setSelectedService] = useState<Service | null>(services[0]);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -145,6 +145,29 @@ export default function BookingScreen() {
         message: specialInstructions,
       };
       const result = await createBooking(bookingData);
+      
+      // Create conversation automatically
+      try {
+        const { messagingService } = await import('@/services/database');
+        const participants = [user?.id ?? '', id as string];
+        const conversationId = await messagingService.createConversation(participants);
+        
+        // Send initial message
+        await messagingService.sendMessage({
+          senderId: user?.id ?? '',
+          receiverId: id as string,
+          content: specialInstructions || `Nouvelle réservation pour le ${selectedDate.toLocaleDateString('fr-FR')}`,
+          conversationId,
+        });
+        
+        // Update booking with chatId
+        await updateBookingStatus(result.id, 'pending', conversationId);
+        
+        console.log('✅ Conversation created for booking');
+      } catch (err) {
+        console.error('❌ Error creating conversation:', err);
+      }
+      
       setShowPayment(false);
       router.push(`/booking/confirmation/${result.id}`);
     } catch (error) {
