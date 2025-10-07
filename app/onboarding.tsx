@@ -65,8 +65,7 @@ export default function OnboardingScreen() {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const heartbeatAnim = useRef(new Animated.Value(1)).current;
   const bounceAnim = useRef(new Animated.Value(0)).current;
-  const chatAnim1 = useRef(new Animated.Value(0)).current;
-  const chatAnim2 = useRef(new Animated.Value(0)).current;
+  const chatPulseAnim = useRef(new Animated.Value(1)).current;
   const gradientAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -110,34 +109,16 @@ export default function OnboardingScreen() {
       ])
     );
 
-    const chatAnimation1 = Animated.loop(
+    const chatPulseAnimation = Animated.loop(
       Animated.sequence([
-        Animated.timing(chatAnim1, {
+        Animated.timing(chatPulseAnim, {
+          toValue: 1.1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(chatPulseAnim, {
           toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.delay(1400),
-        Animated.timing(chatAnim1, {
-          toValue: 0,
-          duration: 0,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-
-    const chatAnimation2 = Animated.loop(
-      Animated.sequence([
-        Animated.delay(1000),
-        Animated.timing(chatAnim2, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.delay(400),
-        Animated.timing(chatAnim2, {
-          toValue: 0,
-          duration: 0,
+          duration: 800,
           useNativeDriver: true,
         }),
       ])
@@ -160,18 +141,16 @@ export default function OnboardingScreen() {
 
     heartbeatAnimation.start();
     bounceAnimation.start();
-    chatAnimation1.start();
-    chatAnimation2.start();
+    chatPulseAnimation.start();
     gradientAnimation.start();
 
     return () => {
       heartbeatAnimation.stop();
       bounceAnimation.stop();
-      chatAnimation1.stop();
-      chatAnimation2.stop();
+      chatPulseAnimation.stop();
       gradientAnimation.stop();
     };
-  }, [heartbeatAnim, bounceAnim, chatAnim1, chatAnim2, gradientAnim]);
+  }, [heartbeatAnim, bounceAnim, chatPulseAnim, gradientAnim]);
 
   const handleNext = () => {
     if (currentSlide < slides.length - 1) {
@@ -226,7 +205,7 @@ export default function OnboardingScreen() {
     } else if (index === 1) {
       iconTransform = [{ translateY: bounceAnim }];
     } else if (index === 2) {
-      iconTransform = [];
+      iconTransform = [{ scale: chatPulseAnim }];
     }
 
     return (
@@ -238,45 +217,16 @@ export default function OnboardingScreen() {
           style={StyleSheet.absoluteFill}
         />
         <Animated.View style={[styles.slideContent, { opacity: fadeAnim }]}>
-          {index === 2 ? (
-            <View style={styles.chatIconsContainer}>
-              <Animated.View 
-                style={[
-                  styles.chatIcon,
-                  styles.chatIcon1,
-                  {
-                    opacity: chatAnim1,
-                    transform: [{ translateX: chatAnim1.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }],
-                  },
-                ]}
-              >
-                <MessageCircle size={60} color={COLORS.white} />
-              </Animated.View>
-              <Animated.View 
-                style={[
-                  styles.chatIcon,
-                  styles.chatIcon2,
-                  {
-                    opacity: chatAnim2,
-                    transform: [{ translateX: chatAnim2.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
-                  },
-                ]}
-              >
-                <MessageCircle size={60} color={COLORS.white} />
-              </Animated.View>
-            </View>
-          ) : (
-            <Animated.View 
-              style={[
-                styles.iconContainer,
-                {
-                  transform: iconTransform,
-                },
-              ]}
-            >
-              <IconComponent size={80} color={COLORS.white} />
-            </Animated.View>
-          )}
+          <Animated.View 
+            style={[
+              styles.iconContainer,
+              {
+                transform: iconTransform,
+              },
+            ]}
+          >
+            <IconComponent size={80} color={COLORS.white} />
+          </Animated.View>
           
           <Text style={styles.title}>
             {t(slide.titleKey)}
@@ -386,33 +336,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 10,
   },
-  chatIconsContainer: {
-    marginBottom: 32,
-    height: 120,
-    width: 200,
-    position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  chatIcon: {
-    position: 'absolute',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 40,
-    padding: 20,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  chatIcon1: {
-    left: 0,
-  },
-  chatIcon2: {
-    right: 0,
-  },
+
   title: {
     fontSize: 28,
     fontWeight: '700' as const,
