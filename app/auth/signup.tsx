@@ -1416,9 +1416,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   radiusBtn: {
-    backgroundColor: COLORS.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderWidth: 1,
-    borderColor: COLORS.mediumGray,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
@@ -1525,12 +1525,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: COLORS.lightGray,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
     alignItems: 'center' as const,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   languageOptionActive: {
-    backgroundColor: COLORS.maleAccent,
-    borderColor: COLORS.maleAccent,
+    backgroundColor: 'rgba(163, 213, 255, 0.4)',
+    borderColor: 'rgba(163, 213, 255, 0.6)',
   },
   languageOptionText: {
     fontSize: 16,
@@ -1606,11 +1607,13 @@ const styles = StyleSheet.create({
   },
   verifyAddressButton: {
     alignSelf: 'flex-start',
-    backgroundColor: COLORS.neutral,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
   },
   verifyAddressText: {
     color: COLORS.black,

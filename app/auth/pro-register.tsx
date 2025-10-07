@@ -659,10 +659,12 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: COLORS.neutral,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
     ...SHADOWS.medium,
   },
   stepText: {
@@ -684,10 +686,12 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   benefitsContainer: {
-    backgroundColor: COLORS.neutral,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 12,
     padding: 20,
     marginBottom: 32,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
     ...SHADOWS.small,
   },
   benefitItem: {
@@ -702,10 +706,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   legalInfoContainer: {
-    backgroundColor: COLORS.neutral,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 12,
     padding: 20,
     marginBottom: 32,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
     ...SHADOWS.small,
   },
   legalInfoTitle: {
@@ -767,12 +773,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: COLORS.lightGray,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
     alignItems: 'center' as const,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   languageOptionActive: {
-    backgroundColor: COLORS.maleAccent,
-    borderColor: COLORS.maleAccent,
+    backgroundColor: 'rgba(163, 213, 255, 0.4)',
+    borderColor: 'rgba(163, 213, 255, 0.6)',
   },
   languageOptionText: {
     fontSize: 16,
