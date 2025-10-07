@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   StyleSheet, 
   View, 
@@ -9,13 +9,13 @@ import {
   Animated,
   Platform
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS } from '@/constants/colors';
 
 import { useI18n } from '@/hooks/i18n-store';
 import { 
-  Globe, 
   ChevronLeft, 
   ChevronRight,
   Heart,
@@ -27,44 +27,99 @@ const { width, height } = Dimensions.get('window');
 
 interface OnboardingSlide {
   id: string;
-  icon: React.ReactNode;
+  icon: React.ComponentType<{ size: number; color: string }>;
   titleKey: string;
   descriptionKey: string;
-  backgroundColor: string;
+  gradientColors: readonly [string, string, string];
 }
 
 const slides: OnboardingSlide[] = [
   {
     id: 'welcome',
-    icon: <Heart size={80} color={COLORS.white} />,
+    icon: Heart,
     titleKey: 'onboarding.welcome.title',
     descriptionKey: 'onboarding.welcome.description',
-    backgroundColor: COLORS.secondary,
+    gradientColors: ['#FF6B9D', '#C06C84', '#6C5B7B'] as const,
   },
   {
     id: 'connect',
-    icon: <MapPin size={80} color={COLORS.white} />,
+    icon: MapPin,
     titleKey: 'onboarding.connect.title',
     descriptionKey: 'onboarding.connect.description',
-    backgroundColor: COLORS.accent,
+    gradientColors: ['#667EEA', '#764BA2', '#F093FB'] as const,
   },
   {
     id: 'chat',
-    icon: <MessageCircle size={80} color={COLORS.white} />,
+    icon: MessageCircle,
     titleKey: 'onboarding.chat.title',
     descriptionKey: 'onboarding.chat.description',
-    backgroundColor: COLORS.catSitter,
+    gradientColors: ['#4FACFE', '#00F2FE', '#43E97B'] as const,
   },
 ];
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const { t, changeLanguage, currentLocale } = useI18n();
+  const { t } = useI18n();
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const iconScale = useRef(new Animated.Value(1)).current;
+  const iconRotate = useRef(new Animated.Value(0)).current;
+  const gradientAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const iconAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(iconScale, {
+            toValue: 1.2,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(iconRotate, {
+            toValue: 1,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(iconScale, {
+            toValue: 1,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(iconRotate, {
+            toValue: 0,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+        ]),
+      ])
+    );
+
+    const gradientAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(gradientAnim, {
+          toValue: 1,
+          duration: 3000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(gradientAnim, {
+          toValue: 0,
+          duration: 3000,
+          useNativeDriver: false,
+        }),
+      ])
+    );
+
+    iconAnimation.start();
+    gradientAnimation.start();
+
+    return () => {
+      iconAnimation.stop();
+      gradientAnimation.stop();
+    };
+  }, [iconScale, iconRotate, gradientAnim]);
 
   const handleNext = () => {
     if (currentSlide < slides.length - 1) {
@@ -110,43 +165,46 @@ export default function OnboardingScreen() {
     router.replace('/auth/signup');
   };
 
-  const handleLanguageSelect = (language: 'en' | 'fr') => {
-    changeLanguage(language);
-    handleNext();
-  };
+  const renderSlide = (slide: OnboardingSlide, index: number) => {
+    const IconComponent = slide.icon;
+    const rotation = iconRotate.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['0deg', '360deg'],
+    });
 
-  const renderLanguageSlide = () => null;
-
-  const renderGDPRSlide = () => null;
-
-
-
-  const renderSlide = (slide: OnboardingSlide, index: number) => (
-    <View key={slide.id} style={[styles.slide, { backgroundColor: slide.backgroundColor }]}>
-      <Animated.View style={[styles.slideContent, { opacity: fadeAnim }]}>
-        <View style={styles.iconContainer}>
-          {slide.icon}
-        </View>
-        
-        <Text style={styles.title}>
-          {t(slide.titleKey)}
-        </Text>
-        
-        <Text style={styles.description}>
-          {t(slide.descriptionKey)}
-        </Text>
-
-        {slide.id === 'language' && renderLanguageSlide()}
-        {slide.id === 'gdpr' && renderGDPRSlide()}
-      </Animated.View>
-    </View>
-  );
-
-  const canProceed = () => {
-    if (slides[currentSlide].id === 'gdpr') {
-      return acceptedTerms && acceptedPrivacy;
-    }
-    return true;
+    return (
+      <View key={slide.id} style={styles.slide}>
+        <LinearGradient
+          colors={slide.gradientColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <Animated.View style={[styles.slideContent, { opacity: fadeAnim }]}>
+          <Animated.View 
+            style={[
+              styles.iconContainer,
+              {
+                transform: [
+                  { scale: iconScale },
+                  { rotate: rotation },
+                ],
+              },
+            ]}
+          >
+            <IconComponent size={80} color={COLORS.white} />
+          </Animated.View>
+          
+          <Text style={styles.title}>
+            {t(slide.titleKey)}
+          </Text>
+          
+          <Text style={styles.description}>
+            {t(slide.descriptionKey)}
+          </Text>
+        </Animated.View>
+      </View>
+    );
   };
 
   return (
@@ -226,6 +284,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 32,
+    overflow: 'hidden',
   },
   slideContent: {
     alignItems: 'center',
@@ -233,6 +292,16 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     marginBottom: 32,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 60,
+    padding: 24,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
   },
   title: {
     fontSize: 28,
