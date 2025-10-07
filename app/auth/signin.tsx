@@ -337,12 +337,12 @@ function SignInScreen() {
             testID="prefill-test"
             onPress={() => {
               setSignInMethod('email');
-              setEmail('test3@gmail.com');
-              setPassword('123456');
+              setEmail('sophie.martin@example.com');
+              setPassword('Test123456!');
             }}
             style={styles.fillTestButton}
           >
-            <Text style={styles.fillTestText}>Remplir test</Text>
+            <Text style={styles.fillTestText}>Remplir test (Sophie)</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
