@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -45,6 +46,35 @@ export default function ProRegisterScreen() {
   
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const iconScale = useRef(new Animated.Value(0.5)).current;
+  
+  useEffect(() => {
+    fadeAnim.setValue(0);
+    slideAnim.setValue(50);
+    iconScale.setValue(0.5);
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.spring(iconScale, {
+        toValue: 1,
+        tension: 40,
+        friction: 6,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [step]);
   
   // Personal data
   const [firstName, setFirstName] = useState('');
@@ -270,16 +300,24 @@ export default function ProRegisterScreen() {
   
   const renderStep1 = () => (
     <>
-      <View style={styles.headerContainer}>
-        <View style={styles.iconContainer}>
+      <Animated.View style={[styles.headerContainer, {
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }]}>
+        <Animated.View style={[styles.iconContainer, {
+          transform: [{ scale: iconScale }],
+        }]}>
           <Briefcase size={32} color={COLORS.maleAccent} />
-        </View>
+        </Animated.View>
         <Text style={styles.stepText}>Étape 1 sur 3</Text>
         <Text style={styles.title}>Compte Professionnel</Text>
         <Text style={styles.subtitle}>Créez votre compte professionnel pour vendre sur Coppet</Text>
-      </View>
+      </Animated.View>
       
-      <View style={styles.benefitsContainer}>
+      <Animated.View style={[styles.benefitsContainer, {
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }]}>
         <View style={styles.benefitItem}>
           <CheckCircle size={20} color={COLORS.success} />
           <Text style={styles.benefitText}>Vendez vos produits sur la marketplace</Text>
@@ -292,8 +330,12 @@ export default function ProRegisterScreen() {
           <Shield size={20} color={COLORS.success} />
           <Text style={styles.benefitText}>Badge de vérification professionnel</Text>
         </View>
-      </View>
+      </Animated.View>
       
+      <Animated.View style={{
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }}>
       <GlassView style={styles.formContainer} liquidGlass tint="neutral" intensity={40}>
         <Input
           label="Prénom"
@@ -390,20 +432,30 @@ export default function ProRegisterScreen() {
           style={styles.button}
         />
       </GlassView>
+      </Animated.View>
     </>
   );
   
   const renderStep2 = () => (
     <>
-      <View style={styles.headerContainer}>
-        <View style={styles.iconContainer}>
+      <Animated.View style={[styles.headerContainer, {
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }]}>
+        <Animated.View style={[styles.iconContainer, {
+          transform: [{ scale: iconScale }],
+        }]}>
           <Building2 size={32} color={COLORS.maleAccent} />
-        </View>
+        </Animated.View>
         <Text style={styles.stepText}>Étape 2 sur 3</Text>
         <Text style={styles.title}>Informations Entreprise</Text>
         <Text style={styles.subtitle}>Renseignez les détails de votre entreprise</Text>
-      </View>
+      </Animated.View>
       
+      <Animated.View style={{
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }}>
       <GlassView style={styles.formContainer} liquidGlass tint="neutral" intensity={40}>
         <Input
           label="Nom de l'entreprise"
@@ -512,21 +564,30 @@ export default function ProRegisterScreen() {
           style={styles.button}
         />
       </GlassView>
+      </Animated.View>
     </>
   );
   
   const renderStep3 = () => (
     <>
-      <View style={styles.headerContainer}>
-        <View style={styles.iconContainer}>
+      <Animated.View style={[styles.headerContainer, {
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }]}>
+        <Animated.View style={[styles.iconContainer, {
+          transform: [{ scale: iconScale }],
+        }]}>
           <Shield size={32} color={COLORS.maleAccent} />
-        </View>
+        </Animated.View>
         <Text style={styles.stepText}>Étape 3 sur 3</Text>
         <Text style={styles.title}>Conditions Légales</Text>
         <Text style={styles.subtitle}>Acceptez les conditions pour finaliser votre inscription</Text>
-      </View>
+      </Animated.View>
       
-      <View style={styles.legalInfoContainer}>
+      <Animated.View style={[styles.legalInfoContainer, {
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }]}>
         <Text style={styles.legalInfoTitle}>Votre compte professionnel inclut :</Text>
         <View style={styles.legalInfoList}>
           <Text style={styles.legalInfoItem}>• Accès au tableau de bord vendeur</Text>
@@ -535,8 +596,12 @@ export default function ProRegisterScreen() {
           <Text style={styles.legalInfoItem}>• Support client prioritaire</Text>
           <Text style={styles.legalInfoItem}>• Badge de vérification</Text>
         </View>
-      </View>
+      </Animated.View>
       
+      <Animated.View style={{
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }}>
       <GlassView style={styles.formContainer} liquidGlass tint="neutral" intensity={40}>
         <View style={styles.legalSection}>
           <Text style={styles.legalText}>
@@ -593,6 +658,7 @@ export default function ProRegisterScreen() {
           ]}
         />
       </GlassView>
+      </Animated.View>
     </>
   );
   

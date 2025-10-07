@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -45,6 +46,43 @@ function SignInScreen() {
   const [captchaAnswer, setCaptchaAnswer] = useState<string>('');
   const [resetLoading, setResetLoading] = useState<boolean>(false);
   const [cooldown, setCooldown] = useState<number>(0);
+  
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const logoScale = useRef(new Animated.Value(0.3)).current;
+  const logoRotate = useRef(new Animated.Value(0)).current;
+  
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.spring(logoScale, {
+        toValue: 1,
+        tension: 40,
+        friction: 6,
+        useNativeDriver: true,
+      }),
+      Animated.timing(logoRotate, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+  
+  const logoRotateInterpolate = logoRotate.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
   
   const validate = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -203,13 +241,28 @@ function SignInScreen() {
           <ArrowLeft size={24} color={COLORS.black} />
         </TouchableOpacity>
         
-        <View style={styles.logoContainer}>
+        <Animated.View style={[styles.logoContainer, {
+          opacity: fadeAnim,
+          transform: [
+            { scale: logoScale },
+            { rotate: logoRotateInterpolate },
+          ],
+        }]}>
           <Logo size="medium" />
-        </View>
+        </Animated.View>
         
-        <Text style={[styles.title, dynamicStyles.title]}>Coppet</Text>
-        <Text style={[styles.welcomeText, dynamicStyles.title]}>Bienvenue sur Coppet</Text>
-        <Text style={[styles.subtitle, dynamicStyles.subtitle]}>Connectez-vous avec les amoureux des animaux près de chez vous</Text>
+        <Animated.Text style={[styles.title, dynamicStyles.title, {
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        }]}>Coppet</Animated.Text>
+        <Animated.Text style={[styles.welcomeText, dynamicStyles.title, {
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        }]}>Bienvenue sur Coppet</Animated.Text>
+        <Animated.Text style={[styles.subtitle, dynamicStyles.subtitle, {
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        }]}>Connectez-vous avec les amoureux des animaux près de chez vous</Animated.Text>
         
         <View style={styles.methodSelector}>
           <TouchableOpacity
@@ -243,6 +296,10 @@ function SignInScreen() {
           </TouchableOpacity>
         </View>
         
+        <Animated.View style={{
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        }}>
         <GlassView style={styles.formContainer} liquidGlass tint="neutral" intensity={40} testID="signin-form">
           {signInMethod === 'email' && (
             <>
@@ -374,15 +431,20 @@ function SignInScreen() {
             </TouchableOpacity>
           </View>
         </GlassView>
+        </Animated.View>
         
-        <View style={styles.footer} testID="signin-footer">
+        <Animated.View style={[styles.footer, {
+          opacity: fadeAnim,
+        }]} testID="signin-footer">
           <Text style={[styles.footerText, dynamicStyles.footerText]}>{t('auth.dont_have_account')}</Text>
           <TouchableOpacity onPress={handleSignUp}>
             <Text style={styles.footerLink}>{t('auth.sign_up')}</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
         
-        <View style={styles.professionalSection}>
+        <Animated.View style={[styles.professionalSection, {
+          opacity: fadeAnim,
+        }]}>
           <TouchableOpacity 
             style={styles.professionalButton}
             onPress={() => router.push('/auth/pro-register')}
@@ -390,7 +452,7 @@ function SignInScreen() {
             <Briefcase size={20} color={COLORS.maleAccent} />
             <Text style={styles.professionalText}>Je suis un professionnel</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
         <ResponsiveModal isVisible={forgotVisible} onClose={() => setForgotVisible(false)} size="small" testID="forgot-modal">
           <View style={styles.modalHeader}>
             <ShieldCheck size={20} color={COLORS.maleAccent} />

@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -101,6 +102,27 @@ export default function SignUpScreen() {
   const [checkingEmail, setCheckingEmail] = useState<boolean>(false);
   const pseudoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const emailTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  
+  useEffect(() => {
+    fadeAnim.setValue(0);
+    slideAnim.setValue(50);
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [step]);
   
   const validatePseudo = (value: string) => {
     const trimmed = value.trim();
@@ -563,10 +585,23 @@ export default function SignUpScreen() {
   
   const renderStep1 = () => (
     <>
-      <Text style={styles.stepText}>{t('auth.step_1_of', { total: isProfessional ? '3' : '2' })}</Text>
-      <Text style={styles.title}>{t('auth.create_account')}</Text>
-      <Text style={styles.subtitle}>{t('auth.lets_start_creating')}</Text>
+      <Animated.Text style={[styles.stepText, {
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }]}>{t('auth.step_1_of', { total: isProfessional ? '3' : '2' })}</Animated.Text>
+      <Animated.Text style={[styles.title, {
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }]}>{t('auth.create_account')}</Animated.Text>
+      <Animated.Text style={[styles.subtitle, {
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }]}>{t('auth.lets_start_creating')}</Animated.Text>
       
+      <Animated.View style={{
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }}>
       <GlassView style={styles.formContainer} liquidGlass tint="neutral" intensity={40}>
         <Input
           label={t('auth.first_name')}
@@ -705,15 +740,29 @@ export default function SignUpScreen() {
           style={styles.button}
         />
       </GlassView>
+      </Animated.View>
     </>
   );
   
   const renderStep2 = () => (
     <>
-      <Text style={styles.stepText}>{t('auth.step_2_of', { total: isProfessional ? '3' : '2' })}</Text>
-      <Text style={styles.title}>{t('auth.personal_information')}</Text>
-      <Text style={styles.subtitle}>{isProfessional ? t('auth.add_personal_info') : t('auth.add_personal_info_and_pet')}</Text>
+      <Animated.Text style={[styles.stepText, {
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }]}>{t('auth.step_2_of', { total: isProfessional ? '3' : '2' })}</Animated.Text>
+      <Animated.Text style={[styles.title, {
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }]}>{t('auth.personal_information')}</Animated.Text>
+      <Animated.Text style={[styles.subtitle, {
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }]}>{isProfessional ? t('auth.add_personal_info') : t('auth.add_personal_info_and_pet')}</Animated.Text>
       
+      <Animated.View style={{
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }}>
       <GlassView style={styles.formContainer} liquidGlass tint="neutral" intensity={40}>
         <View style={styles.phoneSection}>
           <Text style={styles.phoneLabel}>{t('auth.phone')}</Text>
@@ -1033,15 +1082,29 @@ export default function SignUpScreen() {
           style={styles.button}
         />
       </GlassView>
+      </Animated.View>
     </>
   );
   
   const renderStep3 = () => (
     <>
-      <Text style={styles.stepText}>{t('auth.step_3_of', { total: '3' })}</Text>
-      <Text style={styles.title}>{t('auth.professional_information')}</Text>
-      <Text style={styles.subtitle}>{t('auth.complete_professional_profile')}</Text>
+      <Animated.Text style={[styles.stepText, {
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }]}>{t('auth.step_3_of', { total: '3' })}</Animated.Text>
+      <Animated.Text style={[styles.title, {
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }]}>{t('auth.professional_information')}</Animated.Text>
+      <Animated.Text style={[styles.subtitle, {
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }]}>{t('auth.complete_professional_profile')}</Animated.Text>
       
+      <Animated.View style={{
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }}>
       <GlassView style={styles.formContainer} liquidGlass tint="neutral" intensity={40}>
         <Input
           label={t('auth.company_name')}
@@ -1202,6 +1265,7 @@ export default function SignUpScreen() {
           style={styles.button}
         />
       </GlassView>
+      </Animated.View>
     </>
   );
   

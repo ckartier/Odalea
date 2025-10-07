@@ -7,6 +7,7 @@ import {
   TextInput,
   Alert,
   Platform,
+  Animated,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -28,6 +29,35 @@ export default function VerifyScreen() {
   const [initialSmsSent, setInitialSmsSent] = useState<boolean>(false);
   
   const inputRefs = useRef<Array<TextInput | null>>([]);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const codeAnimations = useRef(code.map(() => new Animated.Value(0))).current;
+  
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
+    const staggeredAnimations = codeAnimations.map((anim, index) => 
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 300,
+        delay: index * 80,
+        useNativeDriver: true,
+      })
+    );
+    Animated.stagger(80, staggeredAnimations).start();
+  }, []);
   
   // Set up timer
   useEffect(() => {
@@ -185,14 +215,31 @@ export default function VerifyScreen() {
       </TouchableOpacity>
       
       <GlassView style={styles.content} liquidGlass tint="neutral" intensity={40}>
-        <Text style={styles.title}>Verification</Text>
-        <Text style={styles.subtitle}>
+        <Animated.Text style={[styles.title, {
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        }]}>Verification</Animated.Text>
+        <Animated.Text style={[styles.subtitle, {
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        }]}>
           We've sent a verification code to your phone number
-        </Text>
+        </Animated.Text>
         
-        <View style={styles.codeContainer}>
+        <Animated.View style={[styles.codeContainer, {
+          opacity: fadeAnim,
+        }]}>
           <View id="recaptcha-container" style={{ height: 0 }} />
           {code.map((digit, index) => (
+            <Animated.View key={index} style={{
+              opacity: codeAnimations[index],
+              transform: [{
+                scale: codeAnimations[index].interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.5, 1],
+                }),
+              }],
+            }}>
             <TextInput
               key={index}
               ref={ref => { inputRefs.current[index] = ref; }}
@@ -210,9 +257,14 @@ export default function VerifyScreen() {
               testID={`otp-input-${index}`}
               accessibilityLabel={`OTP digit ${index + 1}`}
             />
+            </Animated.View>
           ))}
-        </View>
+        </Animated.View>
         
+        <Animated.View style={{
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        }}>
         <Button
           title="Verify"
           onPress={handleVerify}
@@ -244,8 +296,11 @@ export default function VerifyScreen() {
         }} style={{ marginTop: 12 }}>
           <Text style={{ color: COLORS.maleAccent, fontWeight: '600' as const }}>Recevoir un lien magique par email</Text>
         </TouchableOpacity>
+        </Animated.View>
         
-        <View style={styles.resendContainer}>
+        <Animated.View style={[styles.resendContainer, {
+          opacity: fadeAnim,
+        }]}>
           <Text style={styles.resendText}>Didn't receive the code?</Text>
           
           {timer > 0 ? (
@@ -255,7 +310,7 @@ export default function VerifyScreen() {
               <Text style={styles.resendLink}>Resend Code</Text>
             </TouchableOpacity>
           )}
-        </View>
+        </Animated.View>
       </GlassView>
     </View>
   );
