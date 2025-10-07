@@ -90,7 +90,7 @@ const Button: React.FC<ButtonProps> = ({
 
   const getTextColor = () => {
     if (disabled) return COLORS.gray;
-    return '#FFFFFF';
+    return COLORS.black;
   };
 
   const getPadding = () => {
@@ -148,45 +148,36 @@ const Button: React.FC<ButtonProps> = ({
     </>
   );
 
-  if (liquidGlass && gradient) {
+  if (liquidGlass) {
     return (
-      <LinearGradient
-        colors={getGradientColors()}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+      <GlassView
+        tint="neutral"
+        liquidGlass={true}
+        intensity={50}
         style={[
+          styles.button,
           {
             borderRadius: getBorderRadius(),
+            ...getPadding(),
             width: fullWidth ? '100%' : undefined,
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
           },
           getShadow(),
           style,
         ]}
       >
-        <GlassView
-          tint={getTint()}
-          liquidGlass={true}
-          style={[
-            styles.button,
-            {
-              borderRadius: getBorderRadius(),
-              ...getPadding(),
-            },
-          ]}
+        <TouchableOpacity
+          testID="button"
+          accessibilityRole="button"
+          style={styles.touchable}
+          onPress={onPress || (() => {})}
+          disabled={disabled || loading}
+          activeOpacity={0.8}
+          {...props}
         >
-          <TouchableOpacity
-            testID="button"
-            accessibilityRole="button"
-            style={styles.touchable}
-            onPress={onPress || (() => {})}
-            disabled={disabled || loading}
-            activeOpacity={0.8}
-            {...props}
-          >
-            <ButtonContent />
-          </TouchableOpacity>
-        </GlassView>
-      </LinearGradient>
+          <ButtonContent />
+        </TouchableOpacity>
+      </GlassView>
     );
   }
 

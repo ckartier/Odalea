@@ -735,7 +735,7 @@ const styles = StyleSheet.create({
   },
   stepText: {
     fontSize: 14,
-    color: COLORS.maleAccent,
+    color: COLORS.white,
     marginBottom: 8,
   },
   title: {
@@ -747,7 +747,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: COLORS.darkGray,
+    color: COLORS.white,
     textAlign: 'center',
     lineHeight: 22,
   },

@@ -50,7 +50,6 @@ function SignInScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const logoScale = useRef(new Animated.Value(0.3)).current;
-  const logoRotate = useRef(new Animated.Value(0)).current;
   
   useEffect(() => {
     Animated.parallel([
@@ -71,18 +70,8 @@ function SignInScreen() {
         friction: 6,
         useNativeDriver: true,
       }),
-      Animated.timing(logoRotate, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
     ]).start();
   }, []);
-  
-  const logoRotateInterpolate = logoRotate.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
   
   const validate = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -245,7 +234,6 @@ function SignInScreen() {
           opacity: fadeAnim,
           transform: [
             { scale: logoScale },
-            { rotate: logoRotateInterpolate },
           ],
         }]}>
           <Logo size="medium" />
@@ -269,7 +257,7 @@ function SignInScreen() {
             style={[styles.methodButton, signInMethod === 'email' && styles.methodButtonActive]}
             onPress={() => setSignInMethod('email')}
           >
-            <Mail size={20} color={signInMethod === 'email' ? COLORS.white : COLORS.darkGray} />
+            <Mail size={18} color={COLORS.black} />
             <Text style={[styles.methodText, dynamicStyles.methodText, signInMethod === 'email' && styles.methodTextActive]}>
               {t('auth.email')}
             </Text>
@@ -279,7 +267,7 @@ function SignInScreen() {
             style={[styles.methodButton, signInMethod === 'phone' && styles.methodButtonActive]}
             onPress={() => setSignInMethod('phone')}
           >
-            <Smartphone size={20} color={signInMethod === 'phone' ? COLORS.white : COLORS.darkGray} />
+            <Smartphone size={18} color={COLORS.black} />
             <Text style={[styles.methodText, dynamicStyles.methodText, signInMethod === 'phone' && styles.methodTextActive]}>
               {t('auth.phone')}
             </Text>
@@ -289,7 +277,7 @@ function SignInScreen() {
             style={[styles.methodButton, signInMethod === 'sms' && styles.methodButtonActive]}
             onPress={() => setSignInMethod('sms')}
           >
-            <MessageSquare size={20} color={signInMethod === 'sms' ? COLORS.white : COLORS.darkGray} />
+            <MessageSquare size={18} color={COLORS.black} />
             <Text style={[styles.methodText, dynamicStyles.methodText, signInMethod === 'sms' && styles.methodTextActive]}>
               {t('auth.sms')}
             </Text>
@@ -529,14 +517,14 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 20,
     fontWeight: '600' as const,
-    color: COLORS.maleAccent,
+    color: COLORS.white,
     textAlign: 'center',
     marginBottom: 8,
     lineHeight: 26,
   },
   subtitle: {
     fontSize: 14,
-    color: COLORS.maleAccent,
+    color: COLORS.white,
     textAlign: 'center',
     marginBottom: IS_SMALL_DEVICE ? 20 : 28,
     lineHeight: 20,
@@ -642,35 +630,36 @@ const styles = StyleSheet.create({
   },
   methodSelector: {
     flexDirection: 'row',
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 12,
     padding: 4,
     marginBottom: IS_SMALL_DEVICE ? 16 : 24,
+    gap: 8,
   },
   methodButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: IS_SMALL_DEVICE ? 10 : 12,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    gap: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    paddingVertical: IS_SMALL_DEVICE ? 8 : 10,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    gap: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    ...SHADOWS.small,
   },
   methodButtonActive: {
-    backgroundColor: 'rgba(163, 213, 255, 0.4)',
-    borderColor: 'rgba(163, 213, 255, 0.6)',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    ...SHADOWS.medium,
   },
   methodText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600' as const,
-    color: COLORS.darkGray,
+    color: COLORS.black,
   },
   methodTextActive: {
-    color: COLORS.white,
+    color: COLORS.black,
+    fontWeight: '700' as const,
   },
   professionalSection: {
     marginTop: IS_SMALL_DEVICE ? 16 : 24,

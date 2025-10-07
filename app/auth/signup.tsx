@@ -1361,7 +1361,7 @@ const styles = StyleSheet.create({
   },
   stepText: {
     fontSize: 14,
-    color: COLORS.maleAccent,
+    color: COLORS.white,
     marginBottom: 8,
     marginTop: 40,
   },
@@ -1373,7 +1373,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: COLORS.darkGray,
+    color: COLORS.white,
     marginBottom: 32,
   },
   formContainer: {
