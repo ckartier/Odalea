@@ -364,7 +364,7 @@ function SignInScreen() {
                 testID="send-sms"
               />
               <TouchableOpacity onPress={() => router.push('/auth/verify')} style={{ alignSelf: 'center', marginTop: 8 }}>
-                <Text style={{ color: COLORS.maleAccent, fontWeight: '700' as const, fontSize: 14 }}>J&apos;ai déjà un code</Text>
+                <Text style={{ color: COLORS.white, fontWeight: '700' as const, fontSize: 14 }}>J&apos;ai déjà un code</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -437,7 +437,7 @@ function SignInScreen() {
             style={styles.professionalButton}
             onPress={() => router.push('/auth/pro-register')}
           >
-            <Briefcase size={20} color={COLORS.maleAccent} />
+            <Briefcase size={20} color={COLORS.black} />
             <Text style={styles.professionalText}>Je suis un professionnel</Text>
           </TouchableOpacity>
         </Animated.View>
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   forgotLink: {
-    color: COLORS.maleAccent,
+    color: COLORS.white,
     fontWeight: '600' as const,
     fontSize: 14,
   },
@@ -607,7 +607,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   seedLinkText: {
-    color: COLORS.maleAccent,
+    color: COLORS.white,
     fontSize: 13,
     fontWeight: '700' as const,
     textDecorationLine: 'underline' as const,
@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
   footerLink: {
     fontSize: 15,
     fontWeight: '700' as const,
-    color: COLORS.maleAccent,
+    color: COLORS.white,
   },
   methodSelector: {
     flexDirection: 'row',
@@ -641,10 +641,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: IS_SMALL_DEVICE ? 8 : 10,
-    paddingHorizontal: 6,
+    paddingVertical: IS_SMALL_DEVICE ? 6 : 8,
+    paddingHorizontal: 4,
     borderRadius: 10,
-    gap: 4,
+    gap: 3,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     ...SHADOWS.small,
   },
@@ -653,7 +653,7 @@ const styles = StyleSheet.create({
     ...SHADOWS.medium,
   },
   methodText: {
-    fontSize: 11,
+    fontSize: IS_SMALL_DEVICE ? 10 : 11,
     fontWeight: '600' as const,
     color: COLORS.black,
   },
@@ -673,17 +673,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: IS_SMALL_DEVICE ? 12 : 16,
     paddingHorizontal: IS_SMALL_DEVICE ? 16 : 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(163, 213, 255, 0.6)',
+    borderColor: 'rgba(255, 255, 255, 0.4)',
     gap: 12,
     ...SHADOWS.small,
   },
   professionalText: {
     fontSize: 16,
     fontWeight: '700' as const,
-    color: COLORS.maleAccent,
+    color: COLORS.black,
   },
 
   modalHeader: {

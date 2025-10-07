@@ -1539,7 +1539,7 @@ const styles = StyleSheet.create({
   footerLink: {
     fontSize: 14,
     fontWeight: '600' as const,
-    color: COLORS.maleAccent,
+    color: COLORS.white,
   },
   professionalSection: {
     marginBottom: 16,
@@ -1627,7 +1627,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   linkText: {
-    color: COLORS.maleAccent,
+    color: COLORS.white,
     fontWeight: '600' as const,
     textDecorationLine: 'underline' as const,
   },
