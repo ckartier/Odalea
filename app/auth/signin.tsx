@@ -238,11 +238,6 @@ function SignInScreen() {
         }]}>
           <Logo size="medium" />
         </Animated.View>
-        
-        <Animated.Text style={[styles.title, dynamicStyles.title, {
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
-        }]}>Coppet</Animated.Text>
         <Animated.Text style={[styles.welcomeText, dynamicStyles.title, {
           opacity: fadeAnim,
           transform: [{ translateY: slideAnim }],
@@ -251,38 +246,6 @@ function SignInScreen() {
           opacity: fadeAnim,
           transform: [{ translateY: slideAnim }],
         }]}>Connectez-vous avec les amoureux des animaux près de chez vous</Animated.Text>
-        
-        <View style={styles.methodSelector}>
-          <TouchableOpacity
-            style={[styles.methodButton, signInMethod === 'email' && styles.methodButtonActive]}
-            onPress={() => setSignInMethod('email')}
-          >
-            <Mail size={18} color={COLORS.black} />
-            <Text style={[styles.methodText, dynamicStyles.methodText, signInMethod === 'email' && styles.methodTextActive]}>
-              {t('auth.email')}
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.methodButton, signInMethod === 'phone' && styles.methodButtonActive]}
-            onPress={() => setSignInMethod('phone')}
-          >
-            <Smartphone size={18} color={COLORS.black} />
-            <Text style={[styles.methodText, dynamicStyles.methodText, signInMethod === 'phone' && styles.methodTextActive]}>
-              {t('auth.phone')}
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.methodButton, signInMethod === 'sms' && styles.methodButtonActive]}
-            onPress={() => setSignInMethod('sms')}
-          >
-            <MessageSquare size={18} color={COLORS.black} />
-            <Text style={[styles.methodText, dynamicStyles.methodText, signInMethod === 'sms' && styles.methodTextActive]}>
-              {t('auth.sms')}
-            </Text>
-          </TouchableOpacity>
-        </View>
         
         <Animated.View style={{
           opacity: fadeAnim,
@@ -364,7 +327,7 @@ function SignInScreen() {
                 testID="send-sms"
               />
               <TouchableOpacity onPress={() => router.push('/auth/verify')} style={{ alignSelf: 'center', marginTop: 8 }}>
-                <Text style={{ color: COLORS.white, fontWeight: '700' as const, fontSize: 14 }}>J&apos;ai déjà un code</Text>
+                <Text style={{ color: COLORS.black, fontWeight: '700' as const, fontSize: 14 }}>J&apos;ai déjà un code</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -517,14 +480,14 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 20,
     fontWeight: '600' as const,
-    color: COLORS.white,
+    color: COLORS.black,
     textAlign: 'center',
     marginBottom: 8,
     lineHeight: 26,
   },
   subtitle: {
     fontSize: 14,
-    color: COLORS.white,
+    color: COLORS.black,
     textAlign: 'center',
     marginBottom: IS_SMALL_DEVICE ? 20 : 28,
     lineHeight: 20,
@@ -558,7 +521,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   forgotLink: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontWeight: '600' as const,
     fontSize: 14,
   },
@@ -607,7 +570,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   seedLinkText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontSize: 13,
     fontWeight: '700' as const,
     textDecorationLine: 'underline' as const,
@@ -620,13 +583,13 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: COLORS.darkGray,
+    color: COLORS.black,
     marginRight: 4,
   },
   footerLink: {
     fontSize: 15,
     fontWeight: '700' as const,
-    color: COLORS.white,
+    color: COLORS.black,
   },
   methodSelector: {
     flexDirection: 'row',
