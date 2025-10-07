@@ -4,7 +4,7 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useMemo } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { UserContext } from "@/hooks/user-store";
+
 import { MessagingContext } from "@/hooks/messaging-store";
 import { ShopContext } from "@/hooks/shop-store";
 import { BadgesContext } from "@/hooks/badges-store";
@@ -99,12 +99,10 @@ RootLayoutNav.displayName = 'RootLayoutNav';
 
 // Optimized Provider composition to reduce nesting and improve performance
 const AppProviders = React.memo(({ children }: { children: React.ReactNode }) => {
-  useNotifications();
-  
   return (
     <I18nContext>
       <FirebaseUserContext>
-        <UserContext>
+        <NotificationsProvider>
           <EmergencyContext>
             <PetsContext>
               <ThemeContext>
@@ -132,11 +130,19 @@ const AppProviders = React.memo(({ children }: { children: React.ReactNode }) =>
               </ThemeContext>
             </PetsContext>
           </EmergencyContext>
-        </UserContext>
+        </NotificationsProvider>
       </FirebaseUserContext>
     </I18nContext>
   );
 });
+
+// Separate notifications provider that uses FirebaseUser
+const NotificationsProvider = React.memo(({ children }: { children: React.ReactNode }) => {
+  useNotifications();
+  return <>{children}</>;
+});
+
+NotificationsProvider.displayName = 'NotificationsProvider';
 
 AppProviders.displayName = 'AppProviders';
 

@@ -12,9 +12,10 @@ import { useFirebaseUser } from './firebase-user-store';
 export function useNotifications() {
   const [expoPushToken, setExpoPushToken] = useState<string>();
   const [notification, setNotification] = useState<Notifications.Notification>();
-  const notificationListener = useRef<Notifications.Subscription>();
-  const responseListener = useRef<Notifications.Subscription>();
-  const { user } = useFirebaseUser();
+  const notificationListener = useRef<Notifications.Subscription | undefined>(undefined);
+  const responseListener = useRef<Notifications.Subscription | undefined>(undefined);
+  const firebaseUserContext = useFirebaseUser();
+  const user = firebaseUserContext?.user;
 
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -26,8 +27,8 @@ export function useNotifications() {
       .then(token => {
         if (token) {
           setExpoPushToken(token);
-          if (user?.uid) {
-            savePushTokenToFirestore(user.uid, token);
+          if (user?.id) {
+            savePushTokenToFirestore(user.id, token);
           }
         }
       })
@@ -50,7 +51,7 @@ export function useNotifications() {
         Notifications.removeNotificationSubscription(responseListener.current);
       }
     };
-  }, [user?.uid]);
+  }, [user?.id]);
 
   return {
     expoPushToken,
