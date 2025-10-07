@@ -23,6 +23,7 @@ import { SocialContext } from "@/hooks/social-store";
 import { trpc, trpcClient } from "@/lib/trpc";
 import AppBackground from "@/components/AppBackground";
 import GlassView from "@/components/GlassView";
+import { useNotifications } from "@/hooks/use-notifications";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -98,6 +99,8 @@ RootLayoutNav.displayName = 'RootLayoutNav';
 
 // Optimized Provider composition to reduce nesting and improve performance
 const AppProviders = React.memo(({ children }: { children: React.ReactNode }) => {
+  useNotifications();
+  
   return (
     <I18nContext>
       <FirebaseUserContext>
