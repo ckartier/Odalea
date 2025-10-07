@@ -36,6 +36,8 @@ import {
 
 import { isEmailTaken } from '@/services/user-validation';
 import { trpc } from '@/lib/trpc';
+import GlassView from '@/components/GlassView';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function ProRegisterScreen() {
   const router = useRouter();
@@ -292,7 +294,7 @@ export default function ProRegisterScreen() {
         </View>
       </View>
       
-      <View style={styles.formContainer}>
+      <GlassView style={styles.formContainer} liquidGlass tint="neutral" intensity={40}>
         <Input
           label="Prénom"
           placeholder="Entrez votre prénom"
@@ -387,7 +389,7 @@ export default function ProRegisterScreen() {
           onPress={handleNextStep}
           style={styles.button}
         />
-      </View>
+      </GlassView>
     </>
   );
   
@@ -402,7 +404,7 @@ export default function ProRegisterScreen() {
         <Text style={styles.subtitle}>Renseignez les détails de votre entreprise</Text>
       </View>
       
-      <View style={styles.formContainer}>
+      <GlassView style={styles.formContainer} liquidGlass tint="neutral" intensity={40}>
         <Input
           label="Nom de l'entreprise"
           placeholder="Entrez le nom de votre entreprise"
@@ -509,7 +511,7 @@ export default function ProRegisterScreen() {
           onPress={handleNextStep}
           style={styles.button}
         />
-      </View>
+      </GlassView>
     </>
   );
   
@@ -535,7 +537,7 @@ export default function ProRegisterScreen() {
         </View>
       </View>
       
-      <View style={styles.formContainer}>
+      <GlassView style={styles.formContainer} liquidGlass tint="neutral" intensity={40}>
         <View style={styles.legalSection}>
           <Text style={styles.legalText}>
             En continuant, vous acceptez les{' '}
@@ -590,17 +592,22 @@ export default function ProRegisterScreen() {
             !acceptedTerms ? styles.disabledButton : null,
           ]}
         />
-      </View>
+      </GlassView>
     </>
   );
   
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-    >
-      <StatusBar style="dark" />
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#E0F2FE', '#BAE6FD', '#7DD3FC']}
+        style={StyleSheet.absoluteFill}
+      />
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <StatusBar style="dark" />
       
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -619,16 +626,17 @@ export default function ProRegisterScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-      
-
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+  },
+  keyboardView: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
@@ -716,6 +724,9 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     width: '100%',
+    padding: 20,
+    borderRadius: 24,
+    marginBottom: 16,
   },
   phoneContainer: {
     flexDirection: 'row',

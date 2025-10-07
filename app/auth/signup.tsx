@@ -37,6 +37,8 @@ import {
   CheckCircle2,
   XCircle
 } from 'lucide-react-native';
+import GlassView from '@/components/GlassView';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { isPseudoTaken, isEmailTaken } from '@/services/user-validation';
 import { trpc } from '@/lib/trpc';
@@ -565,7 +567,7 @@ export default function SignUpScreen() {
       <Text style={styles.title}>{t('auth.create_account')}</Text>
       <Text style={styles.subtitle}>{t('auth.lets_start_creating')}</Text>
       
-      <View style={styles.formContainer}>
+      <GlassView style={styles.formContainer} liquidGlass tint="neutral" intensity={40}>
         <Input
           label={t('auth.first_name')}
           placeholder={t('auth.enter_first_name')}
@@ -702,7 +704,7 @@ export default function SignUpScreen() {
           onPress={handleNextStep}
           style={styles.button}
         />
-      </View>
+      </GlassView>
     </>
   );
   
@@ -712,7 +714,7 @@ export default function SignUpScreen() {
       <Text style={styles.title}>{t('auth.personal_information')}</Text>
       <Text style={styles.subtitle}>{isProfessional ? t('auth.add_personal_info') : t('auth.add_personal_info_and_pet')}</Text>
       
-      <View style={styles.formContainer}>
+      <GlassView style={styles.formContainer} liquidGlass tint="neutral" intensity={40}>
         <View style={styles.phoneSection}>
           <Text style={styles.phoneLabel}>{t('auth.phone')}</Text>
           <View style={styles.phoneContainer}>
@@ -1030,7 +1032,7 @@ export default function SignUpScreen() {
           loading={loading}
           style={styles.button}
         />
-      </View>
+      </GlassView>
     </>
   );
   
@@ -1040,7 +1042,7 @@ export default function SignUpScreen() {
       <Text style={styles.title}>{t('auth.professional_information')}</Text>
       <Text style={styles.subtitle}>{t('auth.complete_professional_profile')}</Text>
       
-      <View style={styles.formContainer}>
+      <GlassView style={styles.formContainer} liquidGlass tint="neutral" intensity={40}>
         <Input
           label={t('auth.company_name')}
           placeholder={t('auth.enter_company_name')}
@@ -1199,7 +1201,7 @@ export default function SignUpScreen() {
           loading={loading}
           style={styles.button}
         />
-      </View>
+      </GlassView>
     </>
   );
   
@@ -1240,12 +1242,17 @@ export default function SignUpScreen() {
   }, [phoneNumber]);
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-    >
-      <StatusBar style="dark" />
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#E0F2FE', '#BAE6FD', '#7DD3FC']}
+        style={StyleSheet.absoluteFill}
+      />
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <StatusBar style="dark" />
       
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -1264,14 +1271,17 @@ export default function SignUpScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+  },
+  keyboardView: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
@@ -1304,6 +1314,9 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     width: '100%',
+    padding: 20,
+    borderRadius: 24,
+    marginBottom: 16,
   },
   phoneSection: {
     marginBottom: 16,
