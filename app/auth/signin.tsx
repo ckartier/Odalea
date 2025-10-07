@@ -17,7 +17,7 @@ import Input from '@/components/Input';
 import Logo from '@/components/Logo';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { useI18n } from '@/hooks/i18n-store';
-import { Mail, Lock, ArrowLeft, Smartphone, MessageSquare, Briefcase, Shield, ShieldCheck } from 'lucide-react-native';
+import { Mail, Lock, ArrowLeft, Smartphone, MessageSquare, Briefcase, Shield, ShieldCheck, Apple } from 'lucide-react-native';
 import { GoogleSignInButton } from '@/components/GoogleAuthButton';
 import ResponsiveModal from '@/components/ResponsiveModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -207,8 +207,9 @@ function SignInScreen() {
           <Logo size="medium" />
         </View>
         
-        <Text style={[styles.title, dynamicStyles.title]}>{t('auth.welcome')}</Text>
-        <Text style={[styles.subtitle, dynamicStyles.subtitle]}>{t('auth.tagline')}</Text>
+        <Text style={[styles.title, dynamicStyles.title]}>Coppet</Text>
+        <Text style={[styles.welcomeText, dynamicStyles.title]}>Bienvenue sur Coppet</Text>
+        <Text style={[styles.subtitle, dynamicStyles.subtitle]}>Connectez-vous avec les amoureux des animaux près de chez vous</Text>
         
         <View style={styles.methodSelector}>
           <TouchableOpacity
@@ -318,7 +319,7 @@ function SignInScreen() {
                 testID="send-sms"
               />
               <TouchableOpacity onPress={() => router.push('/auth/verify')} style={{ alignSelf: 'center', marginTop: 8 }}>
-                <Text style={{ color: COLORS.maleAccent, fontWeight: '600' as const }}>J\'ai déjà un code</Text>
+                <Text style={{ color: COLORS.maleAccent, fontWeight: '700' as const, fontSize: 14 }}>J&apos;ai déjà un code</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -360,14 +361,16 @@ function SignInScreen() {
               onSignInError={(error) => {
                 Alert.alert('Erreur Google', error);
               }}
-              style={styles.googleButton}
+              style={styles.socialButton}
             />
             
             <TouchableOpacity
-              style={[styles.socialButton, SHADOWS.small]}
+              style={styles.socialButton}
               onPress={() => handleSocialSignIn('apple')}
             >
-              <Text style={[styles.socialButtonText, dynamicStyles.socialButtonText]}>{t('auth.apple')}</Text>
+              <View style={styles.appleIconContainer}>
+                <Apple size={20} color="#000" fill="#000" />
+              </View>
             </TouchableOpacity>
           </View>
         </GlassView>
@@ -454,16 +457,24 @@ const styles = StyleSheet.create({
     marginBottom: IS_SMALL_DEVICE ? 24 : 32,
   },
   title: {
-    fontSize: 26,
-    fontWeight: '700' as const,
+    fontSize: 32,
+    fontWeight: '800' as const,
     color: COLORS.black,
     textAlign: 'center',
+    marginBottom: 4,
+    lineHeight: 38,
+  },
+  welcomeText: {
+    fontSize: 20,
+    fontWeight: '600' as const,
+    color: COLORS.maleAccent,
+    textAlign: 'center',
     marginBottom: 8,
-    lineHeight: 32,
+    lineHeight: 26,
   },
   subtitle: {
     fontSize: 14,
-    color: COLORS.darkGray,
+    color: COLORS.maleAccent,
     textAlign: 'center',
     marginBottom: IS_SMALL_DEVICE ? 20 : 28,
     lineHeight: 20,
@@ -499,25 +510,30 @@ const styles = StyleSheet.create({
   forgotLink: {
     color: COLORS.maleAccent,
     fontWeight: '600' as const,
+    fontSize: 14,
   },
   socialButtonsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     gap: IS_SMALL_DEVICE ? 12 : 16,
   },
   socialButton: {
-    flex: 1,
+    width: 56,
+    height: 56,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 12,
-    paddingVertical: 12,
+    borderRadius: 28,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.4)',
   },
-  socialButtonText: {
-    fontSize: 16,
-    fontWeight: '500' as const,
-    color: COLORS.black,
+  appleIconContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   fillTestButton: {
     marginTop: 10,
@@ -543,7 +559,7 @@ const styles = StyleSheet.create({
   seedLinkText: {
     color: COLORS.maleAccent,
     fontSize: 13,
-    fontWeight: '600' as const,
+    fontWeight: '700' as const,
     textDecorationLine: 'underline' as const,
   },
   footer: {
@@ -558,8 +574,8 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   footerLink: {
-    fontSize: 14,
-    fontWeight: '600' as const,
+    fontSize: 15,
+    fontWeight: '700' as const,
     color: COLORS.maleAccent,
   },
   methodSelector: {
@@ -615,13 +631,10 @@ const styles = StyleSheet.create({
   },
   professionalText: {
     fontSize: 16,
-    fontWeight: '600' as const,
+    fontWeight: '700' as const,
     color: COLORS.maleAccent,
   },
-  googleButton: {
-    flex: 1,
-    marginRight: 8,
-  },
+
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',

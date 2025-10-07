@@ -1,6 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, View } from 'react-native';
 import { useGoogleAuth } from '@/hooks/use-google-auth';
+import { COLORS } from '@/constants/colors';
 
 interface GoogleSignInButtonProps {
   onSignInSuccess?: (user: any) => void;
@@ -55,14 +56,11 @@ export function GoogleSignInButton({
       activeOpacity={0.8}
     >
       {isLoading ? (
-        <ActivityIndicator color="#fff" size="small" />
+        <ActivityIndicator color={COLORS.maleAccent} size="small" />
       ) : (
-        <>
-          <Text style={[styles.googleIcon]}>G</Text>
-          <Text style={[styles.buttonText, textStyle]}>
-            Se connecter avec Google
-          </Text>
-        </>
+        <View style={styles.googleIconContainer}>
+          <Text style={styles.googleIcon}>G</Text>
+        </View>
       )}
     </TouchableOpacity>
   );
@@ -128,33 +126,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#4285F4',
-    paddingHorizontal: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     paddingVertical: 12,
-    borderRadius: 8,
-    minHeight: 48,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
   },
   disabledButton: {
-    backgroundColor: '#ccc',
-    shadowOpacity: 0,
-    elevation: 0,
+    backgroundColor: 'rgba(200, 200, 200, 0.3)',
+    borderColor: 'rgba(200, 200, 200, 0.4)',
   },
   signedInButton: {
-    backgroundColor: '#34A853',
+    backgroundColor: 'rgba(52, 168, 83, 0.3)',
+    borderColor: 'rgba(52, 168, 83, 0.4)',
   },
   signOutButton: {
-    backgroundColor: '#EA4335',
+    backgroundColor: 'rgba(234, 67, 53, 0.3)',
+    borderColor: 'rgba(234, 67, 53, 0.4)',
   },
   buttonText: {
-    color: '#fff',
+    color: COLORS.black,
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
@@ -162,15 +153,17 @@ const styles = StyleSheet.create({
   signedInText: {
     marginLeft: 0,
   },
-  googleIcon: {
-    color: '#4285F4',
-    fontSize: 18,
-    fontWeight: 'bold',
-    backgroundColor: '#fff',
+  googleIconContainer: {
     width: 24,
     height: 24,
-    textAlign: 'center',
-    lineHeight: 24,
     borderRadius: 12,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  googleIcon: {
+    color: '#4285F4',
+    fontSize: 16,
+    fontWeight: 'bold' as const,
   },
 });
