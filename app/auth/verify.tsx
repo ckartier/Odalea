@@ -14,6 +14,8 @@ import { COLORS, SHADOWS } from '@/constants/colors';
 import Button from '@/components/Button';
 import { useAuth } from '@/hooks/auth-store';
 import { ArrowLeft } from 'lucide-react-native';
+import GlassView from '@/components/GlassView';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function VerifyScreen() {
   const router = useRouter();
@@ -172,13 +174,17 @@ export default function VerifyScreen() {
   
   return (
     <View style={styles.container}>
+      <LinearGradient
+        colors={['#E0F2FE', '#BAE6FD', '#7DD3FC']}
+        style={StyleSheet.absoluteFill}
+      />
       <StatusBar style="dark" />
       
       <TouchableOpacity style={styles.backButton} onPress={handleBack}>
         <ArrowLeft size={24} color={COLORS.black} />
       </TouchableOpacity>
       
-      <View style={styles.content}>
+      <GlassView style={styles.content} liquidGlass tint="neutral" intensity={40}>
         <Text style={styles.title}>Verification</Text>
         <Text style={styles.subtitle}>
           We've sent a verification code to your phone number
@@ -250,7 +256,7 @@ export default function VerifyScreen() {
             </TouchableOpacity>
           )}
         </View>
-      </View>
+      </GlassView>
     </View>
   );
 }
@@ -258,7 +264,6 @@ export default function VerifyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
   },
   backButton: {
     position: 'absolute',
@@ -271,6 +276,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 120,
     alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 100,
+    marginBottom: 40,
+    borderRadius: 24,
   },
   title: {
     fontSize: 28,

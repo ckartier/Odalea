@@ -22,6 +22,8 @@ import { GoogleSignInButton } from '@/components/GoogleAuthButton';
 import ResponsiveModal from '@/components/ResponsiveModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { emailService } from '@/services/email';
+import GlassView from '@/components/GlassView';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { RESPONSIVE_SPACING, RESPONSIVE_FONT_SIZES, IS_SMALL_DEVICE, RESPONSIVE_LAYOUT, RESPONSIVE_COMPONENT_SIZES } from '@/constants/responsive';
 
@@ -91,12 +93,10 @@ function SignInScreen() {
     setLoading(true);
     
     try {
-      // For demo purposes, we'll use a mock user
-      // In a real app, this would validate credentials with Firebase
       const result = await signIn(email, password);
       
       if (result.success) {
-        router.replace('/(tabs)/map'); // Always land on map after login
+        router.replace('/(tabs)/map');
       } else {
         Alert.alert('Sign In Failed', result.error || 'Invalid email or password');
       }
@@ -183,12 +183,17 @@ function SignInScreen() {
   }), [fonts]);
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 20}
-    >
-      <StatusBar style="dark" />
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#E0F2FE', '#BAE6FD', '#7DD3FC']}
+        style={StyleSheet.absoluteFill}
+      />
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 20}
+      >
+        <StatusBar style="dark" />
       
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -205,7 +210,6 @@ function SignInScreen() {
         <Text style={[styles.title, dynamicStyles.title]}>{t('auth.welcome')}</Text>
         <Text style={[styles.subtitle, dynamicStyles.subtitle]}>{t('auth.tagline')}</Text>
         
-        {/* Sign-in method selector */}
         <View style={styles.methodSelector}>
           <TouchableOpacity
             style={[styles.methodButton, signInMethod === 'email' && styles.methodButtonActive]}
@@ -238,7 +242,7 @@ function SignInScreen() {
           </TouchableOpacity>
         </View>
         
-        <View style={styles.formContainer} testID="signin-form">
+        <GlassView style={styles.formContainer} liquidGlass tint="neutral" intensity={40} testID="signin-form">
           {signInMethod === 'email' && (
             <>
               <Input
@@ -308,13 +312,13 @@ function SignInScreen() {
                     return;
                   }
                   const res = await sendSmsCode(phone);
-                  if (!res.ok) Alert.alert('Erreur', res.error); else Alert.alert('SMS', 'Code envoyé. Entrez-le sur l’écran Vérification.');
+                  if (!res.ok) Alert.alert('Erreur', res.error); else Alert.alert('SMS', 'Code envoyé. Entrez-le sur l\'écran Vérification.');
                 }}
                 style={styles.button}
                 testID="send-sms"
               />
               <TouchableOpacity onPress={() => router.push('/auth/verify')} style={{ alignSelf: 'center', marginTop: 8 }}>
-                <Text style={{ color: COLORS.maleAccent, fontWeight: '600' as const }}>J’ai déjà un code</Text>
+                <Text style={{ color: COLORS.maleAccent, fontWeight: '600' as const }}>J\'ai déjà un code</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -366,7 +370,7 @@ function SignInScreen() {
               <Text style={[styles.socialButtonText, dynamicStyles.socialButtonText]}>{t('auth.apple')}</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </GlassView>
         
         <View style={styles.footer} testID="signin-footer">
           <Text style={[styles.footerText, dynamicStyles.footerText]}>{t('auth.dont_have_account')}</Text>
@@ -421,14 +425,17 @@ function SignInScreen() {
           />
         </ResponsiveModal>
       </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+  },
+  keyboardView: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
@@ -463,6 +470,9 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     width: '100%',
+    padding: 20,
+    borderRadius: 24,
+    marginBottom: 16,
   },
   button: {
     marginTop: 16,
