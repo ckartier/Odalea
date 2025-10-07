@@ -8,9 +8,10 @@ import {
   Platform,
   ViewStyle,
 } from 'react-native';
-import { COLORS, SHADOWS } from '@/constants/colors';
-import { Calendar, X } from 'lucide-react-native';
+import { COLORS, SHADOWS, DIMENSIONS, moderateScale } from '@/constants/colors';
+import { Calendar } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import GlassView from './GlassView';
 
 interface DatePickerProps {
   value: string;
@@ -24,6 +25,7 @@ interface DatePickerProps {
   containerStyle?: ViewStyle;
   maximumDate?: Date;
   minimumDate?: Date;
+  tint?: 'light' | 'dark' | 'default' | 'male' | 'female' | 'neutral';
 }
 
 const DatePicker: React.FC<DatePickerProps> = ({
@@ -35,6 +37,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   containerStyle,
   maximumDate,
   minimumDate,
+  tint = 'neutral',
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [tempDate, setTempDate] = useState(value ? new Date(value) : new Date());
@@ -46,7 +49,6 @@ const DatePicker: React.FC<DatePickerProps> = ({
   
   const handleCancel = () => {
     setModalVisible(false);
-    // Reset temp date to current value
     setTempDate(value ? new Date(value) : new Date());
   };
   
@@ -54,8 +56,6 @@ const DatePicker: React.FC<DatePickerProps> = ({
     if (selectedDate) {
       setTempDate(selectedDate);
       
-      // On iOS, we'll keep the modal open until user confirms
-      // On Android, we'll close the modal and update the value immediately
       if (Platform.OS === 'android') {
         onChange(selectedDate.toISOString().split('T')[0]);
         setModalVisible(false);
@@ -79,20 +79,25 @@ const DatePicker: React.FC<DatePickerProps> = ({
       {label && <Text style={styles.label}>{label}</Text>}
       
       <TouchableOpacity
-        style={[
-          styles.pickerButton,
-          error ? styles.pickerError : null,
-          SHADOWS.small,
-        ]}
         onPress={() => setModalVisible(true)}
       >
-        <Text style={[
-          styles.pickerText,
-          !value ? styles.placeholderText : null,
-        ]}>
-          {value ? formatDate(value) : placeholder}
-        </Text>
-        <Calendar size={20} color={COLORS.darkGray} />
+        <GlassView
+          tint={tint}
+          liquidGlass={true}
+          style={[
+            styles.pickerButton,
+            error ? styles.pickerError : null,
+            SHADOWS.small,
+          ]}
+        >
+          <Text style={[
+            styles.pickerText,
+            !value ? styles.placeholderText : null,
+          ]}>
+            {value ? formatDate(value) : placeholder}
+          </Text>
+          <Calendar size={20} color={COLORS.darkGray} />
+        </GlassView>
       </TouchableOpacity>
       
       {error && <Text style={styles.errorText}>{error}</Text>}
@@ -105,7 +110,11 @@ const DatePicker: React.FC<DatePickerProps> = ({
           onRequestClose={handleCancel}
         >
           <View style={styles.modalOverlay}>
-            <View style={[styles.modalContainer, SHADOWS.large]}>
+            <GlassView
+              tint={tint}
+              liquidGlass={true}
+              style={[styles.modalContainer, SHADOWS.xl]}
+            >
               <View style={styles.modalHeader}>
                 <TouchableOpacity onPress={handleCancel}>
                   <Text style={styles.cancelText}>Cancel</Text>
@@ -124,7 +133,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
                 maximumDate={maximumDate}
                 minimumDate={minimumDate}
               />
-            </View>
+            </GlassView>
           </View>
         </Modal>
       ) : (
@@ -145,31 +154,29 @@ const DatePicker: React.FC<DatePickerProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: moderateScale(12),
     width: '100%',
   },
   label: {
-    fontSize: 14,
-    fontWeight: '500' as const,
-    marginBottom: 6,
+    fontSize: DIMENSIONS.FONT_SIZES.sm,
+    fontWeight: '600' as const,
+    marginBottom: moderateScale(6),
     color: COLORS.black,
   },
   pickerButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.mediumGray,
-    paddingHorizontal: 16,
-    height: 50,
+    borderRadius: 16,
+    paddingHorizontal: moderateScale(16),
+    minHeight: 50,
   },
   pickerError: {
     borderColor: COLORS.error,
+    borderWidth: 1.5,
   },
   pickerText: {
-    fontSize: 16,
+    fontSize: DIMENSIONS.FONT_SIZES.md,
     color: COLORS.black,
   },
   placeholderText: {
@@ -177,8 +184,9 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: COLORS.error,
-    fontSize: 12,
-    marginTop: 4,
+    fontSize: DIMENSIONS.FONT_SIZES.xs,
+    marginTop: moderateScale(4),
+    fontWeight: '500' as const,
   },
   modalOverlay: {
     flex: 1,
@@ -186,30 +194,29 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContainer: {
-    backgroundColor: COLORS.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 16,
-    paddingBottom: 30,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: moderateScale(16),
+    paddingBottom: moderateScale(30),
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 8,
+    paddingHorizontal: moderateScale(16),
+    marginBottom: moderateScale(8),
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: DIMENSIONS.FONT_SIZES.lg,
     fontWeight: '600' as const,
     color: COLORS.black,
   },
   cancelText: {
-    fontSize: 16,
+    fontSize: DIMENSIONS.FONT_SIZES.md,
     color: COLORS.darkGray,
   },
   confirmText: {
-    fontSize: 16,
+    fontSize: DIMENSIONS.FONT_SIZES.md,
     color: COLORS.maleAccent,
     fontWeight: '600' as const,
   },

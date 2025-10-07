@@ -11,11 +11,12 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SHADOWS, DIMENSIONS, IS_SMALL_DEVICE, moderateScale } from '@/constants/colors';
+import GlassView from './GlassView';
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
   onPress?: () => void;
-  variant?: 'primary' | 'subtle' | 'ghost' | 'outline';
+  variant?: 'primary' | 'subtle' | 'ghost' | 'outline' | 'male' | 'female';
   size?: 'xs' | 'small' | 'medium' | 'large' | 'xl';
   loading?: boolean;
   disabled?: boolean;
@@ -25,6 +26,7 @@ interface ButtonProps extends TouchableOpacityProps {
   iconPosition?: 'left' | 'right';
   gradient?: boolean;
   fullWidth?: boolean;
+  liquidGlass?: boolean;
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -40,26 +42,28 @@ const Button: React.FC<ButtonProps> = ({
   iconPosition = 'left',
   gradient = true,
   fullWidth = false,
+  liquidGlass = true,
   ...props
 }) => {
   const getBorderRadius = () => {
     switch (size) {
       case 'xs':
-        return moderateScale(8);
-      case 'small':
-        return moderateScale(10);
-      case 'large':
-        return moderateScale(16);
-      case 'xl':
-        return moderateScale(20);
-      default:
         return moderateScale(12);
+      case 'small':
+        return moderateScale(14);
+      case 'large':
+        return moderateScale(20);
+      case 'xl':
+        return moderateScale(24);
+      default:
+        return moderateScale(16);
     }
   };
 
   const getShadow = () => {
     if (variant === 'ghost') return SHADOWS.none;
     if (disabled) return SHADOWS.none;
+    if (liquidGlass) return SHADOWS.liquidGlass;
     switch (size) {
       case 'xs':
       case 'small':
@@ -72,58 +76,30 @@ const Button: React.FC<ButtonProps> = ({
     }
   };
 
-  const getBackgroundColor = () => {
-    if (disabled) return COLORS.mediumGray;
-    if (gradient) return COLORS.transparent;
+  const getGradientColors = (): [string, string] => {
+    if (disabled) return ['#E2E8F0', '#CBD5E1'];
     switch (variant) {
-      case 'primary':
-        return 'rgba(255,255,255,0.08)';
-      case 'subtle':
-        return 'rgba(255,255,255,0.08)';
-      case 'ghost':
-        return 'transparent';
-      case 'outline':
-        return 'transparent';
+      case 'male':
+        return ['#A3D5FF', '#6BB6FF'];
+      case 'female':
+        return ['#FFB3D9', '#FF8AC9'];
       default:
-        return '#1EAAD6';
-    }
-  };
-
-  const getBorderColor = () => {
-    if (disabled) return COLORS.mediumGray;
-    switch (variant) {
-      case 'subtle':
-        return 'rgba(255,255,255,0.12)';
-      case 'ghost':
-        return 'rgba(255,255,255,0.22)';
-      case 'outline':
-        return 'rgba(255,255,255,0.45)';
-      default:
-        return 'transparent';
+        return ['#A3D5FF', '#FFB3D9'];
     }
   };
 
   const getTextColor = () => {
     if (disabled) return COLORS.gray;
-    switch (variant) {
-      case 'primary':
-        return '#FFFFFF';
-      case 'subtle':
-        return COLORS.white;
-      case 'ghost':
-        return COLORS.white;
-      default:
-        return '#FFFFFF';
-    }
+    return '#FFFFFF';
   };
 
   const getPadding = () => {
     const basePadding = {
-      xs: { vertical: 3, horizontal: 6 },
-      small: { vertical: 4, horizontal: 8 },
-      medium: { vertical: 6, horizontal: 12 },
-      large: { vertical: 8, horizontal: 16 },
-      xl: { vertical: 10, horizontal: 20 },
+      xs: { vertical: 6, horizontal: 12 },
+      small: { vertical: 8, horizontal: 16 },
+      medium: { vertical: 12, horizontal: 20 },
+      large: { vertical: 14, horizontal: 24 },
+      xl: { vertical: 16, horizontal: 28 },
     } as const;
     const padding = basePadding[size] || basePadding.medium;
     return {
@@ -147,29 +123,16 @@ const Button: React.FC<ButtonProps> = ({
     }
   };
 
-  const innerButtonStyles = [
-    styles.button,
-    {
-      backgroundColor: getBackgroundColor(),
-      borderColor: getBorderColor(),
-      borderWidth: 1,
-      borderRadius: getBorderRadius(),
-      ...getPadding(),
-      width: fullWidth ? '100%' : undefined,
-      minHeight: 44,
-    },
-    getShadow(),
-    style,
-  ];
-
-  const textStyles = [
-    styles.text,
-    {
-      color: getTextColor(),
-      fontSize: getFontSize(),
-    },
-    textStyle,
-  ];
+  const getTint = () => {
+    switch (variant) {
+      case 'male':
+        return 'male' as const;
+      case 'female':
+        return 'female' as const;
+      default:
+        return 'neutral' as const;
+    }
+  };
 
   const ButtonContent = () => (
     <>
@@ -178,18 +141,70 @@ const Button: React.FC<ButtonProps> = ({
       ) : (
         <>
           {icon && iconPosition === 'left' && <View style={styles.iconContainer}>{icon as React.ReactNode}</View>}
-          <Text style={textStyles}>{title}</Text>
+          <Text style={[styles.text, { color: getTextColor(), fontSize: getFontSize() }, textStyle]}>{title}</Text>
           {icon && iconPosition === 'right' && <View style={styles.iconContainer}>{icon as React.ReactNode}</View>}
         </>
       )}
     </>
   );
 
-  const content = (
+  if (liquidGlass && gradient) {
+    return (
+      <LinearGradient
+        colors={getGradientColors()}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[
+          {
+            borderRadius: getBorderRadius(),
+            width: fullWidth ? '100%' : undefined,
+          },
+          getShadow(),
+          style,
+        ]}
+      >
+        <GlassView
+          tint={getTint()}
+          liquidGlass={true}
+          style={[
+            styles.button,
+            {
+              borderRadius: getBorderRadius(),
+              ...getPadding(),
+            },
+          ]}
+        >
+          <TouchableOpacity
+            testID="button"
+            accessibilityRole="button"
+            style={styles.touchable}
+            onPress={onPress || (() => {})}
+            disabled={disabled || loading}
+            activeOpacity={0.8}
+            {...props}
+          >
+            <ButtonContent />
+          </TouchableOpacity>
+        </GlassView>
+      </LinearGradient>
+    );
+  }
+
+  return (
     <TouchableOpacity
       testID="button"
       accessibilityRole="button"
-      style={innerButtonStyles}
+      style={[
+        styles.button,
+        {
+          borderRadius: getBorderRadius(),
+          ...getPadding(),
+          width: fullWidth ? '100%' : undefined,
+          backgroundColor: disabled ? COLORS.mediumGray : 'rgba(255,255,255,0.08)',
+        },
+        getShadow(),
+        style,
+      ]}
       onPress={onPress || (() => {})}
       disabled={disabled || loading}
       activeOpacity={0.8}
@@ -198,21 +213,6 @@ const Button: React.FC<ButtonProps> = ({
       <ButtonContent />
     </TouchableOpacity>
   );
-
-  if (gradient) {
-    return (
-      <LinearGradient
-        colors={["#a3e5fa", "#f7b6d6"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ borderRadius: getBorderRadius() }}
-      >
-        <View style={[styles.borderPad, { borderRadius: getBorderRadius() }]}>{content}</View>
-      </LinearGradient>
-    );
-  }
-
-  return <View style={[styles.borderPad, { borderRadius: getBorderRadius() }]}>{content}</View>;
 };
 
 const styles = StyleSheet.create({
@@ -225,10 +225,13 @@ const styles = StyleSheet.create({
       ? DIMENSIONS.COMPONENT_SIZES.BUTTON_HEIGHT * 0.85
       : DIMENSIONS.COMPONENT_SIZES.BUTTON_HEIGHT,
     overflow: 'hidden',
-    backgroundColor: 'transparent',
   },
-  borderPad: {
-    padding: 2,
+  touchable: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: moderateScale(6),
   },
   text: {
     fontWeight: '600' as const,

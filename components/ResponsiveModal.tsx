@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS, DIMENSIONS, IS_TABLET, RESPONSIVE_LAYOUT, moderateScale } from '@/constants/colors';
 import { X } from 'lucide-react-native';
+import GlassView from './GlassView';
 
 interface ResponsiveModalProps extends Omit<ModalProps, 'children'> {
   children: React.ReactNode;
@@ -22,6 +23,7 @@ interface ResponsiveModalProps extends Omit<ModalProps, 'children'> {
   closeOnBackdrop?: boolean;
   style?: ViewStyle;
   contentStyle?: ViewStyle;
+  tint?: 'light' | 'dark' | 'default' | 'male' | 'female' | 'neutral';
 }
 
 const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
@@ -34,6 +36,7 @@ const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
   closeOnBackdrop = true,
   style,
   contentStyle,
+  tint = 'neutral',
   ...modalProps
 }) => {
   const insets = useSafeAreaInsets();
@@ -59,7 +62,7 @@ const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
           height: '100%',
           maxHeight: '100%',
         };
-      default: // medium
+      default:
         return {
           width: IS_TABLET ? Math.min(600, screenWidth * 0.7) : screenWidth * 0.9,
           maxHeight: screenHeight * 0.8,
@@ -100,11 +103,14 @@ const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
             style,
           ]}
         >
-          <View
+          <GlassView
+            tint={tint}
+            liquidGlass={true}
             style={[
               styles.modalContent,
               modalSize,
               size === 'fullscreen' && styles.fullscreenContent,
+              SHADOWS.xl,
               contentStyle,
             ]}
           >
@@ -119,7 +125,7 @@ const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
             )}
             
             {children}
-          </View>
+          </GlassView>
         </View>
       </View>
     </Modal>
@@ -148,17 +154,9 @@ const styles = StyleSheet.create({
     maxHeight: '100%',
   },
   modalContent: {
-    backgroundColor: COLORS.white,
-    borderRadius: moderateScale(16),
+    borderRadius: moderateScale(24),
     padding: DIMENSIONS.SPACING.lg,
     position: 'relative',
-    ...Platform.select({
-      ios: SHADOWS.large,
-      android: SHADOWS.large,
-      web: {
-        boxShadow: `0 ${moderateScale(10)}px ${moderateScale(25)}px rgba(0, 0, 0, 0.25)`,
-      },
-    }),
   },
   fullscreenContent: {
     borderRadius: 0,
@@ -171,10 +169,10 @@ const styles = StyleSheet.create({
     top: DIMENSIONS.SPACING.md,
     right: DIMENSIONS.SPACING.md,
     zIndex: 1,
-    width: moderateScale(32),
-    height: moderateScale(32),
-    borderRadius: moderateScale(16),
-    backgroundColor: COLORS.lightGray,
+    width: moderateScale(36),
+    height: moderateScale(36),
+    borderRadius: moderateScale(18),
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },

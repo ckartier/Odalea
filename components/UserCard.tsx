@@ -8,10 +8,11 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { COLORS, SHADOWS, RESPONSIVE_FONT_SIZES, RESPONSIVE_COMPONENT_SIZES } from '@/constants/colors';
+import { COLORS, SHADOWS, RESPONSIVE_FONT_SIZES, RESPONSIVE_COMPONENT_SIZES, moderateScale } from '@/constants/colors';
 import { User } from '@/types';
 import { MessageCircle, UserCheck } from 'lucide-react-native';
 import { useMessaging } from '@/hooks/messaging-store';
+import GlassView from './GlassView';
 
 interface UserCardProps {
   user: User;
@@ -52,58 +53,64 @@ const UserCard: React.FC<UserCardProps> = ({
   
   return (
     <TouchableOpacity
-      style={[styles.container, SHADOWS.medium, style]}
       onPress={handlePress}
       activeOpacity={0.8}
+      style={style}
     >
-      <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: getMainPetPhoto() }}
-          style={styles.image}
-          contentFit="cover"
-          transition={300}
-        />
-      </View>
-      
-      <View style={styles.infoContainer}>
-        <Text style={styles.name}>@{user.pseudo}</Text>
+      <GlassView
+        tint="neutral"
+        liquidGlass={true}
+        style={[styles.container, SHADOWS.liquidGlass]}
+      >
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: getMainPetPhoto() }}
+            style={styles.image}
+            contentFit="cover"
+            transition={300}
+          />
+        </View>
         
-        <View style={styles.detailsContainer}>
-          {user.isCatSitter && (
-            <View style={styles.badgeContainer}>
-              <Text style={styles.badgeText}>Cat Sitter</Text>
-            </View>
-          )}
+        <View style={styles.infoContainer}>
+          <Text style={styles.name}>@{user.pseudo}</Text>
           
-          <Text style={styles.petCount}>
-            {user.pets.length} pet{user.pets.length !== 1 ? 's' : ''}
-          </Text>
+          <View style={styles.detailsContainer}>
+            {user.isCatSitter && (
+              <View style={styles.badgeContainer}>
+                <Text style={styles.badgeText}>Cat Sitter</Text>
+              </View>
+            )}
+            
+            <Text style={styles.petCount}>
+              {user.pets.length} pet{user.pets.length !== 1 ? 's' : ''}
+            </Text>
+          </View>
         </View>
-      </View>
-      
-      {showActions && (
-        <View style={styles.actionsContainer}>
-          {areFriends(user.id) ? (
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={handleMessage}
-            >
-              <MessageCircle size={20} color={'#f2bcd7'} />
-            </TouchableOpacity>
-          ) : hasPendingRequest(user.id) ? (
-            <View style={styles.pendingContainer}>
-              <Text style={styles.pendingText}>Pending</Text>
-            </View>
-          ) : (
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={handleAddFriend}
-            >
-              <UserCheck size={20} color={'#f2bcd7'} />
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
+        
+        {showActions && (
+          <View style={styles.actionsContainer}>
+            {areFriends(user.id) ? (
+              <TouchableOpacity 
+                style={styles.actionButton}
+                onPress={handleMessage}
+              >
+                <MessageCircle size={20} color={COLORS.femaleAccent} />
+              </TouchableOpacity>
+            ) : hasPendingRequest(user.id) ? (
+              <View style={styles.pendingContainer}>
+                <Text style={styles.pendingText}>Pending</Text>
+              </View>
+            ) : (
+              <TouchableOpacity 
+                style={styles.actionButton}
+                onPress={handleAddFriend}
+              >
+                <UserCheck size={20} color={COLORS.femaleAccent} />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+      </GlassView>
     </TouchableOpacity>
   );
 };
@@ -111,17 +118,16 @@ const UserCard: React.FC<UserCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(215, 246, 255, 0.8)',
-    borderRadius: 12,
-    padding: 8,
-    marginBottom: 6,
+    borderRadius: 16,
+    padding: moderateScale(12),
+    marginBottom: moderateScale(8),
   },
   imageContainer: {
     width: RESPONSIVE_COMPONENT_SIZES.AVATAR_LARGE,
     height: RESPONSIVE_COMPONENT_SIZES.AVATAR_LARGE,
     borderRadius: RESPONSIVE_COMPONENT_SIZES.AVATAR_LARGE / 2,
     overflow: 'hidden',
-    marginRight: 8,
+    marginRight: moderateScale(12),
   },
   image: {
     width: '100%',
@@ -135,23 +141,23 @@ const styles = StyleSheet.create({
     fontSize: RESPONSIVE_FONT_SIZES.md,
     fontWeight: '600' as const,
     color: COLORS.black,
-    marginBottom: 2,
+    marginBottom: moderateScale(4),
   },
   detailsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   badgeContainer: {
-    backgroundColor: 'rgba(242, 188, 215, 0.8)',
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: 8,
-    marginRight: 4,
+    backgroundColor: COLORS.femaleAccent,
+    paddingHorizontal: moderateScale(8),
+    paddingVertical: moderateScale(2),
+    borderRadius: moderateScale(8),
+    marginRight: moderateScale(6),
   },
   badgeText: {
     color: COLORS.white,
     fontSize: RESPONSIVE_FONT_SIZES.xs,
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
   },
   petCount: {
     fontSize: RESPONSIVE_FONT_SIZES.sm,
@@ -162,22 +168,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionButton: {
-    width: RESPONSIVE_COMPONENT_SIZES.BUTTON_HEIGHT * 0.8,
-    height: RESPONSIVE_COMPONENT_SIZES.BUTTON_HEIGHT * 0.8,
-    borderRadius: (RESPONSIVE_COMPONENT_SIZES.BUTTON_HEIGHT * 0.8) / 2,
-    backgroundColor: COLORS.lightGray,
+    width: moderateScale(40),
+    height: moderateScale(40),
+    borderRadius: moderateScale(20),
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   pendingContainer: {
-    paddingHorizontal: 4,
-    paddingVertical: 2,
+    paddingHorizontal: moderateScale(8),
+    paddingVertical: moderateScale(4),
     backgroundColor: COLORS.default,
-    borderRadius: 8,
+    borderRadius: moderateScale(8),
   },
   pendingText: {
     fontSize: RESPONSIVE_FONT_SIZES.xs,
-    color: COLORS.black,
+    color: COLORS.white,
+    fontWeight: '600' as const,
   },
 });
 

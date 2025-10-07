@@ -1,25 +1,33 @@
-import React, { ReactNode, useMemo } from 'react';
+import React, { ReactNode } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS } from '@/constants/colors';
 
 interface AppBackgroundProps {
   children: ReactNode;
+  variant?: 'default' | 'male' | 'female';
 }
 
-const GRAD_FROM = '#a3e5fa';
-const GRAD_TO = '#f7b6d6';
-
-export default function AppBackground({ children }: AppBackgroundProps) {
-  const pointerEvents = useMemo(() => (Platform.OS === 'web' ? 'none' : 'auto'), []);
+export default function AppBackground({ children, variant = 'default' }: AppBackgroundProps) {
+  const getGradientColors = (): [string, string] => {
+    switch (variant) {
+      case 'male':
+        return [COLORS.male, COLORS.maleAccent];
+      case 'female':
+        return [COLORS.female, COLORS.femaleAccent];
+      default:
+        return ['#A3E5FA', '#F7B6D6'];
+    }
+  };
 
   return (
     <View style={styles.root}>
       <LinearGradient
-        colors={[GRAD_FROM, GRAD_TO]}
+        colors={getGradientColors()}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
-        pointerEvents={pointerEvents as any}
+        pointerEvents={Platform.OS === 'web' ? 'none' : 'auto'}
       />
       <View style={styles.content}>{children}</View>
     </View>

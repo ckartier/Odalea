@@ -8,9 +8,10 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { COLORS, SHADOWS, RESPONSIVE_FONT_SIZES } from '@/constants/colors';
+import { COLORS, SHADOWS, RESPONSIVE_FONT_SIZES, moderateScale } from '@/constants/colors';
 import { Pet } from '@/types';
 import { MapPin, Palette, Heart } from 'lucide-react-native';
+import GlassView from './GlassView';
 
 interface PetCardProps {
   pet: Pet;
@@ -52,11 +53,8 @@ const PetCard: React.FC<PetCardProps> = ({
     }
   };
   
-  const getBackgroundColor = () => {
-    if (pet.gender === 'male') {
-      return 'rgba(177, 230, 246, 0.8)';
-    }
-    return 'rgba(242, 188, 215, 0.8)';
+  const getTint = () => {
+    return pet.gender === 'male' ? 'male' as const : 'female' as const;
   };
   
   const getAge = () => {
@@ -71,7 +69,6 @@ const PetCard: React.FC<PetCardProps> = ({
     }
     
     if (age === 0) {
-      // Calculate months for kittens
       const monthAge = today.getMonth() - birthDate.getMonth() + 
         (today.getFullYear() - birthDate.getFullYear()) * 12;
       return `${monthAge} month${monthAge !== 1 ? 's' : ''}`;
@@ -85,77 +82,77 @@ const PetCard: React.FC<PetCardProps> = ({
       testID={`pet-card-${pet.id}`}
       accessibilityRole="button"
       accessibilityLabel={`Open ${pet.name} details`}
-      style={[
-        styles.container,
-        { backgroundColor: getBackgroundColor() },
-        SHADOWS.medium,
-        style,
-      ]}
       onPress={handlePress}
       activeOpacity={0.8}
+      style={style}
     >
-      <Image
-        source={{ uri: mainPhotoUri }}
-        style={styles.image}
-        contentFit="cover"
-        transition={300}
-      />
-      
-      <View style={styles.infoContainer}>
-        <Text style={styles.name}>{pet.name}</Text>
-        <Text style={styles.breed}>{pet.breed}</Text>
-        <Text style={styles.age}>{getAge()}</Text>
+      <GlassView
+        tint={getTint()}
+        liquidGlass={true}
+        style={[styles.container, SHADOWS.liquidGlass]}
+      >
+        <Image
+          source={{ uri: mainPhotoUri }}
+          style={styles.image}
+          contentFit="cover"
+          transition={300}
+        />
         
-        {pet.color && (
-          <View style={styles.detailContainer}>
-            <Palette size={12} color={COLORS.black} />
-            <Text style={styles.detail}>{pet.color}</Text>
-          </View>
-        )}
-        
-        {characterList.length > 0 && (
-          <View style={styles.detailContainer}>
-            <Heart size={12} color={COLORS.black} />
-            <Text style={styles.detail}>{characterList.slice(0, 2).join(', ')}{characterList.length > 2 ? '...' : ''}</Text>
-          </View>
-        )}
-        
-        {showLocation && pet.location && (
-          <View style={styles.locationContainer}>
-            <MapPin size={14} color={COLORS.black} />
-            <Text style={styles.location}>Nearby</Text>
-          </View>
-        )}
-      </View>
+        <View style={styles.infoContainer}>
+          <Text style={styles.name}>{pet.name}</Text>
+          <Text style={styles.breed}>{pet.breed}</Text>
+          <Text style={styles.age}>{getAge()}</Text>
+          
+          {pet.color && (
+            <View style={styles.detailContainer}>
+              <Palette size={12} color={COLORS.black} />
+              <Text style={styles.detail}>{pet.color}</Text>
+            </View>
+          )}
+          
+          {characterList.length > 0 && (
+            <View style={styles.detailContainer}>
+              <Heart size={12} color={COLORS.black} />
+              <Text style={styles.detail}>{characterList.slice(0, 2).join(', ')}{characterList.length > 2 ? '...' : ''}</Text>
+            </View>
+          )}
+          
+          {showLocation && pet.location && (
+            <View style={styles.locationContainer}>
+              <MapPin size={14} color={COLORS.black} />
+              <Text style={styles.location}>Nearby</Text>
+            </View>
+          )}
+        </View>
+      </GlassView>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
+    borderRadius: 20,
     overflow: 'hidden',
-    width: 130,
-    height: 170,
+    width: moderateScale(140),
   },
   image: {
     width: '100%',
-    height: 100,
+    height: moderateScale(110),
   },
   infoContainer: {
-    padding: 6,
+    padding: moderateScale(10),
   },
   name: {
     fontSize: RESPONSIVE_FONT_SIZES.md,
     fontWeight: '600' as const,
     color: COLORS.black,
-    marginBottom: 2,
+    marginBottom: moderateScale(2),
   },
   breed: {
     fontSize: RESPONSIVE_FONT_SIZES.sm,
     color: COLORS.black,
     opacity: 0.8,
-    marginBottom: 2,
+    marginBottom: moderateScale(2),
   },
   age: {
     fontSize: RESPONSIVE_FONT_SIZES.xs,
@@ -165,24 +162,24 @@ const styles = StyleSheet.create({
   detailContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
+    marginTop: moderateScale(2),
   },
   detail: {
     fontSize: RESPONSIVE_FONT_SIZES.xs,
     color: COLORS.black,
     opacity: 0.7,
-    marginLeft: 4,
+    marginLeft: moderateScale(4),
   },
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: moderateScale(4),
   },
   location: {
     fontSize: RESPONSIVE_FONT_SIZES.xs,
     color: COLORS.black,
     opacity: 0.7,
-    marginLeft: 4,
+    marginLeft: moderateScale(4),
   },
 });
 

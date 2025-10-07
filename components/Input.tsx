@@ -24,6 +24,7 @@ interface InputProps extends TextInputProps {
   rightIcon?: React.ReactNode;
   isPassword?: boolean;
   hideLabel?: boolean;
+  tint?: 'light' | 'dark' | 'default' | 'male' | 'female' | 'neutral';
 }
 
 const Input: React.FC<InputProps> = ({
@@ -38,6 +39,7 @@ const Input: React.FC<InputProps> = ({
   isPassword = false,
   hideLabel = false,
   secureTextEntry,
+  tint = 'neutral',
   ...props
 }) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -65,11 +67,13 @@ const Input: React.FC<InputProps> = ({
       {label && !hideLabel && <Text style={[styles.label, labelStyle]}>{label}</Text>}
       
       <GlassView
-        intensity={35}
-        tint="light"
+        intensity={40}
+        tint={tint}
+        liquidGlass={true}
         style={[
           styles.inputGlass,
           error ? styles.inputError : null,
+          SHADOWS.small,
           inputStyle,
         ]}
       >
@@ -106,17 +110,15 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: DIMENSIONS.FONT_SIZES.sm,
-    fontWeight: '500' as const,
-    marginBottom: moderateScale(4),
+    fontWeight: '600' as const,
+    marginBottom: moderateScale(6),
     color: COLORS.black,
   },
   inputGlass: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    paddingVertical: moderateScale(8),
+    paddingVertical: moderateScale(4),
   },
   input: {
     flex: 1,
@@ -127,11 +129,13 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: COLORS.error,
+    borderWidth: 1.5,
   },
   errorText: {
     color: COLORS.error,
     fontSize: DIMENSIONS.FONT_SIZES.xs,
-    marginTop: moderateScale(3),
+    marginTop: moderateScale(4),
+    fontWeight: '500' as const,
   },
   iconContainer: {
     paddingHorizontal: moderateScale(10),
