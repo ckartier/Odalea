@@ -22,7 +22,6 @@ import { FirebaseUserContext } from "@/hooks/firebase-user-store";
 import { SocialContext } from "@/hooks/social-store";
 import { trpc, trpcClient } from "@/lib/trpc";
 import AppBackground from "@/components/AppBackground";
-import GlassView from "@/components/GlassView";
 import { useNotifications } from "@/hooks/use-notifications";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -45,19 +44,15 @@ const queryClient = new QueryClient({
 
 // Memoize screen options to prevent unnecessary re-renders
 const screenOptions = {
-  headerBackTitle: "Retour",
-  headerTitleStyle: {
-    fontWeight: '600' as const,
-    color: '#0B0B0C',
-    fontSize: 18,
-  },
+  headerBackTitle: "",
+  headerTitle: "",
   headerTintColor: '#0B0B0C',
   headerShadowVisible: false,
   gestureEnabled: true,
   headerTransparent: true,
-  headerBackground: () => (
-    <GlassView testID="glass-header" intensity={40} tint="light" style={{ flex: 1 }} />
-  ),
+  headerStyle: {
+    backgroundColor: 'transparent',
+  },
 };
 
 const RootLayoutNav = React.memo(() => {
@@ -66,31 +61,31 @@ const RootLayoutNav = React.memo(() => {
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="splash" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-      <Stack.Screen name="auth/signin" options={{ headerShown: true, title: "Se connecter" }} />
-      <Stack.Screen name="auth/signup" options={{ headerShown: true, title: "Créer un compte" }} />
-      <Stack.Screen name="auth/pro-register" options={{ headerShown: true, title: "Inscription Pro" }} />
-      <Stack.Screen name="auth/verify" options={{ headerShown: true, title: "Vérification" }} />
+      <Stack.Screen name="auth/signin" options={{ headerShown: true }} />
+      <Stack.Screen name="auth/signup" options={{ headerShown: true }} />
+      <Stack.Screen name="auth/pro-register" options={{ headerShown: true }} />
+      <Stack.Screen name="auth/verify" options={{ headerShown: true }} />
       <Stack.Screen name="menu" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="cat-sitter" options={{ title: "Cat Sitters", headerShown: false }} />
-      <Stack.Screen name="cat-sitter/[id]" options={{ title: "Profil Cat Sitter" }} />
-      <Stack.Screen name="pet/[id]" options={{ title: "Profil de l'animal" }} />
-      <Stack.Screen name="profile/[id]" options={{ title: "Profil utilisateur" }} />
-      <Stack.Screen name="messages/[id]" options={{ title: "Chat" }} />
-      <Stack.Screen name="messages/new" options={{ title: "Nouveau message" }} />
-      <Stack.Screen name="shop/product/[id]" options={{ title: "Détails du produit" }} />
-      <Stack.Screen name="lost-found/report" options={{ title: "Signaler un animal perdu" }} />
-      <Stack.Screen name="lost-found/[id]" options={{ title: "Détails animal perdu" }} />
-      <Stack.Screen name="booking/[id]" options={{ title: "Réserver Cat Sitter" }} />
-      <Stack.Screen name="booking/confirmation/[id]" options={{ title: "Confirmation de réservation" }} />
-      <Stack.Screen name="premium" options={{ title: "Abonnement Premium" }} />
+      <Stack.Screen name="cat-sitter" options={{ headerShown: false }} />
+      <Stack.Screen name="cat-sitter/[id]" options={{ headerShown: true }} />
+      <Stack.Screen name="pet/[id]" options={{ headerShown: true }} />
+      <Stack.Screen name="profile/[id]" options={{ headerShown: true }} />
+      <Stack.Screen name="messages/[id]" options={{ headerShown: true }} />
+      <Stack.Screen name="messages/new" options={{ headerShown: true }} />
+      <Stack.Screen name="shop/product/[id]" options={{ headerShown: true }} />
+      <Stack.Screen name="lost-found/report" options={{ headerShown: true }} />
+      <Stack.Screen name="lost-found/[id]" options={{ headerShown: true }} />
+      <Stack.Screen name="booking/[id]" options={{ headerShown: true }} />
+      <Stack.Screen name="booking/confirmation/[id]" options={{ headerShown: true }} />
+      <Stack.Screen name="premium" options={{ headerShown: true }} />
       <Stack.Screen name="(pro)" options={{ headerShown: false }} />
-      <Stack.Screen name="cat-sitter-dashboard" options={{ title: "Dashboard Cat-Sitter" }} />
-      <Stack.Screen name="cat-sitter-settings" options={{ title: "Paramètres Cat-Sitter" }} />
-      <Stack.Screen name="legal/terms" options={{ title: "Conditions d'utilisation" }} />
-      <Stack.Screen name="legal/privacy" options={{ title: "Politique de confidentialité" }} />
-      <Stack.Screen name="firebase-test" options={{ title: "Firebase Connection Test" }} />
-      <Stack.Screen name="admin-tools" options={{ title: "Outils Firebase" }} />
+      <Stack.Screen name="cat-sitter-dashboard" options={{ headerShown: true }} />
+      <Stack.Screen name="cat-sitter-settings" options={{ headerShown: true }} />
+      <Stack.Screen name="legal/terms" options={{ headerShown: true }} />
+      <Stack.Screen name="legal/privacy" options={{ headerShown: true }} />
+      <Stack.Screen name="firebase-test" options={{ headerShown: true }} />
+      <Stack.Screen name="admin-tools" options={{ headerShown: true }} />
     </Stack>
   );
 });
