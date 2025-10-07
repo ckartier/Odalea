@@ -39,21 +39,21 @@ const slides: OnboardingSlide[] = [
     icon: Heart,
     titleKey: 'onboarding.welcome.title',
     descriptionKey: 'onboarding.welcome.description',
-    gradientColors: ['#FF6B9D', '#C06C84', '#6C5B7B'] as const,
+    gradientColors: ['#E8B4D4', '#C8A2C8', '#A8B4D8'] as const,
   },
   {
     id: 'connect',
     icon: MapPin,
     titleKey: 'onboarding.connect.title',
     descriptionKey: 'onboarding.connect.description',
-    gradientColors: ['#667EEA', '#764BA2', '#F093FB'] as const,
+    gradientColors: ['#B8C8E8', '#C8B4D8', '#D8B4C8'] as const,
   },
   {
     id: 'chat',
     icon: MessageCircle,
     titleKey: 'onboarding.chat.title',
     descriptionKey: 'onboarding.chat.description',
-    gradientColors: ['#4FACFE', '#00F2FE', '#43E97B'] as const,
+    gradientColors: ['#A8D8E8', '#B8C8D8', '#C8B8D8'] as const,
   },
 ];
 
@@ -63,37 +63,83 @@ export default function OnboardingScreen() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
-  const iconScale = useRef(new Animated.Value(1)).current;
-  const iconRotate = useRef(new Animated.Value(0)).current;
+  const heartbeatAnim = useRef(new Animated.Value(1)).current;
+  const bounceAnim = useRef(new Animated.Value(0)).current;
+  const chatAnim1 = useRef(new Animated.Value(0)).current;
+  const chatAnim2 = useRef(new Animated.Value(0)).current;
   const gradientAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const iconAnimation = Animated.loop(
+    const heartbeatAnimation = Animated.loop(
       Animated.sequence([
-        Animated.parallel([
-          Animated.timing(iconScale, {
-            toValue: 1.2,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(iconRotate, {
-            toValue: 1,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.parallel([
-          Animated.timing(iconScale, {
-            toValue: 1,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(iconRotate, {
-            toValue: 0,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-        ]),
+        Animated.timing(heartbeatAnim, {
+          toValue: 1.15,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heartbeatAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heartbeatAnim, {
+          toValue: 1.15,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heartbeatAnim, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    const bounceAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(bounceAnim, {
+          toValue: -12,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(bounceAnim, {
+          toValue: 0,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    const chatAnimation1 = Animated.loop(
+      Animated.sequence([
+        Animated.timing(chatAnim1, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.delay(1400),
+        Animated.timing(chatAnim1, {
+          toValue: 0,
+          duration: 0,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    const chatAnimation2 = Animated.loop(
+      Animated.sequence([
+        Animated.delay(1000),
+        Animated.timing(chatAnim2, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.delay(400),
+        Animated.timing(chatAnim2, {
+          toValue: 0,
+          duration: 0,
+          useNativeDriver: true,
+        }),
       ])
     );
 
@@ -101,25 +147,31 @@ export default function OnboardingScreen() {
       Animated.sequence([
         Animated.timing(gradientAnim, {
           toValue: 1,
-          duration: 3000,
+          duration: 4000,
           useNativeDriver: false,
         }),
         Animated.timing(gradientAnim, {
           toValue: 0,
-          duration: 3000,
+          duration: 4000,
           useNativeDriver: false,
         }),
       ])
     );
 
-    iconAnimation.start();
+    heartbeatAnimation.start();
+    bounceAnimation.start();
+    chatAnimation1.start();
+    chatAnimation2.start();
     gradientAnimation.start();
 
     return () => {
-      iconAnimation.stop();
+      heartbeatAnimation.stop();
+      bounceAnimation.stop();
+      chatAnimation1.stop();
+      chatAnimation2.stop();
       gradientAnimation.stop();
     };
-  }, [iconScale, iconRotate, gradientAnim]);
+  }, [heartbeatAnim, bounceAnim, chatAnim1, chatAnim2, gradientAnim]);
 
   const handleNext = () => {
     if (currentSlide < slides.length - 1) {
@@ -167,10 +219,15 @@ export default function OnboardingScreen() {
 
   const renderSlide = (slide: OnboardingSlide, index: number) => {
     const IconComponent = slide.icon;
-    const rotation = iconRotate.interpolate({
-      inputRange: [0, 1],
-      outputRange: ['0deg', '360deg'],
-    });
+    
+    let iconTransform: Array<{ scale?: Animated.Value; translateY?: Animated.Value }> = [];
+    if (index === 0) {
+      iconTransform = [{ scale: heartbeatAnim }];
+    } else if (index === 1) {
+      iconTransform = [{ translateY: bounceAnim }];
+    } else if (index === 2) {
+      iconTransform = [];
+    }
 
     return (
       <View key={slide.id} style={styles.slide}>
@@ -181,19 +238,45 @@ export default function OnboardingScreen() {
           style={StyleSheet.absoluteFill}
         />
         <Animated.View style={[styles.slideContent, { opacity: fadeAnim }]}>
-          <Animated.View 
-            style={[
-              styles.iconContainer,
-              {
-                transform: [
-                  { scale: iconScale },
-                  { rotate: rotation },
-                ],
-              },
-            ]}
-          >
-            <IconComponent size={80} color={COLORS.white} />
-          </Animated.View>
+          {index === 2 ? (
+            <View style={styles.chatIconsContainer}>
+              <Animated.View 
+                style={[
+                  styles.chatIcon,
+                  styles.chatIcon1,
+                  {
+                    opacity: chatAnim1,
+                    transform: [{ translateX: chatAnim1.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }],
+                  },
+                ]}
+              >
+                <MessageCircle size={60} color={COLORS.white} />
+              </Animated.View>
+              <Animated.View 
+                style={[
+                  styles.chatIcon,
+                  styles.chatIcon2,
+                  {
+                    opacity: chatAnim2,
+                    transform: [{ translateX: chatAnim2.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
+                  },
+                ]}
+              >
+                <MessageCircle size={60} color={COLORS.white} />
+              </Animated.View>
+            </View>
+          ) : (
+            <Animated.View 
+              style={[
+                styles.iconContainer,
+                {
+                  transform: iconTransform,
+                },
+              ]}
+            >
+              <IconComponent size={80} color={COLORS.white} />
+            </Animated.View>
+          )}
           
           <Text style={styles.title}>
             {t(slide.titleKey)}
@@ -302,6 +385,33 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 20,
     elevation: 10,
+  },
+  chatIconsContainer: {
+    marginBottom: 32,
+    height: 120,
+    width: 200,
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  chatIcon: {
+    position: 'absolute',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 40,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  chatIcon1: {
+    left: 0,
+  },
+  chatIcon2: {
+    right: 0,
   },
   title: {
     fontSize: 28,

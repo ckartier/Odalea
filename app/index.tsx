@@ -12,7 +12,7 @@ export default function IndexScreen() {
   const { user, loading } = useUser();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.5)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const heartbeatAnim = useRef(new Animated.Value(1)).current;
   const gradientAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -30,42 +30,54 @@ export default function IndexScreen() {
       }),
     ]).start();
 
-    const rotateLoop = Animated.loop(
-      Animated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 4000,
-        useNativeDriver: true,
-      })
+    const heartbeatLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(heartbeatAnim, {
+          toValue: 1.15,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heartbeatAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heartbeatAnim, {
+          toValue: 1.15,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heartbeatAnim, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+      ])
     );
 
     const gradientLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(gradientAnim, {
           toValue: 1,
-          duration: 2500,
+          duration: 3500,
           useNativeDriver: false,
         }),
         Animated.timing(gradientAnim, {
           toValue: 0,
-          duration: 2500,
+          duration: 3500,
           useNativeDriver: false,
         }),
       ])
     );
 
-    rotateLoop.start();
+    heartbeatLoop.start();
     gradientLoop.start();
 
     return () => {
-      rotateLoop.stop();
+      heartbeatLoop.stop();
       gradientLoop.stop();
     };
-  }, [fadeAnim, scaleAnim, rotateAnim, gradientAnim]);
-
-  const rotation = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
+  }, [fadeAnim, scaleAnim, heartbeatAnim, gradientAnim]);
 
   // Show loading with animation while checking auth state
   if (loading) {
@@ -73,7 +85,7 @@ export default function IndexScreen() {
       <View style={styles.container}>
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: gradientAnim }]}>
           <LinearGradient
-            colors={['#FF6B9D', '#C06C84', '#6C5B7B']}
+            colors={['#E8B4D4', '#C8A2C8', '#A8B4D8']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFill}
@@ -81,7 +93,7 @@ export default function IndexScreen() {
         </Animated.View>
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: gradientAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }]}>
           <LinearGradient
-            colors={['#667EEA', '#764BA2', '#F093FB']}
+            colors={['#B8C8E8', '#C8B4D8', '#D8B4C8']}
             start={{ x: 1, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={StyleSheet.absoluteFill}
@@ -93,8 +105,7 @@ export default function IndexScreen() {
             {
               opacity: fadeAnim,
               transform: [
-                { scale: scaleAnim },
-                { rotate: rotation },
+                { scale: Animated.multiply(scaleAnim, heartbeatAnim) },
               ],
             },
           ]}

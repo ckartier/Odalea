@@ -77,8 +77,8 @@ export default function SplashScreen() {
 
     const gradientLoop = Animated.loop(
       Animated.sequence([
-        Animated.timing(gradientAnim, { toValue: 1, duration: 1200, useNativeDriver: false }),
-        Animated.timing(gradientAnim, { toValue: 0, duration: 1200, useNativeDriver: false }),
+        Animated.timing(gradientAnim, { toValue: 1, duration: 4000, useNativeDriver: false }),
+        Animated.timing(gradientAnim, { toValue: 0, duration: 4000, useNativeDriver: false }),
       ])
     );
 
@@ -124,8 +124,8 @@ export default function SplashScreen() {
   const particle2Y = particle2.interpolate({ inputRange: [0, 1], outputRange: [height * 0.3, height] });
   const particle3Y = particle3.interpolate({ inputRange: [0, 1], outputRange: [height * 0.8, -50] });
 
-  const COLOR_A = '#a3e5fa' as const;
-  const COLOR_B = '#f7b6d6' as const;
+  const COLOR_A = '#C8D8E8' as const;
+  const COLOR_B = '#E8C8D8' as const;
   const topOpacity = gradientAnim;
   const bottomOpacity = gradientAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
 
