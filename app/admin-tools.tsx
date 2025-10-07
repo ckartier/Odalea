@@ -918,6 +918,7 @@ export default function AdminToolsScreen() {
         isActive: true,
         profileComplete: true,
         isAdmin: true,
+        isSuperAdmin: true,
       };
       await setDoc(doc(db, 'users', uid), { ...userDoc, updatedAt: serverTimestamp(), createdAt: serverTimestamp() } as any, { merge: true });
       const petId = `pet-${uid}-nana`;

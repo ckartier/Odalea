@@ -36,6 +36,7 @@ export interface User {
   isActive: boolean;
   profileComplete: boolean;
   isAdmin?: boolean;
+  isSuperAdmin?: boolean;
 }
 
 export interface ProfessionalData {

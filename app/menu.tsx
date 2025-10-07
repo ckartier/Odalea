@@ -27,6 +27,7 @@ import {
   BarChart,
   HelpCircle,
   Wrench,
+  UserSearch,
 } from 'lucide-react-native';
 
 interface MenuItem {
@@ -37,8 +38,8 @@ interface MenuItem {
   isSpecial?: boolean;
 }
 
-const getMenuItems = (opts: { isProfessional: boolean; isAdmin: boolean; email?: string | null }): MenuItem[] => {
-  const showAdmin = opts.isAdmin || (opts.email?.toLowerCase() === 'ckartier@gmail.com');
+const getMenuItems = (opts: { isProfessional: boolean; isSuperAdmin: boolean; email?: string | null }): MenuItem[] => {
+  const showAdmin = opts.isSuperAdmin;
   if (opts.isProfessional) {
     const proItems: MenuItem[] = [
       {
@@ -72,7 +73,11 @@ const getMenuItems = (opts: { isProfessional: boolean; isAdmin: boolean; email?:
         route: '/settings/support',
       },
     ];
-    return showAdmin ? [...proItems, { id: 'admin-tools', titleKey: 'Admin Tools', iconName: 'Wrench', route: '/admin-tools' }] : proItems;
+    return showAdmin ? [
+      ...proItems,
+      { id: 'admin-tools', titleKey: 'Admin Tools', iconName: 'Wrench', route: '/admin-tools' },
+      { id: 'admin-search', titleKey: 'Recherche Utilisateurs', iconName: 'UserSearch', route: '/admin-search-users' },
+    ] : proItems;
   }
 
   const base: MenuItem[] = [
@@ -131,7 +136,11 @@ const getMenuItems = (opts: { isProfessional: boolean; isAdmin: boolean; email?:
       route: '/settings/support',
     },
   ];
-  return showAdmin ? [...base, { id: 'admin-tools', titleKey: 'Admin Tools', iconName: 'Wrench', route: '/admin-tools' }] : base;
+  return showAdmin ? [
+    ...base,
+    { id: 'admin-tools', titleKey: 'Admin Tools', iconName: 'Wrench', route: '/admin-tools' },
+    { id: 'admin-search', titleKey: 'Recherche Utilisateurs', iconName: 'UserSearch', route: '/admin-search-users' },
+  ] : base;
 };
 
 export default function MenuScreen() {
@@ -144,7 +153,7 @@ export default function MenuScreen() {
   const { userPets } = usePets();
   const [selectedMenuItem, setSelectedMenuItem] = useState('');
 
-  const menuItems = getMenuItems({ isProfessional: Boolean(user?.isProfessional), isAdmin: Boolean((user as any)?.isAdmin), email: user?.email ?? null });
+  const menuItems = getMenuItems({ isProfessional: Boolean(user?.isProfessional), isSuperAdmin: Boolean((user as any)?.isSuperAdmin), email: user?.email ?? null });
   
   const menuOptions = menuItems.map(item => ({
     value: item.route,
@@ -186,6 +195,8 @@ export default function MenuScreen() {
         return <HelpCircle {...iconProps} />;
       case 'Wrench':
         return <Wrench {...iconProps} />;
+      case 'UserSearch':
+        return <UserSearch {...iconProps} />;
       default:
         return <Search {...iconProps} />;
     }
