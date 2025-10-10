@@ -497,12 +497,15 @@ export default function MapScreen() {
   const allPetsIncludingUser: AllPet[] = [...firebasePetsWithOwner, ...userPetsWithLocation];
 
   const filteredPets = allPetsIncludingUser.filter((pet: AllPet) => {
-    if (activeFilters.has('all') || activeFilters.has('pets')) return true;
+    if (activeFilters.size === 0) return false;
+    if (activeFilters.has('all')) return true;
+    if (activeFilters.has('pets')) return true;
     if (activeFilters.has('sitters') && Boolean(pet.owner?.isCatSitter || pet.owner?.isProfessional)) return true;
     return false;
   });
 
   const filteredUsers = usersWithLocation.filter((u) => {
+    if (activeFilters.size === 0) return false;
     if (activeFilters.has('all')) return true;
     if (activeFilters.has('sitters') && (u.isCatSitter || u.isProfessional)) return true;
     if (activeFilters.has('friends')) return true;
@@ -658,11 +661,17 @@ export default function MapScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.controlButton, SHADOWS.medium]}
+          style={[styles.controlButton, SHADOWS.medium, showFilters && styles.controlButtonActive]}
           onPress={() => setShowFilters(!showFilters)}
           testID="btn-filters"
+          activeOpacity={0.8}
         >
-          <Filter size={24} color={activeFilters.size > 0 && !activeFilters.has('all') ? COLORS.primary : COLORS.black} />
+          <Filter size={24} color={showFilters ? COLORS.white : (activeFilters.size > 0 && !activeFilters.has('all') ? COLORS.primary : COLORS.black)} />
+          {activeFilters.size > 0 && !activeFilters.has('all') && (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>{activeFilters.size}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -672,53 +681,71 @@ export default function MapScreen() {
             style={[styles.filterItem, activeFilters.has('all') && styles.filterItemActive]}
             onPress={() => handleFilterPress('all')}
             testID="filter-all"
+            activeOpacity={0.7}
           >
-            <Layers size={20} color={activeFilters.has('all') ? COLORS.white : COLORS.black} />
-            <Text style={[styles.filterText, activeFilters.has('all') && styles.filterTextActive]}>{t('map.show_all')}</Text>
+            <View style={[styles.filterIconContainer, activeFilters.has('all') && styles.filterIconActive]}>
+              <Layers size={18} color={activeFilters.has('all') ? COLORS.white : COLORS.primary} />
+            </View>
+            <Text style={[styles.filterText, activeFilters.has('all') && styles.filterTextActive]}>Tout afficher</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.filterItem, activeFilters.has('pets') && styles.filterItemActive]}
             onPress={() => handleFilterPress('pets')}
             testID="filter-pets"
+            activeOpacity={0.7}
           >
-            <Heart size={20} color={activeFilters.has('pets') ? COLORS.white : COLORS.black} />
-            <Text style={[styles.filterText, activeFilters.has('pets') && styles.filterTextActive]}>{t('map.pets')}</Text>
+            <View style={[styles.filterIconContainer, activeFilters.has('pets') && styles.filterIconActive]}>
+              <Heart size={18} color={activeFilters.has('pets') ? COLORS.white : COLORS.primary} />
+            </View>
+            <Text style={[styles.filterText, activeFilters.has('pets') && styles.filterTextActive]}>Animaux</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.filterItem, activeFilters.has('sitters') && styles.filterItemActive]}
             onPress={() => handleFilterPress('sitters')}
             testID="filter-sitters"
+            activeOpacity={0.7}
           >
-            <Users size={20} color={activeFilters.has('sitters') ? COLORS.white : COLORS.black} />
-            <Text style={[styles.filterText, activeFilters.has('sitters') && styles.filterTextActive]}>{t('map.sitters')}</Text>
+            <View style={[styles.filterIconContainer, activeFilters.has('sitters') && styles.filterIconActive]}>
+              <Users size={18} color={activeFilters.has('sitters') ? COLORS.white : COLORS.primary} />
+            </View>
+            <Text style={[styles.filterText, activeFilters.has('sitters') && styles.filterTextActive]}>Cat Sitters</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.filterItem, activeFilters.has('friends') && styles.filterItemActive]}
             onPress={() => handleFilterPress('friends')}
             testID="filter-friends"
+            activeOpacity={0.7}
           >
-            <Users size={20} color={activeFilters.has('friends') ? COLORS.white : COLORS.black} />
-            <Text style={[styles.filterText, activeFilters.has('friends') && styles.filterTextActive]}>{t('map.friends')}</Text>
+            <View style={[styles.filterIconContainer, activeFilters.has('friends') && styles.filterIconActive]}>
+              <Users size={18} color={activeFilters.has('friends') ? COLORS.white : COLORS.primary} />
+            </View>
+            <Text style={[styles.filterText, activeFilters.has('friends') && styles.filterTextActive]}>Amis</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.filterItem, activeFilters.has('lost') && styles.filterItemActive]}
             onPress={() => handleFilterPress('lost')}
             testID="filter-lost"
+            activeOpacity={0.7}
           >
-            <Search size={20} color={activeFilters.has('lost') ? COLORS.white : COLORS.black} />
-            <Text style={[styles.filterText, activeFilters.has('lost') && styles.filterTextActive]}>{t('map.lost_found')}</Text>
+            <View style={[styles.filterIconContainer, activeFilters.has('lost') && styles.filterIconActive]}>
+              <Search size={18} color={activeFilters.has('lost') ? COLORS.white : COLORS.primary} />
+            </View>
+            <Text style={[styles.filterText, activeFilters.has('lost') && styles.filterTextActive]}>Perdus</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.filterItem, activeFilters.has('vets') && styles.filterItemActive]}
             onPress={() => handleFilterPress('vets')}
             testID="filter-vets"
+            activeOpacity={0.7}
           >
-            <Stethoscope size={20} color={activeFilters.has('vets') ? COLORS.white : COLORS.black} />
+            <View style={[styles.filterIconContainer, activeFilters.has('vets') && styles.filterIconActive]}>
+              <Stethoscope size={18} color={activeFilters.has('vets') ? COLORS.white : COLORS.primary} />
+            </View>
             <Text style={[styles.filterText, activeFilters.has('vets') && styles.filterTextActive]}>Vétérinaires</Text>
           </TouchableOpacity>
         </View>
@@ -808,29 +835,67 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  controlButtonActive: {
+    backgroundColor: COLORS.primary,
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#ef4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.white,
+  },
+  filterBadgeText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: COLORS.white,
+  },
   filterMenu: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 120 : 100,
     right: 16,
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    paddingVertical: 8,
-    minWidth: 150,
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    borderRadius: 16,
+    paddingVertical: 12,
+    minWidth: 180,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
   },
   filterItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     gap: 12,
+    marginHorizontal: 8,
+    marginVertical: 2,
+    borderRadius: 12,
   },
   filterItemActive: {
     backgroundColor: COLORS.primary,
   },
+  filterIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterIconActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
   filterText: {
-    fontSize: 14,
-    fontWeight: '500' as const,
+    fontSize: 15,
+    fontWeight: '600' as const,
     color: '#1A1A1A',
+    flex: 1,
   },
   filterTextActive: {
     color: COLORS.white,
@@ -843,9 +908,11 @@ const styles = StyleSheet.create({
   },
   selectedPetCard: {
     backgroundColor: COLORS.white,
-    borderRadius: 20,
+    borderRadius: 24,
     overflow: 'hidden',
     flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
   },
   adBannerTop: {
     marginVertical: 0,
@@ -949,14 +1016,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: Platform.OS === 'ios' ? 60 : 40,
     left: 16,
-    backgroundColor: COLORS.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
   },
   statsText: {
-    fontSize: 12,
-    fontWeight: '500' as const,
+    fontSize: 13,
+    fontWeight: '600' as const,
     color: '#1A1A1A',
   },
   webOverlay: {
