@@ -11,10 +11,12 @@ import {
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
+import { useTheme } from '@/hooks/theme-store';
 import { ArrowLeft } from 'lucide-react-native';
 import GlassView from '@/components/GlassView';
 
 export default function TermsScreen() {
+  const { currentTheme, isDark } = useTheme();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   
@@ -45,23 +47,23 @@ export default function TermsScreen() {
           title: 'Conditions d\'Utilisation',
           headerShown: true,
           headerStyle: {
-            backgroundColor: COLORS.white,
+            backgroundColor: currentTheme.card,
           },
           headerTitleStyle: {
-            color: COLORS.black,
+            color: currentTheme.text,
             fontSize: 18,
             fontWeight: '600',
           },
           headerLeft: () => (
             <TouchableOpacity onPress={handleBack} style={{ marginLeft: 16 }}>
-              <ArrowLeft size={24} color={COLORS.black} />
+              <ArrowLeft size={24} color={currentTheme.text} />
             </TouchableOpacity>
           ),
         }}
       />
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
         <ScrollView 
           style={styles.content} 
           showsVerticalScrollIndicator={false}
@@ -71,9 +73,9 @@ export default function TermsScreen() {
           opacity: fadeAnim,
           transform: [{ translateY: slideAnim }],
         }}>
-          <GlassView style={styles.card} liquidGlass tint="neutral" intensity={30}>
-            <Text style={styles.mainTitle}>Conditions Générales d&apos;Utilisation</Text>
-            <Text style={styles.lastUpdate}>Dernière mise à jour : {new Date().toLocaleDateString('fr-FR')}</Text>
+          <GlassView style={styles.card} liquidGlass tint="neutral" intensity={isDark ? 15 : 30}>
+            <Text style={[styles.mainTitle, { color: currentTheme.text }]}>Conditions Générales d&apos;Utilisation</Text>
+            <Text style={[styles.lastUpdate, { color: currentTheme.text, opacity: 0.7 }]}>Dernière mise à jour : {new Date().toLocaleDateString('fr-FR')}</Text>
           </GlassView>
         </Animated.View>
 
@@ -81,9 +83,9 @@ export default function TermsScreen() {
           opacity: fadeAnim,
           transform: [{ translateY: slideAnim }],
         }}>
-        <GlassView style={styles.section} liquidGlass tint="neutral" intensity={20}>
-          <Text style={styles.sectionTitle}>1. Acceptation des conditions</Text>
-          <Text style={styles.paragraph}>
+        <GlassView style={styles.section} liquidGlass tint="neutral" intensity={isDark ? 10 : 20}>
+          <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>1. Acceptation des conditions</Text>
+          <Text style={[styles.paragraph, { color: currentTheme.text }]}>
             Bienvenue sur Coppet. En utilisant cette application, vous acceptez les présentes conditions générales d&apos;utilisation. Si vous n&apos;acceptez pas ces conditions, veuillez ne pas utiliser l&apos;application.
           </Text>
         </GlassView>
@@ -93,9 +95,9 @@ export default function TermsScreen() {
           opacity: fadeAnim,
           transform: [{ translateY: slideAnim }],
         }}>
-        <GlassView style={styles.section} liquidGlass tint="neutral" intensity={20}>
-          <Text style={styles.sectionTitle}>2. Objet de l&apos;application</Text>
-          <Text style={styles.paragraph}>
+        <GlassView style={styles.section} liquidGlass tint="neutral" intensity={isDark ? 10 : 20}>
+          <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>2. Objet de l&apos;application</Text>
+          <Text style={[styles.paragraph, { color: currentTheme.text }]}>
             Coppet est une application sociale dédiée aux propriétaires d&apos;animaux de compagnie. Elle permet de créer un profil pour vous et vos animaux, de rencontrer d&apos;autres propriétaires, de partager des moments, de trouver des services (cat-sitters, vétérinaires, boutiques), et de participer à des défis et événements.
           </Text>
         </GlassView>
@@ -239,7 +241,6 @@ export default function TermsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
   },
   content: {
     flex: 1,
@@ -258,13 +259,11 @@ const styles = StyleSheet.create({
   mainTitle: {
     fontSize: 24,
     fontWeight: '700' as const,
-    color: COLORS.black,
     marginBottom: 8,
     textAlign: 'center',
   },
   lastUpdate: {
     fontSize: 12,
-    color: COLORS.darkGray,
     fontStyle: 'italic' as const,
   },
   section: {
@@ -275,13 +274,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700' as const,
-    color: COLORS.black,
     marginBottom: 12,
     lineHeight: 24,
   },
   paragraph: {
     fontSize: 15,
-    color: COLORS.black,
     lineHeight: 22,
     marginBottom: 12,
     textAlign: 'left',
@@ -289,7 +286,6 @@ const styles = StyleSheet.create({
   bulletText: {
     fontSize: 15,
     lineHeight: 22,
-    color: COLORS.black,
     marginLeft: 16,
     marginBottom: 8,
   },
