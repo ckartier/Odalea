@@ -22,6 +22,7 @@ import PhotoUploader from '@/components/PhotoUploader';
 import GenderSelector from '@/components/GenderSelector';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { useI18n } from '@/hooks/i18n-store';
+import { StorageService } from '@/services/storage';
 import { 
   ArrowLeft, 
   Mail, 
@@ -425,6 +426,8 @@ export default function SignUpScreen() {
           return;
         }
       }
+      
+      console.log('🔄 Starting signup process...');
       const result = await signUp({
         email: email.trim(),
         password: password,
@@ -435,6 +438,41 @@ export default function SignUpScreen() {
       });
       
       if (result.success) {
+        console.log('✅ User created in Firebase Auth:', result.user.uid);
+        
+        // Upload profile photo if exists
+        let uploadedProfilePhotoUrl: string | undefined = undefined;
+        if (profilePhoto) {
+          try {
+            console.log('📤 Uploading profile photo...');
+            uploadedProfilePhotoUrl = await StorageService.uploadProfilePicture(
+              result.user.uid,
+              profilePhoto
+            );
+            console.log('✅ Profile photo uploaded:', uploadedProfilePhotoUrl);
+          } catch (uploadError) {
+            console.error('❌ Failed to upload profile photo:', uploadError);
+          }
+        }
+        
+        // Upload animal photo if exists
+        let uploadedAnimalPhotoUrl: string | undefined = undefined;
+        if (!isProfessional && animalPhoto) {
+          try {
+            console.log('📤 Uploading animal photo...');
+            const tempPetId = `pet-${Date.now()}`;
+            uploadedAnimalPhotoUrl = await StorageService.uploadPetPhoto(
+              result.user.uid,
+              tempPetId,
+              animalPhoto
+            );
+            console.log('✅ Animal photo uploaded:', uploadedAnimalPhotoUrl);
+          } catch (uploadError) {
+            console.error('❌ Failed to upload animal photo:', uploadError);
+          }
+        }
+        
+        console.log('💾 Saving user data to Firestore...');
         await updateUser({
           pseudo: pseudo.trim(),
           pseudoLower: pseudo.trim().toLowerCase(),
@@ -451,7 +489,7 @@ export default function SignUpScreen() {
           isCatSitter,
           catSitterRadiusKm: isCatSitter ? catSitterRadiusKm : undefined,
           referralCode: referralCode.trim() || undefined,
-          photo: profilePhoto || undefined,
+          photo: uploadedProfilePhotoUrl || undefined,
           isProfessional,
           professionalData: isProfessional ? {
             companyName,
@@ -479,8 +517,9 @@ export default function SignUpScreen() {
           animalType: isProfessional ? undefined : animalType,
           animalName: isProfessional ? undefined : animalName,
           animalGender: isProfessional ? undefined : animalGender,
-          animalPhoto: isProfessional ? undefined : (animalPhoto || undefined),
+          animalPhoto: isProfessional ? undefined : (uploadedAnimalPhotoUrl || undefined),
         });
+        console.log('✅ User data saved to Firestore');
 
         // Create cat-sitter profile if needed
         if (isCatSitter && !isProfessional) {
@@ -541,7 +580,8 @@ export default function SignUpScreen() {
               else if (cityLower.includes('marseille')) coords = { latitude: 43.2965, longitude: 5.3698 };
             }
 
-            const petPhoto = animalPhoto || profilePhoto || 'https://images.unsplash.com/photo-1555685812-4b943f1cb0eb?q=80&w=800&auto=format&fit=crop';
+            console.log('🐾 Creating pet profile...');
+            const petPhoto = uploadedAnimalPhotoUrl || uploadedProfilePhotoUrl || 'https://images.unsplash.com/photo-1555685812-4b943f1cb0eb?q=80&w=800&auto=format&fit=crop';
             const petData = {
               name: animalName.trim() || 'Mon Animal',
               type: animalType || 'chat',
@@ -561,7 +601,7 @@ export default function SignUpScreen() {
               location: coords ?? undefined,
             } as const;
             const addRes = await addPet(petData as any);
-            console.log('Signup pet add result', addRes);
+            console.log('✅ Pet profile created:', addRes);
           } catch (petErr) {
             console.log('Unable to add pet at signup', petErr);
           }
