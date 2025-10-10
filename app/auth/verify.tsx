@@ -204,10 +204,7 @@ export default function VerifyScreen() {
   
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#E0F2FE', '#BAE6FD', '#7DD3FC']}
-        style={StyleSheet.absoluteFill}
-      />
+      <View style={StyleSheet.absoluteFill} />
       <StatusBar style="dark" />
       
       <TouchableOpacity style={styles.backButton} onPress={handleBack}>
@@ -319,6 +316,7 @@ export default function VerifyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.white,
   },
   backButton: {
     position: 'absolute',

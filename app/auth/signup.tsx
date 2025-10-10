@@ -1307,10 +1307,7 @@ export default function SignUpScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#E0F2FE', '#BAE6FD', '#7DD3FC']}
-        style={StyleSheet.absoluteFill}
-      />
+      <View style={StyleSheet.absoluteFill} />
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -1343,6 +1340,7 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.white,
   },
   keyboardView: {
     flex: 1,
@@ -1361,7 +1359,7 @@ const styles = StyleSheet.create({
   },
   stepText: {
     fontSize: 14,
-    color: COLORS.white,
+    color: COLORS.black,
     marginBottom: 8,
     marginTop: 40,
   },
@@ -1373,7 +1371,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: COLORS.white,
+    color: COLORS.darkGray,
     marginBottom: 32,
   },
   formContainer: {
@@ -1539,7 +1537,7 @@ const styles = StyleSheet.create({
   footerLink: {
     fontSize: 14,
     fontWeight: '600' as const,
-    color: COLORS.white,
+    color: COLORS.black,
   },
   professionalSection: {
     marginBottom: 16,
@@ -1627,7 +1625,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   linkText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontWeight: '600' as const,
     textDecorationLine: 'underline' as const,
   },

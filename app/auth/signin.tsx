@@ -24,7 +24,7 @@ import ResponsiveModal from '@/components/ResponsiveModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { emailService } from '@/services/email';
 import GlassView from '@/components/GlassView';
-import { LinearGradient } from 'expo-linear-gradient';
+
 
 import { RESPONSIVE_SPACING, RESPONSIVE_FONT_SIZES, IS_SMALL_DEVICE, RESPONSIVE_LAYOUT, RESPONSIVE_COMPONENT_SIZES } from '@/constants/responsive';
 
@@ -211,10 +211,7 @@ function SignInScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#E0F2FE', '#BAE6FD', '#7DD3FC']}
-        style={StyleSheet.absoluteFill}
-      />
+      <View style={StyleSheet.absoluteFill} />
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -449,6 +446,7 @@ function SignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.white,
   },
   keyboardView: {
     flex: 1,
@@ -487,7 +485,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: COLORS.black,
+    color: COLORS.darkGray,
     textAlign: 'center',
     marginBottom: IS_SMALL_DEVICE ? 20 : 28,
     lineHeight: 20,
