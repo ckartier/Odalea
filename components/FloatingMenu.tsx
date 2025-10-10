@@ -178,16 +178,14 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
   const insets = useSafeAreaInsets();
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
-  const slideAnim = useRef(new Animated.Value(MENU_WIDTH)).current;
+  const slideAnim = useRef(new Animated.Value(500)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
   // Initialize animation values to closed state
   useEffect(() => {
     if (!isOpen) {
-      slideAnim.setValue(MENU_WIDTH);
+      slideAnim.setValue(500);
       fadeAnim.setValue(0);
-      scaleAnim.setValue(0.8);
     }
   }, []);
 
@@ -200,37 +198,31 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
       setInternalIsOpen(true);
     }
     if (Platform.OS === 'web') {
-      // Web fallback without animations
       slideAnim.setValue(0);
       fadeAnim.setValue(1);
-      scaleAnim.setValue(1);
     } else {
       Animated.parallel([
-        Animated.timing(slideAnim, {
+        Animated.spring(slideAnim, {
           toValue: 0,
-          duration: ANIMATION_CONFIG.duration,
-          ...ANIMATION_CONFIG.timingConfig,
+          tension: 40,
+          friction: 8,
+          useNativeDriver: false,
         }),
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: ANIMATION_CONFIG.duration,
-          ...ANIMATION_CONFIG.timingConfig,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          ...ANIMATION_CONFIG.springConfig,
+          duration: 300,
+          useNativeDriver: false,
         }),
       ]).start();
     }
-  }, [externalIsOpen, slideAnim, fadeAnim, scaleAnim]);
+  }, [externalIsOpen, slideAnim, fadeAnim]);
 
   const closeMenu = useCallback(() => {
     console.log('FloatingMenu: closeMenu called', { externalIsOpen, onToggle: !!onToggle });
     
     if (Platform.OS === 'web') {
-      slideAnim.setValue(MENU_WIDTH);
+      slideAnim.setValue(500);
       fadeAnim.setValue(0);
-      scaleAnim.setValue(0.8);
       if (onToggle) {
         onToggle();
       } else {
@@ -239,19 +231,14 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
     } else {
       Animated.parallel([
         Animated.timing(slideAnim, {
-          toValue: MENU_WIDTH,
-          duration: ANIMATION_CONFIG.closeDuration,
-          ...ANIMATION_CONFIG.timingConfig,
+          toValue: 500,
+          duration: 250,
+          useNativeDriver: false,
         }),
         Animated.timing(fadeAnim, {
           toValue: 0,
-          duration: ANIMATION_CONFIG.closeDuration,
-          ...ANIMATION_CONFIG.timingConfig,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 0.8,
-          duration: ANIMATION_CONFIG.closeDuration,
-          ...ANIMATION_CONFIG.timingConfig,
+          duration: 250,
+          useNativeDriver: false,
         }),
       ]).start(() => {
         if (onToggle) {
@@ -261,7 +248,7 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
         }
       });
     }
-  }, [onToggle, slideAnim, fadeAnim, scaleAnim]);
+  }, [onToggle, slideAnim, fadeAnim]);
 
   // Memoize calculations to prevent unnecessary re-computations
   const totalUnreadMessages = useMemo(() => {
@@ -337,33 +324,26 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
       if (externalIsOpen) {
         openMenu();
       } else {
-        // When externally controlled and should close, just animate without calling onToggle
         if (Platform.OS === 'web') {
-          slideAnim.setValue(MENU_WIDTH);
+          slideAnim.setValue(500);
           fadeAnim.setValue(0);
-          scaleAnim.setValue(0.8);
         } else {
           Animated.parallel([
             Animated.timing(slideAnim, {
-              toValue: MENU_WIDTH,
-              duration: ANIMATION_CONFIG.closeDuration,
-              ...ANIMATION_CONFIG.timingConfig,
+              toValue: 500,
+              duration: 250,
+              useNativeDriver: false,
             }),
             Animated.timing(fadeAnim, {
               toValue: 0,
-              duration: ANIMATION_CONFIG.closeDuration,
-              ...ANIMATION_CONFIG.timingConfig,
-            }),
-            Animated.timing(scaleAnim, {
-              toValue: 0.8,
-              duration: ANIMATION_CONFIG.closeDuration,
-              ...ANIMATION_CONFIG.timingConfig,
+              duration: 250,
+              useNativeDriver: false,
             }),
           ]).start();
         }
       }
     }
-  }, [externalIsOpen, openMenu, slideAnim, fadeAnim, scaleAnim]);
+  }, [externalIsOpen, openMenu, slideAnim, fadeAnim]);
 
   // Prevent rendering during navigation transitions or when user is not authenticated
   if (!pathname) {
@@ -399,10 +379,9 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
         style={[
           styles.menu,
           {
-            top: insets.top + 70,
+            bottom: 0,
             transform: [
-              { translateX: slideAnim },
-              { scale: scaleAnim },
+              { translateY: slideAnim },
             ],
           },
         ]}
@@ -431,54 +410,43 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
               activeOpacity={0.7}
             >
               <LinearGradient
-                colors={["#a3e5fa", "#f7b6d6"]}
+                colors={isActiveRoute(item.route) ? ["#a3e5fa", "#f7b6d6"] : ["#f5f5f5", "#e8e8e8"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={[
-                  styles.menuItemIconGradient,
-                  isActiveRoute(item.route) && styles.menuItemIconGradientActive,
-                ]}
+                style={styles.menuItemButton}
               >
-                <View
+                <Text
                   style={[
-                    styles.menuItemIcon,
-                    isActiveRoute(item.route) && styles.menuItemIconActive,
+                    styles.menuItemText,
+                    isActiveRoute(item.route) && styles.menuItemTextActive,
                   ]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
                 >
-                  {renderIcon(item.iconName, item)}
-                  {item.id === 'messages' && totalUnreadMessages > 0 && (
-                    <View style={styles.notificationBadge}>
-                      <Text style={styles.notificationText}>
-                        {totalUnreadMessages > 99 ? '99+' : totalUnreadMessages}
-                      </Text>
-                    </View>
-                  )}
-                  {item.id === 'challenges' && pendingChallengesCount > 0 && (
-                    <View style={styles.notificationBadge}>
-                      <Text style={styles.notificationText}>
-                        {pendingChallengesCount > 99 ? '99+' : pendingChallengesCount}
-                      </Text>
-                    </View>
-                  )}
-                  {item.id === 'community' && newCommunityActivity > 0 && (
-                    <View style={styles.notificationBadge}>
-                      <Text style={styles.notificationText}>
-                        {newCommunityActivity > 99 ? '99+' : newCommunityActivity}
-                      </Text>
-                    </View>
-                  )}
-                </View>
+                  {item.isSpecial ? item.titleKey : t(item.titleKey)}
+                </Text>
+                {item.id === 'messages' && totalUnreadMessages > 0 && (
+                  <View style={styles.notificationBadge}>
+                    <Text style={styles.notificationText}>
+                      {totalUnreadMessages > 99 ? '99+' : totalUnreadMessages}
+                    </Text>
+                  </View>
+                )}
+                {item.id === 'challenges' && pendingChallengesCount > 0 && (
+                  <View style={styles.notificationBadge}>
+                    <Text style={styles.notificationText}>
+                      {pendingChallengesCount > 99 ? '99+' : pendingChallengesCount}
+                    </Text>
+                  </View>
+                )}
+                {item.id === 'community' && newCommunityActivity > 0 && (
+                  <View style={styles.notificationBadge}>
+                    <Text style={styles.notificationText}>
+                      {newCommunityActivity > 99 ? '99+' : newCommunityActivity}
+                    </Text>
+                  </View>
+                )}
               </LinearGradient>
-              <Text
-                style={[
-                  styles.menuItemText,
-                  isActiveRoute(item.route) && styles.menuItemTextActive,
-                ]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {item.isSpecial ? item.titleKey : t(item.titleKey)}
-              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -513,29 +481,31 @@ const styles = StyleSheet.create({
   },
   menu: {
     position: 'absolute',
-    right: DIMENSIONS.SPACING.md,
-    left: DIMENSIONS.SPACING.md,
-    maxHeight: '80%',
+    left: 0,
+    right: 0,
+    maxHeight: '70%',
     backgroundColor: COLORS.white,
-    borderRadius: DIMENSIONS.SPACING.lg,
+    borderTopLeftRadius: DIMENSIONS.SPACING.xl,
+    borderTopRightRadius: DIMENSIONS.SPACING.xl,
     zIndex: 1001,
+    paddingBottom: DIMENSIONS.SPACING.xl,
     ...Platform.select({
       ios: {
         shadowColor: COLORS.shadow,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
         elevation: 0,
       },
       android: {
         shadowColor: COLORS.shadow,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-        elevation: 6,
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
+        elevation: 8,
       },
       web: {
-        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
+        boxShadow: '0 -4px 32px rgba(0, 0, 0, 0.12)',
       },
     }),
   },
@@ -563,49 +533,29 @@ const styles = StyleSheet.create({
     paddingVertical: DIMENSIONS.SPACING.sm,
   },
   menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: DIMENSIONS.SPACING.md,
-    paddingVertical: DIMENSIONS.SPACING.sm,
-    marginHorizontal: DIMENSIONS.SPACING.sm,
-    marginVertical: 1,
-    borderRadius: DIMENSIONS.SPACING.md,
-    minHeight: DIMENSIONS.COMPONENT_SIZES.BUTTON_HEIGHT,
-    backgroundColor: 'transparent',
+    paddingHorizontal: DIMENSIONS.SPACING.lg,
+    paddingVertical: DIMENSIONS.SPACING.xs,
   },
   menuItemActive: {
-    backgroundColor: 'rgba(125, 212, 238, 0.1)',
   },
-  menuItemIconGradient: {
-    width: DIMENSIONS.COMPONENT_SIZES.AVATAR_MEDIUM,
-    height: DIMENSIONS.COMPONENT_SIZES.AVATAR_MEDIUM,
-    borderRadius: DIMENSIONS.COMPONENT_SIZES.AVATAR_MEDIUM / 2,
-    padding: 2,
-    marginRight: DIMENSIONS.SPACING.sm,
-  },
-  menuItemIconGradientActive: {
-    opacity: 1,
-  },
-  menuItemIcon: {
-    flex: 1,
+  menuItemButton: {
+    paddingVertical: DIMENSIONS.SPACING.md,
+    paddingHorizontal: DIMENSIONS.SPACING.lg,
+    borderRadius: DIMENSIONS.SPACING.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: DIMENSIONS.COMPONENT_SIZES.AVATAR_MEDIUM / 2,
     position: 'relative',
-  },
-  menuItemIconActive: {
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    minHeight: 56,
   },
   menuItemText: {
-    flex: 1,
-    fontSize: DIMENSIONS.FONT_SIZES.md,
-    fontWeight: '500' as const,
+    fontSize: DIMENSIONS.FONT_SIZES.lg,
+    fontWeight: '600' as const,
     color: COLORS.black,
+    textAlign: 'center' as const,
   },
   menuItemTextActive: {
-    color: COLORS.primary,
-    fontWeight: '600' as const,
+    color: COLORS.white,
+    fontWeight: '700' as const,
   },
 
   menuFooter: {
@@ -621,12 +571,12 @@ const styles = StyleSheet.create({
   },
   notificationBadge: {
     position: 'absolute',
-    top: -DIMENSIONS.SPACING.xs,
-    right: -DIMENSIONS.SPACING.xs,
+    top: DIMENSIONS.SPACING.sm,
+    right: DIMENSIONS.SPACING.lg,
     backgroundColor: COLORS.error,
-    borderRadius: DIMENSIONS.SPACING.sm + 2,
-    minWidth: DIMENSIONS.SPACING.lg,
-    height: DIMENSIONS.SPACING.lg,
+    borderRadius: DIMENSIONS.SPACING.md,
+    minWidth: DIMENSIONS.SPACING.lg + 4,
+    height: DIMENSIONS.SPACING.lg + 4,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,

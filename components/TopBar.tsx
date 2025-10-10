@@ -63,51 +63,28 @@ const TopBar = React.memo(({ rightAction, onMenuPress }: TopBarProps) => {
       activeOpacity={0.85}
     >
       {primaryPet?.mainPhoto || user?.photo ? (
-        <LinearGradient
-          colors={["#a3e5fa", "#f7b6d6"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.avatarGradient}
-        >
-          <View style={styles.avatarWrap}>
-            <RNImage
-              source={{ uri: (primaryPet?.mainPhoto ?? user?.photo) as string }}
-              style={styles.avatarImage}
-            />
-          </View>
-        </LinearGradient>
+        <RNImage
+          source={{ uri: (primaryPet?.mainPhoto ?? user?.photo) as string }}
+          style={styles.avatarImage}
+        />
       ) : (
-        <LinearGradient
-          colors={["#a3e5fa", "#f7b6d6"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.avatarGradient}
-        >
-          <View style={styles.avatarFallback}>
-            <Text style={styles.avatarInitials}>{primaryPet?.name ? primaryPet.name.charAt(0).toUpperCase() : '🐾'}</Text>
-          </View>
-        </LinearGradient>
+        <View style={styles.avatarFallback}>
+          <Text style={styles.avatarInitials}>{primaryPet?.name ? primaryPet.name.charAt(0).toUpperCase() : '🐾'}</Text>
+        </View>
       )}
     </TouchableOpacity>
   );
 
   const Right = (
-    <LinearGradient
-      colors={["#a3e5fa", "#f7b6d6"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.menuButtonGradient}
+    <TouchableOpacity
+      onPress={onMenuPress}
+      style={styles.menuButton}
+      accessibilityLabel="Open menu"
+      testID="topbar-menu"
+      activeOpacity={0.8}
     >
-      <TouchableOpacity
-        onPress={onMenuPress}
-        style={styles.menuButton}
-        accessibilityLabel="Open menu"
-        testID="topbar-menu"
-        activeOpacity={0.8}
-      >
-        <Menu size={24} color={COLORS.black} />
-      </TouchableOpacity>
-    </LinearGradient>
+      <Menu size={24} color={COLORS.black} />
+    </TouchableOpacity>
   );
 
   const userLabel = useMemo(() => user?.pseudo || user?.name || '', [user?.pseudo, user?.name]);
@@ -118,12 +95,7 @@ const TopBar = React.memo(({ rightAction, onMenuPress }: TopBarProps) => {
 
   return (
     <View style={[containerStyle, styles.transparentBg]} testID="topbar">
-      <LinearGradient
-        colors={["#ffffffaa", "#ffffff66"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255, 255, 255, 0.7)' }]} />
       <View style={styles.headerWrap}>
         <View style={styles.content}>
           {renderAvatar()}
@@ -173,32 +145,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'transparent',
   },
-  avatarGradient: {
+  avatarImage: {
     width: 88,
     height: 88,
     borderRadius: 44,
-    padding: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarWrap: {
-    width: 82,
-    height: 82,
-    borderRadius: 41,
-    backgroundColor: 'rgba(255,255,255,0.6)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(0,0,0,0.08)',
-    overflow: 'hidden',
-  },
-  avatarImage: {
-    width: 82,
-    height: 82,
-    borderRadius: 41,
   },
   avatarFallback: {
-    width: 82,
-    height: 82,
-    borderRadius: 41,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.06)',
@@ -224,21 +179,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  menuButtonGradient: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    padding: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   menuButton: {
     width: 40,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 20,
-    backgroundColor: COLORS.white,
   },
   hairline: {
     position: 'absolute',
