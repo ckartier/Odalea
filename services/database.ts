@@ -1712,6 +1712,25 @@ export const challengeService = {
     }
   },
 
+  // Create a new challenge
+  async createChallenge(challenge: any): Promise<string> {
+    try {
+      const challengesRef = collection(db, COLLECTIONS.CHALLENGES);
+      const docRef = await addDoc(challengesRef, {
+        ...challenge,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        participants: 0,
+        completions: 0,
+      });
+      console.log('✅ Challenge created successfully');
+      return docRef.id;
+    } catch (error) {
+      console.error('❌ Error creating challenge:', error);
+      throw error;
+    }
+  },
+
   // Submit challenge entry
   async submitChallenge(submission: any): Promise<string> {
     try {

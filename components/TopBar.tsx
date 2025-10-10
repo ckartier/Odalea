@@ -54,26 +54,34 @@ const TopBar = React.memo(({ rightAction, onMenuPress }: TopBarProps) => {
     router.push('/(tabs)/profile' as any);
   }, [router]);
 
-  const renderAvatar = () => (
-    <TouchableOpacity
-      onPress={goProfile}
-      style={styles.avatarButton}
-      accessibilityLabel="Ouvrir le profil"
-      testID="topbar-avatar"
-      activeOpacity={0.85}
-    >
-      {primaryPet?.mainPhoto || user?.photo ? (
-        <RNImage
-          source={{ uri: (primaryPet?.mainPhoto ?? user?.photo) as string }}
-          style={styles.avatarImage}
-        />
-      ) : (
-        <View style={styles.avatarFallback}>
-          <Text style={styles.avatarInitials}>{primaryPet?.name ? primaryPet.name.charAt(0).toUpperCase() : '🐾'}</Text>
-        </View>
-      )}
-    </TouchableOpacity>
-  );
+  const renderAvatar = () => {
+    const photoUri = primaryPet?.mainPhoto || user?.photo || user?.animalPhoto;
+    const displayName = primaryPet?.name || user?.animalName || user?.pseudo || user?.name || '';
+    
+    return (
+      <TouchableOpacity
+        onPress={goProfile}
+        style={styles.avatarButton}
+        accessibilityLabel="Ouvrir le profil"
+        testID="topbar-avatar"
+        activeOpacity={0.85}
+      >
+        {photoUri ? (
+          <RNImage
+            source={{ uri: photoUri }}
+            style={styles.avatarImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.avatarFallback}>
+            <Text style={styles.avatarInitials}>
+              {displayName ? displayName.charAt(0).toUpperCase() : '🐾'}
+            </Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   const Right = (
     <TouchableOpacity

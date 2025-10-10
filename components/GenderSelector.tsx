@@ -19,7 +19,8 @@ interface GenderSelectorProps {
   style?: ViewStyle;
 }
 
-const GRADIENT_COLORS = ['#F6C1DE', '#C9D3FF'] as const;
+const MALE_GRADIENT_COLORS = ['#A3D5FF', '#6BA3D8'] as const;
+const FEMALE_GRADIENT_COLORS = ['#FFB6D9', '#FF8DC7'] as const;
 const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
 
@@ -52,7 +53,7 @@ const GenderSelector: React.FC<GenderSelectorProps> = ({
           {value === 'male' && (
             <>
               <LinearGradient
-                colors={[...GRADIENT_COLORS]}
+                colors={[...MALE_GRADIENT_COLORS]}
                 start={GRADIENT_START}
                 end={GRADIENT_END}
                 style={styles.gradientBg}
@@ -92,7 +93,7 @@ const GenderSelector: React.FC<GenderSelectorProps> = ({
           {value === 'female' && (
             <>
               <LinearGradient
-                colors={[...GRADIENT_COLORS]}
+                colors={[...FEMALE_GRADIENT_COLORS]}
                 start={GRADIENT_START}
                 end={GRADIENT_END}
                 style={styles.gradientBg}

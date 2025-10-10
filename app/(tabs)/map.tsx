@@ -189,13 +189,12 @@ export default function MapScreen() {
     }
   }, [user, userLocation]);
 
-  const handleMarkerPress = (pet: Pet & { owner?: User }) => {
-    if (selectedPet?.id !== pet.id) {
-      setSelectedPet(pet);
-      setSelectedUser(pet.owner || null);
-    }
+  const handleMarkerPress = useCallback((pet: Pet & { owner?: User }) => {
+    console.log('Marker pressed:', pet.id, pet.name);
+    setSelectedPet(pet);
+    setSelectedUser(pet.owner || null);
     incrementActionCount();
-  };
+  }, [incrementActionCount]);
 
   const handleRegionChange = useCallback((r: Region) => {
     setRegion(r);
