@@ -34,7 +34,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { t, currentLocale, changeLanguage } = useI18n();
   const { user, signOut } = useAuth();
-  const { currentTheme, updateTheme, primaryPetGender } = useTheme();
+  const { currentTheme, mode, setThemeMode, isDark } = useTheme();
 
   const handleLanguageChange = () => {
     Alert.alert(
@@ -50,6 +50,30 @@ export default function SettingsScreen() {
           text: 'English',
           onPress: () => changeLanguage('en'),
           style: currentLocale === 'en' ? 'default' : 'cancel',
+        },
+      ]
+    );
+  };
+
+  const handleThemeChange = () => {
+    Alert.alert(
+      'Thème',
+      'Choisissez le thème de l\'application',
+      [
+        {
+          text: 'Clair',
+          onPress: () => setThemeMode('light'),
+          style: mode === 'light' ? 'default' : 'cancel',
+        },
+        {
+          text: 'Sombre',
+          onPress: () => setThemeMode('dark'),
+          style: mode === 'dark' ? 'default' : 'cancel',
+        },
+        {
+          text: 'Système',
+          onPress: () => setThemeMode('system'),
+          style: mode === 'system' ? 'default' : 'cancel',
         },
       ]
     );
@@ -95,51 +119,51 @@ export default function SettingsScreen() {
     {
       id: 'notifications',
       title: t('settings.notifications'),
-      icon: <Bell size={24} color={COLORS.primary} />,
+      icon: <Bell size={24} color={currentTheme.text} />,
       onPress: () => router.push('/settings/notifications'),
     },
     {
       id: 'language',
       title: t('settings.language'),
-      icon: <Globe size={24} color={COLORS.primary} />,
+      icon: <Globe size={24} color={currentTheme.text} />,
       subtitle: currentLocale === 'fr' ? 'Français' : 'English',
       onPress: handleLanguageChange,
     },
     {
       id: 'theme',
       title: t('settings.theme'),
-      icon: primaryPetGender === 'male' ? <Sun size={24} color={COLORS.primary} /> : primaryPetGender === 'female' ? <Moon size={24} color={COLORS.primary} /> : <SettingsIcon size={24} color={COLORS.primary} />,
-      subtitle: primaryPetGender === 'male' ? 'Thème Masculin' : primaryPetGender === 'female' ? 'Thème Féminin' : 'Thème Neutre',
-      onPress: updateTheme,
+      icon: isDark ? <Moon size={24} color={currentTheme.text} /> : <Sun size={24} color={currentTheme.text} />,
+      subtitle: mode === 'light' ? 'Clair' : mode === 'dark' ? 'Sombre' : 'Système',
+      onPress: handleThemeChange,
     },
     {
       id: 'privacy',
       title: t('settings.privacy'),
-      icon: <Shield size={24} color={COLORS.primary} />,
+      icon: <Shield size={24} color={currentTheme.text} />,
       onPress: () => router.push('/settings/privacy'),
     },
     {
       id: 'blocked-users',
       title: 'Utilisateurs bloqués',
-      icon: <Shield size={24} color={COLORS.primary} />,
+      icon: <Shield size={24} color={currentTheme.text} />,
       onPress: () => router.push('/settings/blocked-users'),
     },
     {
       id: 'help',
       title: t('settings.help'),
-      icon: <HelpCircle size={24} color={COLORS.primary} />,
+      icon: <HelpCircle size={24} color={currentTheme.text} />,
       onPress: () => router.push('/settings/help'),
     },
     {
       id: 'faq',
       title: 'Questions fréquentes',
-      icon: <HelpCircle size={24} color={COLORS.primary} />,
+      icon: <HelpCircle size={24} color={currentTheme.text} />,
       onPress: () => router.push('/settings/faq'),
     },
     {
       id: 'support',
       title: t('settings.contact_support'),
-      icon: <MessageSquare size={24} color={COLORS.primary} />,
+      icon: <MessageSquare size={24} color={currentTheme.text} />,
       onPress: () => {
         const subject = 'Support Coppet - Demande d\'aide';
         const body = `Bonjour,\n\nJ'ai besoin d'aide concernant :\n\n[Décrivez votre problème ici]\n\nInformations du compte :\n- Email : ${user?.email}\n- Version de l'app : 1.0.0\n\nMerci pour votre aide.`;
@@ -157,19 +181,19 @@ export default function SettingsScreen() {
     {
       id: 'terms',
       title: 'Conditions d\'utilisation',
-      icon: <FileText size={24} color={COLORS.primary} />,
+      icon: <FileText size={24} color={currentTheme.text} />,
       onPress: () => router.push('/legal/terms'),
     },
     {
       id: 'privacy-policy',
       title: 'Politique de confidentialité',
-      icon: <FileText size={24} color={COLORS.primary} />,
+      icon: <FileText size={24} color={currentTheme.text} />,
       onPress: () => router.push('/legal/privacy'),
     },
     {
       id: 'rgpd',
       title: 'RGPD',
-      icon: <Shield size={24} color={COLORS.primary} />,
+      icon: <Shield size={24} color={currentTheme.text} />,
       onPress: () => router.push('/settings/rgpd'),
     },
   ];
@@ -194,54 +218,54 @@ export default function SettingsScreen() {
   const renderSettingItem = (item: any) => (
     <TouchableOpacity
       key={item.id}
-      style={[styles.settingItem, SHADOWS.small]}
+      style={[styles.settingItem, SHADOWS.small, { backgroundColor: currentTheme.card }]}
       onPress={item.onPress}
       activeOpacity={0.7}
     >
-      <View style={styles.settingIcon}>
+      <View style={[styles.settingIcon, { backgroundColor: currentTheme.background }]}>
         {item.icon}
       </View>
       <View style={styles.settingContent}>
-        <Text style={[styles.settingTitle, { color: item.textColor || COLORS.black }]}>
+        <Text style={[styles.settingTitle, { color: item.textColor || currentTheme.text }]}>
           {item.title}
         </Text>
         {item.subtitle && (
-          <Text style={styles.settingSubtitle}>{item.subtitle}</Text>
+          <Text style={[styles.settingSubtitle, { color: currentTheme.text }]}>{item.subtitle}</Text>
         )}
       </View>
-      <ChevronRight size={20} color={COLORS.darkGray} />
+      <ChevronRight size={20} color={currentTheme.text} />
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
       <Stack.Screen
         options={{
           title: t('settings.settings'),
-          headerStyle: { backgroundColor: COLORS.white },
-          headerTintColor: COLORS.black,
+          headerStyle: { backgroundColor: currentTheme.card },
+          headerTintColor: currentTheme.text,
         }}
       />
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <FirebaseTest testId="firebase-connection-test" />
         
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Général</Text>
+          <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>Général</Text>
           {settingsItems.map(renderSettingItem)}
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Compte</Text>
+          <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>Compte</Text>
           {dangerousItems.map(renderSettingItem)}
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
+          <Text style={[styles.footerText, { color: currentTheme.text }]}>
             Coppet v1.0.0
           </Text>
-          <Text style={styles.footerText}>
+          <Text style={[styles.footerText, { color: currentTheme.text }]}>
             © 2024 Coppet. Tous droits réservés.
           </Text>
         </View>
@@ -253,7 +277,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.screenBackground,
   },
   content: {
     flex: 1,
@@ -265,14 +288,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700' as const,
-    color: COLORS.black,
     marginBottom: 16,
     paddingHorizontal: 4,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
@@ -281,7 +302,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.lightGray,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -292,12 +312,10 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 16,
     fontWeight: '600' as const,
-    color: COLORS.black,
     marginBottom: 2,
   },
   settingSubtitle: {
     fontSize: 14,
-    color: COLORS.darkGray,
   },
   footer: {
     alignItems: 'center',
@@ -306,7 +324,6 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 12,
-    color: COLORS.darkGray,
     textAlign: 'center',
     marginBottom: 4,
   },

@@ -2,6 +2,7 @@ import React, { ReactNode } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '@/constants/colors';
+import { useTheme } from '@/hooks/theme-store';
 
 interface AppBackgroundProps {
   children: ReactNode;
@@ -9,7 +10,13 @@ interface AppBackgroundProps {
 }
 
 export default function AppBackground({ children, variant = 'default' }: AppBackgroundProps) {
+  const { currentTheme, isDark } = useTheme();
+  
   const getGradientColors = (): [string, string] => {
+    if (isDark) {
+      return [currentTheme.background, currentTheme.card];
+    }
+    
     switch (variant) {
       case 'male':
         return [COLORS.male, COLORS.maleAccent];
