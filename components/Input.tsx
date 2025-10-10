@@ -77,13 +77,9 @@ const Input: React.FC<InputProps> = ({
           inputStyle,
         ]}
       >
-        {leftIcon && <View style={styles.iconContainer}>{leftIcon as React.ReactNode}</View>}
-        
         <TextInput
           style={[
             styles.input,
-            leftIcon ? { paddingLeft: 8 } : null,
-            (rightIcon || isPassword) ? { paddingRight: 8 } : null,
             inputTextStyle,
           ]}
           placeholderTextColor={COLORS.darkGray}
@@ -91,7 +87,7 @@ const Input: React.FC<InputProps> = ({
           {...props}
         />
         
-        {(rightIcon || isPassword) && (
+        {isPassword && (
           <View style={styles.iconContainer}>
             {renderPasswordIcon()}
           </View>

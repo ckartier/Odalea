@@ -609,7 +609,6 @@ export default function SignUpScreen() {
           value={firstName}
           onChangeText={setFirstName}
           error={errors.firstName}
-          leftIcon={<User size={20} color={COLORS.darkGray} />}
         />
         
         <Input
@@ -618,7 +617,6 @@ export default function SignUpScreen() {
           value={lastName}
           onChangeText={setLastName}
           error={errors.lastName}
-          leftIcon={<User size={20} color={COLORS.darkGray} />}
         />
         
         <Input
@@ -633,7 +631,6 @@ export default function SignUpScreen() {
             }
           }}
           error={errors.pseudo}
-          leftIcon={<User size={20} color={COLORS.darkGray} />}
           testID="pseudo-input"
         />
         {checkingPseudo && !errors.pseudo && (
@@ -668,7 +665,6 @@ export default function SignUpScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           error={errors.email}
-          leftIcon={<Mail size={20} color={COLORS.darkGray} />}
         />
         {checkingEmail && !errors.email && (
           <View style={styles.pseudoStatus}>
@@ -781,7 +777,6 @@ export default function SignUpScreen() {
                 keyboardType="phone-pad"
                 error={errors.phoneNumber}
                 containerStyle={styles.phoneInput}
-                leftIcon={<Phone size={20} color={COLORS.darkGray} />}
                 hideLabel
               />
             </View>
@@ -796,7 +791,6 @@ export default function SignUpScreen() {
             setAddress(v);
           }}
           error={errors.address}
-          leftIcon={<MapPin size={20} color={COLORS.darkGray} />}
           testID="address-input"
         />
         
@@ -817,7 +811,6 @@ export default function SignUpScreen() {
             }}
             error={errors.zipCode}
             containerStyle={styles.zipInput}
-            leftIcon={<Hash size={20} color={COLORS.darkGray} />}
             testID="zip-input"
           />
           
@@ -831,7 +824,6 @@ export default function SignUpScreen() {
             }}
             error={errors.city}
             containerStyle={styles.cityInput}
-            leftIcon={<Building2 size={20} color={COLORS.darkGray} />}
             testID="city-input"
           />
         </View>
@@ -951,7 +943,6 @@ export default function SignUpScreen() {
               value={animalName}
               onChangeText={setAnimalName}
               error={errors.animalName}
-              leftIcon={<Heart size={20} color={COLORS.darkGray} />}
             />
             
             <DropdownSelector
@@ -1017,7 +1008,6 @@ export default function SignUpScreen() {
               onChangeText={setAnimalSpecialSign}
               multiline
               numberOfLines={2}
-              leftIcon={<Info size={20} color={COLORS.darkGray} />}
             />
 
             <View style={styles.photoSection}>
@@ -1053,7 +1043,6 @@ export default function SignUpScreen() {
           placeholder={t('auth.enter_referral_code')}
           value={referralCode}
           onChangeText={setReferralCode}
-          leftIcon={<Gift size={20} color={COLORS.darkGray} />}
         />
 
         {isCatSitter && (
@@ -1112,7 +1101,6 @@ export default function SignUpScreen() {
           value={companyName}
           onChangeText={setCompanyName}
           error={errors.companyName}
-          leftIcon={<Building2 size={20} color={COLORS.darkGray} />}
         />
         
         <Input
@@ -1121,7 +1109,6 @@ export default function SignUpScreen() {
           value={siret}
           onChangeText={setSiret}
           error={errors.siret}
-          leftIcon={<Hash size={20} color={COLORS.darkGray} />}
         />
         
         <Input
@@ -1130,7 +1117,6 @@ export default function SignUpScreen() {
           value={businessAddress}
           onChangeText={setBusinessAddress}
           error={errors.businessAddress}
-          leftIcon={<MapPin size={20} color={COLORS.darkGray} />}
         />
         
         <Input
@@ -1141,7 +1127,6 @@ export default function SignUpScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           error={errors.businessEmail}
-          leftIcon={<Mail size={20} color={COLORS.darkGray} />}
         />
         
         <Input
@@ -1151,7 +1136,6 @@ export default function SignUpScreen() {
           onChangeText={setBusinessPhone}
           keyboardType="phone-pad"
           error={errors.businessPhone}
-          leftIcon={<Phone size={20} color={COLORS.darkGray} />}
         />
         
         <Input
@@ -1162,7 +1146,6 @@ export default function SignUpScreen() {
           multiline
           numberOfLines={3}
           error={errors.businessDescription}
-          leftIcon={<FileText size={20} color={COLORS.darkGray} />}
         />
         
         <Input
@@ -1171,7 +1154,6 @@ export default function SignUpScreen() {
           value={iban}
           onChangeText={setIban}
           error={errors.iban}
-          leftIcon={<CreditCard size={20} color={COLORS.darkGray} />}
         />
         
         <View style={styles.languageContainer}>

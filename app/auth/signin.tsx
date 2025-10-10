@@ -262,7 +262,6 @@ function SignInScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 error={errors.email}
-                leftIcon={<Mail size={20} color={COLORS.darkGray} />}
               />
               
               <Input
@@ -273,7 +272,6 @@ function SignInScreen() {
                 secureTextEntry
                 isPassword
                 error={errors.password}
-                leftIcon={<Lock size={20} color={COLORS.darkGray} />}
                 testID="password-input"
               />
               <TouchableOpacity accessibilityRole="button" testID="forgot-password-button" onPress={openForgot} style={styles.forgotLinkContainer}>
@@ -290,7 +288,6 @@ function SignInScreen() {
               onChangeText={setPhoneNumber}
               keyboardType="phone-pad"
               error={errors.phone}
-              leftIcon={<Smartphone size={20} color={COLORS.darkGray} />}
             />
           )}
           
@@ -416,7 +413,6 @@ function SignInScreen() {
             onChangeText={setResetEmail}
             keyboardType="email-address"
             autoCapitalize="none"
-            leftIcon={<Mail size={20} color={COLORS.darkGray} />}
             testID="reset-email-input"
           />
           <View style={styles.captchaRow}>

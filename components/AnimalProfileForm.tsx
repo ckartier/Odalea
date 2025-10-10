@@ -208,7 +208,6 @@ export default function AnimalProfileForm({
             value={name}
             onChangeText={setName}
             error={errors.name}
-            leftIcon={<Heart size={20} color={COLORS.darkGray} />}
           />
 
           {/* Species Selection */}
@@ -284,7 +283,6 @@ export default function AnimalProfileForm({
             value={birthDate}
             onChangeText={setBirthDate}
             error={errors.birthDate}
-            leftIcon={<Calendar size={20} color={COLORS.darkGray} />}
           />
 
           {/* Color Selection */}
@@ -321,7 +319,6 @@ export default function AnimalProfileForm({
             placeholder="Ex: Collier bleu, tache, queue courte..."
             value={distinctiveSign}
             onChangeText={setDistinctiveSign}
-            leftIcon={<Tag size={20} color={COLORS.darkGray} />}
           />
         </View>
 
@@ -410,7 +407,6 @@ export default function AnimalProfileForm({
             onChangeText={setDescription}
             multiline
             numberOfLines={4}
-            leftIcon={<Smile size={20} color={COLORS.darkGray} />}
           />
         </View>
 
