@@ -75,7 +75,7 @@ export default function MapScreen() {
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [locationPermission, setLocationPermission] = useState<boolean>(false);
-  const [currentFilter, setCurrentFilter] = useState<MapFilter>('all');
+  const [activeFilters, setActiveFilters] = useState<Set<MapFilter>>(new Set(['all', 'pets', 'sitters', 'friends', 'lost', 'vets']));
   const [showFilters, setShowFilters] = useState(false);
   const [vets, setVets] = useState<VetPlace[]>([]);
 
@@ -228,17 +228,37 @@ export default function MapScreen() {
   };
 
   const handleFilterPress = async (filter: MapFilter) => {
-    setCurrentFilter(filter);
-    setShowFilters(false);
+    const newFilters = new Set(activeFilters);
+    if (filter === 'all') {
+      if (newFilters.has('all')) {
+        newFilters.clear();
+      } else {
+        newFilters.clear();
+        newFilters.add('all');
+        newFilters.add('pets');
+        newFilters.add('sitters');
+        newFilters.add('friends');
+        newFilters.add('lost');
+        newFilters.add('vets');
+      }
+    } else {
+      if (newFilters.has(filter)) {
+        newFilters.delete(filter);
+        newFilters.delete('all');
+      } else {
+        newFilters.add(filter);
+      }
+    }
+    setActiveFilters(newFilters);
     incrementActionCount();
     try {
       const { track } = require('@/services/tracking');
-      track('map_filter_apply', { filter });
+      track('map_filter_apply', { filters: Array.from(newFilters) });
     } catch (e) {
       console.log('track map_filter_apply failed', e);
     }
 
-    if (filter === 'vets') {
+    if (newFilters.has('vets') && vets.length === 0) {
       await fetchNearbyVets();
     }
   };
@@ -468,21 +488,17 @@ export default function MapScreen() {
   const allPetsIncludingUser: AllPet[] = [...firebasePetsWithOwner, ...userPetsWithLocation];
 
   const filteredPets = allPetsIncludingUser.filter((pet: AllPet) => {
-    switch (currentFilter) {
-      case 'pets':
-        return true;
-      case 'sitters':
-        return Boolean(pet.owner?.isCatSitter || pet.owner?.isProfessional);
-      case 'friends':
-        return false;
-      case 'lost':
-        return false;
-      default:
-        return true;
-    }
+    if (activeFilters.has('all') || activeFilters.has('pets')) return true;
+    if (activeFilters.has('sitters') && Boolean(pet.owner?.isCatSitter || pet.owner?.isProfessional)) return true;
+    return false;
   });
 
-  const filteredUsers = usersWithLocation;
+  const filteredUsers = usersWithLocation.filter((u) => {
+    if (activeFilters.has('all')) return true;
+    if (activeFilters.has('sitters') && (u.isCatSitter || u.isProfessional)) return true;
+    if (activeFilters.has('friends')) return true;
+    return false;
+  });
 
   // Projection helpers for web overlay markers
   const projectPoint = useCallback(
@@ -518,7 +534,7 @@ export default function MapScreen() {
         {Platform.OS !== 'web' && filteredUsers.map((u) => (
           <UserMarker key={`user-${u.id}`} user={u} onPress={() => setSelectedUser(u)} />
         ))}
-        {Platform.OS !== 'web' && currentFilter === 'vets' && vets.map((vet) => (
+        {Platform.OS !== 'web' && activeFilters.has('vets') && vets.map((vet) => (
           <MapMarker 
             key={`vet-${vet.id}`} 
             pet={{
@@ -599,7 +615,7 @@ export default function MapScreen() {
               </TouchableOpacity>
             );
           })}
-          {currentFilter === 'vets' && vets.map((vet) => {
+          {activeFilters.has('vets') && vets.map((vet) => {
             const pos = projectPoint(vet.location.latitude, vet.location.longitude);
             const left = Math.max(24, Math.min(width - 24, pos.left));
             const top = Math.max(24, Math.min(height - 24, pos.top));
@@ -637,64 +653,64 @@ export default function MapScreen() {
           onPress={() => setShowFilters(!showFilters)}
           testID="btn-filters"
         >
-          <Filter size={24} color={currentFilter !== 'all' ? COLORS.primary : COLORS.black} />
+          <Filter size={24} color={activeFilters.size > 0 && !activeFilters.has('all') ? COLORS.primary : COLORS.black} />
         </TouchableOpacity>
       </View>
 
       {showFilters && (
         <View style={[styles.filterMenu, SHADOWS.large]} testID="filter-menu">
           <TouchableOpacity
-            style={[styles.filterItem, currentFilter === 'all' && styles.filterItemActive]}
+            style={[styles.filterItem, activeFilters.has('all') && styles.filterItemActive]}
             onPress={() => handleFilterPress('all')}
             testID="filter-all"
           >
-            <Layers size={20} color={currentFilter === 'all' ? COLORS.white : COLORS.black} />
-            <Text style={[styles.filterText, currentFilter === 'all' && styles.filterTextActive]}>{t('map.show_all')}</Text>
+            <Layers size={20} color={activeFilters.has('all') ? COLORS.white : COLORS.black} />
+            <Text style={[styles.filterText, activeFilters.has('all') && styles.filterTextActive]}>{t('map.show_all')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.filterItem, currentFilter === 'pets' && styles.filterItemActive]}
+            style={[styles.filterItem, activeFilters.has('pets') && styles.filterItemActive]}
             onPress={() => handleFilterPress('pets')}
             testID="filter-pets"
           >
-            <Heart size={20} color={currentFilter === 'pets' ? COLORS.white : COLORS.black} />
-            <Text style={[styles.filterText, currentFilter === 'pets' && styles.filterTextActive]}>{t('map.pets')}</Text>
+            <Heart size={20} color={activeFilters.has('pets') ? COLORS.white : COLORS.black} />
+            <Text style={[styles.filterText, activeFilters.has('pets') && styles.filterTextActive]}>{t('map.pets')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.filterItem, currentFilter === 'sitters' && styles.filterItemActive]}
+            style={[styles.filterItem, activeFilters.has('sitters') && styles.filterItemActive]}
             onPress={() => handleFilterPress('sitters')}
             testID="filter-sitters"
           >
-            <Users size={20} color={currentFilter === 'sitters' ? COLORS.white : COLORS.black} />
-            <Text style={[styles.filterText, currentFilter === 'sitters' && styles.filterTextActive]}>{t('map.sitters')}</Text>
+            <Users size={20} color={activeFilters.has('sitters') ? COLORS.white : COLORS.black} />
+            <Text style={[styles.filterText, activeFilters.has('sitters') && styles.filterTextActive]}>{t('map.sitters')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.filterItem, currentFilter === 'friends' && styles.filterItemActive]}
+            style={[styles.filterItem, activeFilters.has('friends') && styles.filterItemActive]}
             onPress={() => handleFilterPress('friends')}
             testID="filter-friends"
           >
-            <Users size={20} color={currentFilter === 'friends' ? COLORS.white : COLORS.black} />
-            <Text style={[styles.filterText, currentFilter === 'friends' && styles.filterTextActive]}>{t('map.friends')}</Text>
+            <Users size={20} color={activeFilters.has('friends') ? COLORS.white : COLORS.black} />
+            <Text style={[styles.filterText, activeFilters.has('friends') && styles.filterTextActive]}>{t('map.friends')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.filterItem, currentFilter === 'lost' && styles.filterItemActive]}
+            style={[styles.filterItem, activeFilters.has('lost') && styles.filterItemActive]}
             onPress={() => handleFilterPress('lost')}
             testID="filter-lost"
           >
-            <Search size={20} color={currentFilter === 'lost' ? COLORS.white : COLORS.black} />
-            <Text style={[styles.filterText, currentFilter === 'lost' && styles.filterTextActive]}>{t('map.lost_found')}</Text>
+            <Search size={20} color={activeFilters.has('lost') ? COLORS.white : COLORS.black} />
+            <Text style={[styles.filterText, activeFilters.has('lost') && styles.filterTextActive]}>{t('map.lost_found')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.filterItem, currentFilter === 'vets' && styles.filterItemActive]}
+            style={[styles.filterItem, activeFilters.has('vets') && styles.filterItemActive]}
             onPress={() => handleFilterPress('vets')}
             testID="filter-vets"
           >
-            <Stethoscope size={20} color={currentFilter === 'vets' ? COLORS.white : COLORS.black} />
-            <Text style={[styles.filterText, currentFilter === 'vets' && styles.filterTextActive]}>Vétérinaires</Text>
+            <Stethoscope size={20} color={activeFilters.has('vets') ? COLORS.white : COLORS.black} />
+            <Text style={[styles.filterText, activeFilters.has('vets') && styles.filterTextActive]}>Vétérinaires</Text>
           </TouchableOpacity>
         </View>
       )}
