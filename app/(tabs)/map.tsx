@@ -16,6 +16,7 @@ import MapView, { PROVIDER_GOOGLE } from '@/components/MapView';
 import MapMarker from '@/components/MapMarker';
 import UserMarker from '@/components/UserMarker';
 import AdBanner from '@/components/AdBanner';
+import { Image } from 'expo-image';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { usePremium } from '@/hooks/premium-store';
 import { useI18n } from '@/hooks/i18n-store';
@@ -24,7 +25,7 @@ import { Pet, User } from '@/types';
 import { Compass, Layers, Filter, Users, Heart, Search } from 'lucide-react-native';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { petService, userService } from '@/services/database';
-import { getBlurredUserLocation } from '@/services/location-privacy';
+import { getBlurredUserLocation, getBlurredPetLocation } from '@/services/location-privacy';
 
 // Type definitions for map region
 interface Region {
@@ -443,16 +444,51 @@ export default function MapScreen() {
         onRegionChangeComplete={Platform.OS !== 'web' ? handleRegionChange : undefined}
         testID="map-view"
       >
-        {filteredPets.map((pet, index) => (
+        {Platform.OS !== 'web' && filteredPets.map((pet, index) => (
           <MapMarker key={`${pet.id}-${index}`} pet={pet} onPress={() => handleMarkerPress(pet)} />
         ))}
-        {filteredUsers.map((u) => (
+        {Platform.OS !== 'web' && filteredUsers.map((u) => (
           <UserMarker key={`user-${u.id}`} user={u} onPress={() => setSelectedUser(u)} />
         ))}
       </MapView>
 
       {Platform.OS === 'web' && (
         <View pointerEvents="box-none" style={styles.webOverlay} testID="web-marker-layer">
+          {filteredPets.map((pet, idx) => {
+            if (!pet.location) return null;
+            const blurred = getBlurredPetLocation(pet.id, pet.location);
+            const pos = projectPoint(blurred.latitude, blurred.longitude);
+            const left = Math.max(24, Math.min(width - 24, pos.left));
+            const top = Math.max(24, Math.min(height - 24, pos.top));
+            const markerColor = pet.gender === 'male' ? COLORS.male : COLORS.female;
+            return (
+              <TouchableOpacity
+                key={`overlay-pet-${pet.id}-${idx}`}
+                onPress={() => handleMarkerPress(pet)}
+                activeOpacity={0.8}
+                style={[styles.webPetMarker, { left, top }]}
+                testID={`pet-marker-${pet.id}`}
+              >
+                <View style={[styles.webPetMarkerCircle, { backgroundColor: markerColor, borderColor: COLORS.white }]}>
+                  {pet.mainPhoto ? (
+                    <img
+                      src={pet.mainPhoto}
+                      alt={pet.name}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ) : (
+                    <Text style={styles.webPetEmoji}>🐱</Text>
+                  )}
+                </View>
+                <View style={[styles.webPetTriangle, { borderTopColor: markerColor }]} />
+              </TouchableOpacity>
+            );
+          })}
           {filteredUsers.map((u, idx) => {
             const originalLoc = { latitude: u.location?.latitude ?? DEFAULT_LAT, longitude: u.location?.longitude ?? DEFAULT_LNG };
             const blurred = getBlurredUserLocation(u.id, originalLoc);
@@ -541,40 +577,54 @@ export default function MapScreen() {
       )}
 
       {selectedPet && (
-        <View
-          style={[
-            styles.selectedPetCard,
-            SHADOWS.large,
-            { backgroundColor: selectedPet.gender === 'female' ? COLORS.female : COLORS.male },
-          ]}
-          testID="selected-pet-card"
-        >
+        <View style={styles.selectedPetCardContainer} testID="selected-pet-card">
           <AdBanner size="banner" style={styles.adBannerTop} />
+          
+          <TouchableOpacity 
+            style={[styles.selectedPetCard, SHADOWS.large]} 
+            onPress={handlePetCardPress} 
+            activeOpacity={0.95}
+          >
+            <View style={styles.petCardImageContainer}>
+              {selectedPet.mainPhoto ? (
+                <Image
+                  source={{ uri: selectedPet.mainPhoto }}
+                  style={styles.petCardImage}
+                  contentFit="cover"
+                />
+              ) : (
+                <View style={[styles.petCardImagePlaceholder, { backgroundColor: selectedPet.gender === 'female' ? COLORS.female : COLORS.male }]}>
+                  <Text style={styles.petCardImageEmoji}>🐱</Text>
+                </View>
+              )}
+              <View style={[styles.petGenderBadge, { backgroundColor: selectedPet.gender === 'female' ? COLORS.female : COLORS.male }]}>
+                <Text style={styles.petGenderText}>{selectedPet.gender === 'female' ? '♀' : '♂'}</Text>
+              </View>
+            </View>
 
-          <TouchableOpacity style={styles.petCardContent} onPress={handlePetCardPress} activeOpacity={0.9}>
-            <View
-              style={[
-                styles.petColorIndicator,
-                { backgroundColor: selectedPet.gender === 'female' ? COLORS.femaleAccent : COLORS.maleAccent },
-              ]}
-            />
-
-            <View style={styles.petInfo}>
-              <Text style={[styles.petName, { color: COLORS.white }]}>{selectedPet.name}</Text>
-              <Text style={[styles.petBreed, { color: COLORS.white, opacity: 0.9 }]}>
+            <View style={styles.petCardInfo}>
+              <View style={styles.petCardHeader}>
+                <Text style={styles.petCardName}>{selectedPet.name}</Text>
+                <TouchableOpacity onPress={handleUserPress} style={styles.ownerBadge}>
+                  <Text style={styles.ownerBadgeText}>@{selectedUser?.pseudo ?? ''}</Text>
+                  {selectedUser?.isPremium && <Text style={styles.premiumIcon}>⭐</Text>}
+                </TouchableOpacity>
+              </View>
+              
+              <Text style={styles.petCardBreed}>
                 {selectedPet.breed} • {selectedPet.type}
               </Text>
-              <TouchableOpacity onPress={handleUserPress}>
-                <Text style={[styles.petOwner, { color: COLORS.white }]}>
-                  @{selectedUser?.pseudo ?? ''}
-                  {selectedUser?.isPremium && ' ⭐'}
-                  {(selectedUser?.isCatSitter || selectedUser?.isProfessional) && ' 🐱'}
+              
+              <View style={styles.petCardFooter}>
+                <Text style={styles.petCardLocation}>
+                  📍 {selectedUser?.city ?? ''}{selectedUser?.zipCode ? `, ${selectedUser.zipCode}` : ''}
                 </Text>
-              </TouchableOpacity>
-              <Text style={[styles.petLocation, { color: COLORS.white, opacity: 0.8 }]}>
-                {selectedUser?.city ?? ''}
-                {selectedUser?.zipCode ? `, ${selectedUser.zipCode}` : ''}
-              </Text>
+                {(selectedUser?.isCatSitter || selectedUser?.isProfessional) && (
+                  <View style={styles.sitterBadge}>
+                    <Text style={styles.sitterBadgeText}>Cat Sitter</Text>
+                  </View>
+                )}
+              </View>
             </View>
           </TouchableOpacity>
         </View>
@@ -637,45 +687,115 @@ const styles = StyleSheet.create({
   filterTextActive: {
     color: COLORS.white,
   },
-  selectedPetCard: {
+  selectedPetCardContainer: {
     position: 'absolute',
     bottom: 24,
     left: 16,
     right: 16,
-    maxHeight: '40%',
-    borderRadius: 16,
+  },
+  selectedPetCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
     overflow: 'hidden',
+    flexDirection: 'row',
   },
   adBannerTop: {
     marginVertical: 0,
   },
-  petCardContent: {
-    flexDirection: 'row',
+  petCardImageContainer: {
+    width: 120,
+    height: 140,
+    position: 'relative',
   },
-  petColorIndicator: {
-    width: 8,
+  petCardImage: {
+    width: '100%',
     height: '100%',
   },
-  petInfo: {
+  petCardImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  petCardImageEmoji: {
+    fontSize: 48,
+  },
+  petGenderBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.white,
+  },
+  petGenderText: {
+    fontSize: 16,
+    color: COLORS.white,
+    fontWeight: '700' as const,
+  },
+  petCardInfo: {
     flex: 1,
     padding: 16,
+    justifyContent: 'space-between',
   },
-  petName: {
-    fontSize: 18,
-    fontWeight: '600' as const,
-    marginBottom: 4,
+  petCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
   },
-  petBreed: {
-    fontSize: 14,
-    marginBottom: 4,
+  petCardName: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: '#1A1A1A',
+    flex: 1,
   },
-  petOwner: {
-    fontSize: 14,
-    fontWeight: '500' as const,
-    marginBottom: 2,
+  ownerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
   },
-  petLocation: {
+  ownerBadgeText: {
     fontSize: 12,
+    fontWeight: '600' as const,
+    color: '#666',
+  },
+  premiumIcon: {
+    fontSize: 12,
+  },
+  petCardBreed: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 12,
+  },
+  petCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  petCardLocation: {
+    fontSize: 13,
+    color: '#888',
+    flex: 1,
+  },
+  sitterBadge: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  sitterBadgeText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: COLORS.white,
   },
   statsBar: {
     position: 'absolute',
@@ -718,5 +838,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#1A1A1A',
     maxWidth: 140,
+  },
+  webPetMarker: {
+    position: 'absolute',
+    alignItems: 'center',
+    transform: [{ translateX: -24 }, { translateY: -62 }],
+  },
+  webPetMarkerCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  webPetEmoji: {
+    fontSize: 24,
+  },
+  webPetTriangle: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid' as const,
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderTopWidth: 14,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    marginTop: -2,
   },
 });
