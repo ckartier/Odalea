@@ -245,6 +245,10 @@ export default function SignUpScreen() {
       if (!animalColor) {
         newErrors.animalColor = t('auth.pet_color_required');
       }
+      
+      if (!acceptedTerms) {
+        newErrors.acceptedTerms = 'Vous devez accepter les CGU et la Politique de Confidentialité';
+      }
     }
     
     if (isProfessional) {
@@ -1063,6 +1067,59 @@ export default function SignUpScreen() {
           <Text style={styles.miniMapTitle}>Aperçu de zone</Text>
           <Text style={styles.miniMapSub}>Ville: {city || '—'} • CP: {zipCode || '—'} • Rayon: {isCatSitter ? catSitterRadiusKm : 0} km</Text>
         </View>
+        
+        <View style={styles.legalSection}>
+          <TouchableOpacity
+            style={[
+              styles.termsContainer,
+              acceptedTerms ? styles.termsActive : null,
+            ]}
+            onPress={() => setAcceptedTerms(!acceptedTerms)}
+          >
+            <View style={[
+              styles.checkbox,
+              acceptedTerms ? styles.checkboxActive : null,
+            ]}>
+              {acceptedTerms && <View style={styles.checkboxInner} />}
+            </View>
+            <View style={styles.termsTextContainer}>
+              <Text style={styles.termsText}>
+                J'accepte les{' '}
+                <Text 
+                  style={styles.linkText}
+                  onPress={() => {
+                    console.log('Navigating to terms from signup...');
+                    try {
+                      router.push('/legal/terms');
+                    } catch (error) {
+                      console.error('Navigation error to terms from signup:', error);
+                    }
+                  }}
+                >
+                  Conditions Générales d'Utilisation
+                </Text>
+                {' '}et la{' '}
+                <Text 
+                  style={styles.linkText}
+                  onPress={() => {
+                    console.log('Navigating to privacy from signup...');
+                    try {
+                      router.push('/legal/privacy');
+                    } catch (error) {
+                      console.error('Navigation error to privacy from signup:', error);
+                    }
+                  }}
+                >
+                  Politique de Confidentialité
+                </Text>
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+        
+        {errors.acceptedTerms && (
+          <Text style={styles.errorText}>{errors.acceptedTerms}</Text>
+        )}
         
         <Button
           title={isProfessional ? t('common.next') : t('auth.create_account_button')}
