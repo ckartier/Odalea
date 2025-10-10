@@ -57,12 +57,12 @@ export const [ThemeContext, useTheme] = createContextHook(() => {
     const genderAccent = gender === 'female' ? COLORS.femaleAccent : gender === 'male' ? COLORS.maleAccent : accent;
     if (dark) {
       return {
-        background: '#0B1220',
-        primary: COLORS.primary,
+        background: COLORS.darkBackground,
+        primary: COLORS.white,
         accent: genderAccent,
-        text: '#F8FAFC',
-        card: '#111827',
-        border: '#1F2937',
+        text: COLORS.darkText,
+        card: COLORS.darkCard,
+        border: COLORS.darkBorder,
       };
     }
     return {

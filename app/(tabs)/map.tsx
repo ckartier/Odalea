@@ -269,28 +269,38 @@ export default function MapScreen() {
       const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
       
       if (!apiKey) {
-        console.error('Google Maps API key not found');
-        Alert.alert('Erreur', 'Clé API Google Maps manquante');
+        console.error('❌ Google Maps API key not found in environment');
+        console.log('Available env keys:', Object.keys(process.env).filter(k => k.includes('GOOGLE')));
+        Alert.alert('Configuration', 'La clé API Google Maps est manquante. Veuillez configurer EXPO_PUBLIC_GOOGLE_MAPS_API_KEY dans votre fichier .env');
         return;
       }
       
+      console.log('🔑 Using Google Maps API key:', apiKey.substring(0, 10) + '...');
+      
       const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${loc.latitude},${loc.longitude}&radius=5000&type=veterinary_care&key=${apiKey}`;
-      console.log('Fetching vets from:', url);
+      console.log('📍 Fetching vets near:', loc);
       
       const response = await fetch(url);
       
       if (!response.ok) {
-        console.log('Failed to fetch vets, status:', response.status);
-        Alert.alert('Erreur', 'Impossible de charger les vétérinaires');
+        console.error('❌ Failed to fetch vets, status:', response.status);
+        Alert.alert('Erreur', `Impossible de charger les vétérinaires (${response.status})`);
         return;
       }
       
       const data = await response.json();
-      console.log('Vets data:', data);
+      console.log('📊 Vets API response status:', data.status);
       
       if (data.status === 'REQUEST_DENIED') {
-        console.error('Google Places API error:', data.error_message);
-        Alert.alert('Erreur API', data.error_message || 'Accès refusé à l\'API Google Places');
+        console.error('❌ Google Places API error:', data.error_message);
+        Alert.alert('Erreur API', data.error_message || 'Accès refusé à l\'API Google Places. Vérifiez que l\'API Places est activée dans votre console Google Cloud.');
+        return;
+      }
+      
+      if (data.status === 'ZERO_RESULTS') {
+        console.log('ℹ️ No vets found in this area');
+        Alert.alert('Information', 'Aucun vétérinaire trouvé dans cette zone (rayon de 5km)');
+        setVets([]);
         return;
       }
       
@@ -306,15 +316,14 @@ export default function MapScreen() {
           rating: place.rating,
         }));
         setVets(vetPlaces);
-        console.log(`Found ${vetPlaces.length} veterinarians`);
+        console.log(`✅ Found ${vetPlaces.length} veterinarians`);
       } else {
-        console.log('No vets found in this area');
-        Alert.alert('Information', 'Aucun vétérinaire trouvé dans cette zone');
+        console.log('⚠️ No vets in response');
         setVets([]);
       }
     } catch (error) {
-      console.error('Error fetching vets:', error);
-      Alert.alert('Erreur', 'Erreur lors du chargement des vétérinaires');
+      console.error('❌ Error fetching vets:', error);
+      Alert.alert('Erreur', 'Erreur lors du chargement des vétérinaires: ' + (error as Error).message);
     }
   };
 

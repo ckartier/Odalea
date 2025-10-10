@@ -33,10 +33,10 @@ export const COLORS = {
   mediumGray: '#E2E8F0',
   darkGray: '#475569',
   
-  darkBackground: '#0B1220',
-  darkCard: '#111827',
-  darkBorder: '#1F2937',
-  darkText: '#F8FAFC',
+  darkBackground: '#0F172A',
+  darkCard: '#1E293B',
+  darkBorder: '#334155',
+  darkText: '#F1F5F9',
   
   success: '#10B981',
   successLight: '#D1FAE5',
