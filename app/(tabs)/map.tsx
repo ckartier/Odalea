@@ -266,11 +266,10 @@ export default function MapScreen() {
   const fetchNearbyVets = async () => {
     try {
       const loc = userLocation ?? { latitude: DEFAULT_LAT, longitude: DEFAULT_LNG };
-      const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+      const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyDMh-ZNFwOqVvnviQg1-FV7tAZPDy1xxPk';
       
       if (!apiKey) {
         console.error('❌ Google Maps API key not found in environment');
-        console.log('Available env keys:', Object.keys(process.env).filter(k => k.includes('GOOGLE')));
         Alert.alert('Configuration', 'La clé API Google Maps est manquante. Veuillez configurer EXPO_PUBLIC_GOOGLE_MAPS_API_KEY dans votre fichier .env');
         return;
       }

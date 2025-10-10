@@ -85,12 +85,13 @@ const MapView: React.FC<MapViewProps> = ({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+    const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyDMh-ZNFwOqVvnviQg1-FV7tAZPDy1xxPk';
     if (!apiKey) {
       console.error('[MapView.web] Missing EXPO_PUBLIC_GOOGLE_MAPS_API_KEY');
       setLoadError('Clé API Google Maps manquante (EXPO_PUBLIC_GOOGLE_MAPS_API_KEY).');
       return;
     }
+    console.log('[MapView.web] Using Google Maps API key:', apiKey.substring(0, 10) + '...');
 
     if (window.google?.maps) {
       initializeMap();
