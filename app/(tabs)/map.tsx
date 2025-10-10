@@ -22,7 +22,7 @@ import { usePremium } from '@/hooks/premium-store';
 import { useI18n } from '@/hooks/i18n-store';
 import { useTheme } from '@/hooks/theme-store';
 import { Pet, User } from '@/types';
-import { Compass, Layers, Filter, Users, Heart, Search } from 'lucide-react-native';
+import { Compass, Layers, Filter, Users, Heart, Search, Stethoscope } from 'lucide-react-native';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { petService, userService } from '@/services/database';
 import { getBlurredUserLocation, getBlurredPetLocation } from '@/services/location-privacy';
@@ -35,7 +35,16 @@ interface Region {
   longitudeDelta: number;
 }
 
-type MapFilter = 'all' | 'pets' | 'sitters' | 'friends' | 'lost';
+type MapFilter = 'all' | 'pets' | 'sitters' | 'friends' | 'lost' | 'vets';
+
+interface VetPlace {
+  id: string;
+  name: string;
+  location: { latitude: number; longitude: number };
+  address: string;
+  rating?: number;
+  phone?: string;
+}
 
 type AllPet = Pet & { owner?: User | undefined; isUserPet?: boolean };
 
@@ -68,6 +77,7 @@ export default function MapScreen() {
   const [locationPermission, setLocationPermission] = useState<boolean>(false);
   const [currentFilter, setCurrentFilter] = useState<MapFilter>('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [vets, setVets] = useState<VetPlace[]>([]);
 
   // Request location permission and get current location
   useEffect(() => {
@@ -217,7 +227,7 @@ export default function MapScreen() {
     }
   };
 
-  const handleFilterPress = (filter: MapFilter) => {
+  const handleFilterPress = async (filter: MapFilter) => {
     setCurrentFilter(filter);
     setShowFilters(false);
     incrementActionCount();
@@ -226,6 +236,65 @@ export default function MapScreen() {
       track('map_filter_apply', { filter });
     } catch (e) {
       console.log('track map_filter_apply failed', e);
+    }
+
+    if (filter === 'vets') {
+      await fetchNearbyVets();
+    }
+  };
+
+  const fetchNearbyVets = async () => {
+    try {
+      const loc = userLocation ?? { latitude: DEFAULT_LAT, longitude: DEFAULT_LNG };
+      const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+      
+      if (!apiKey) {
+        console.error('Google Maps API key not found');
+        Alert.alert('Erreur', 'Clé API Google Maps manquante');
+        return;
+      }
+      
+      const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${loc.latitude},${loc.longitude}&radius=5000&type=veterinary_care&key=${apiKey}`;
+      console.log('Fetching vets from:', url);
+      
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        console.log('Failed to fetch vets, status:', response.status);
+        Alert.alert('Erreur', 'Impossible de charger les vétérinaires');
+        return;
+      }
+      
+      const data = await response.json();
+      console.log('Vets data:', data);
+      
+      if (data.status === 'REQUEST_DENIED') {
+        console.error('Google Places API error:', data.error_message);
+        Alert.alert('Erreur API', data.error_message || 'Accès refusé à l\'API Google Places');
+        return;
+      }
+      
+      if (data.results && data.results.length > 0) {
+        const vetPlaces: VetPlace[] = data.results.map((place: any) => ({
+          id: place.place_id,
+          name: place.name,
+          location: {
+            latitude: place.geometry.location.lat,
+            longitude: place.geometry.location.lng,
+          },
+          address: place.vicinity,
+          rating: place.rating,
+        }));
+        setVets(vetPlaces);
+        console.log(`Found ${vetPlaces.length} veterinarians`);
+      } else {
+        console.log('No vets found in this area');
+        Alert.alert('Information', 'Aucun vétérinaire trouvé dans cette zone');
+        setVets([]);
+      }
+    } catch (error) {
+      console.error('Error fetching vets:', error);
+      Alert.alert('Erreur', 'Erreur lors du chargement des vétérinaires');
     }
   };
 
@@ -449,6 +518,27 @@ export default function MapScreen() {
         {Platform.OS !== 'web' && filteredUsers.map((u) => (
           <UserMarker key={`user-${u.id}`} user={u} onPress={() => setSelectedUser(u)} />
         ))}
+        {Platform.OS !== 'web' && currentFilter === 'vets' && vets.map((vet) => (
+          <MapMarker 
+            key={`vet-${vet.id}`} 
+            pet={{
+              id: vet.id,
+              name: vet.name,
+              type: 'veterinaire' as any,
+              breed: vet.address,
+              gender: 'male' as any,
+              location: vet.location,
+              mainPhoto: '',
+            } as any}
+            onPress={() => {
+              Alert.alert(
+                vet.name,
+                `${vet.address}${vet.rating ? `\n⭐ ${vet.rating}/5` : ''}`,
+                [{ text: 'OK' }]
+              );
+            }}
+          />
+        ))}
       </MapView>
 
       {Platform.OS === 'web' && (
@@ -506,6 +596,31 @@ export default function MapScreen() {
                 <Text style={styles.webPinLabel} numberOfLines={1}>
                   @{u.pseudo ?? 'user'}
                 </Text>
+              </TouchableOpacity>
+            );
+          })}
+          {currentFilter === 'vets' && vets.map((vet) => {
+            const pos = projectPoint(vet.location.latitude, vet.location.longitude);
+            const left = Math.max(24, Math.min(width - 24, pos.left));
+            const top = Math.max(24, Math.min(height - 24, pos.top));
+            return (
+              <TouchableOpacity
+                key={`overlay-vet-${vet.id}`}
+                onPress={() => {
+                  Alert.alert(
+                    vet.name,
+                    `${vet.address}${vet.rating ? `\n⭐ ${vet.rating}/5` : ''}`,
+                    [{ text: 'OK' }]
+                  );
+                }}
+                activeOpacity={0.8}
+                style={[styles.webPetMarker, { left, top }]}
+                testID={`vet-marker-${vet.id}`}
+              >
+                <View style={[styles.webPetMarkerCircle, { backgroundColor: '#10b981', borderColor: COLORS.white }]}>
+                  <Text style={styles.webPetEmoji}>🏥</Text>
+                </View>
+                <View style={[styles.webPetTriangle, { borderTopColor: '#10b981' }]} />
               </TouchableOpacity>
             );
           })}
@@ -571,6 +686,15 @@ export default function MapScreen() {
           >
             <Search size={20} color={currentFilter === 'lost' ? COLORS.white : COLORS.black} />
             <Text style={[styles.filterText, currentFilter === 'lost' && styles.filterTextActive]}>{t('map.lost_found')}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.filterItem, currentFilter === 'vets' && styles.filterItemActive]}
+            onPress={() => handleFilterPress('vets')}
+            testID="filter-vets"
+          >
+            <Stethoscope size={20} color={currentFilter === 'vets' ? COLORS.white : COLORS.black} />
+            <Text style={[styles.filterText, currentFilter === 'vets' && styles.filterTextActive]}>Vétérinaires</Text>
           </TouchableOpacity>
         </View>
       )}
