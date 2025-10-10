@@ -1,10 +1,3 @@
-refait le code app json que je colle les modifications
-Rork
-Read
-app.json
-Created
-app.json
-Je ne peux pas modifier le fichier app.json directement. Voici le code corrigé que vous pouvez copier-coller :
 {
 "expo": {
   "name": "Coppet",
