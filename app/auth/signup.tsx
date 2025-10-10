@@ -109,16 +109,16 @@ export default function SignUpScreen() {
   useEffect(() => {
     fadeAnim.setValue(0);
     slideAnim.setValue(50);
-    Animated.parallel([
+    Animated.sequence([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 600,
+        duration: 500,
         useNativeDriver: true,
       }),
       Animated.spring(slideAnim, {
         toValue: 0,
-        tension: 50,
-        friction: 7,
+        tension: 60,
+        friction: 8,
         useNativeDriver: true,
       }),
     ]).start();

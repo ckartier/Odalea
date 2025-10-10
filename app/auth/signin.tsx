@@ -52,22 +52,25 @@ function SignInScreen() {
   const logoScale = useRef(new Animated.Value(0.3)).current;
   
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.spring(logoScale, {
+          toValue: 1,
+          tension: 40,
+          friction: 6,
+          delay: 100,
+          useNativeDriver: true,
+        }),
+      ]),
       Animated.spring(slideAnim, {
         toValue: 0,
         tension: 50,
         friction: 7,
-        useNativeDriver: true,
-      }),
-      Animated.spring(logoScale, {
-        toValue: 1,
-        tension: 40,
-        friction: 6,
         useNativeDriver: true,
       }),
     ]).start();

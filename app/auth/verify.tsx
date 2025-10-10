@@ -34,29 +34,29 @@ export default function VerifyScreen() {
   const codeAnimations = useRef(code.map(() => new Animated.Value(0))).current;
   
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-      }),
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          tension: 60,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.stagger(60, codeAnimations.map((anim) => 
+        Animated.spring(anim, {
+          toValue: 1,
+          tension: 80,
+          friction: 7,
+          useNativeDriver: true,
+        })
+      )),
     ]).start();
-    
-    const staggeredAnimations = codeAnimations.map((anim, index) => 
-      Animated.timing(anim, {
-        toValue: 1,
-        duration: 300,
-        delay: index * 80,
-        useNativeDriver: true,
-      })
-    );
-    Animated.stagger(80, staggeredAnimations).start();
   }, []);
   
   // Set up timer

@@ -54,25 +54,27 @@ export default function ProRegisterScreen() {
   useEffect(() => {
     fadeAnim.setValue(0);
     slideAnim.setValue(50);
-    iconScale.setValue(0.5);
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
+    iconScale.setValue(0.3);
+    Animated.sequence([
+      Animated.spring(iconScale, {
         toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
         tension: 50,
         friction: 7,
         useNativeDriver: true,
       }),
-      Animated.spring(iconScale, {
-        toValue: 1,
-        tension: 40,
-        friction: 6,
-        useNativeDriver: true,
-      }),
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          tension: 60,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]),
     ]).start();
   }, [step]);
   
