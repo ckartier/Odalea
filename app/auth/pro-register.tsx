@@ -9,6 +9,7 @@ import {
   Platform,
   Alert,
   Animated,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -41,6 +42,8 @@ import GlassView from '@/components/GlassView';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function ProRegisterScreen() {
+  const { height: windowHeight } = useWindowDimensions();
+  const isCompactScreen = windowHeight < 720;
   const router = useRouter();
   const { signUp } = useAuth();
   
@@ -675,8 +678,10 @@ export default function ProRegisterScreen() {
         <StatusBar style="dark" />
       
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, isCompactScreen ? styles.scrollContentCompact : null]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
       >
         <TouchableOpacity style={styles.backButton} onPress={handlePreviousStep}>
           <ArrowLeft size={24} color={COLORS.black} />
@@ -709,6 +714,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 60,
     paddingBottom: 40,
+  },
+  scrollContentCompact: {
+    paddingHorizontal: 16,
+    paddingTop: 36,
+    paddingBottom: 24,
   },
   backButton: {
     position: 'absolute',
