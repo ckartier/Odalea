@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -74,7 +74,7 @@ export const [BookingContext, useBooking] = createContextHook(() => {
       try {
         // Try Firebase first
         const users = await databaseService.user.getAllUsers(100);
-        const catSitters = users.filter(u => u.isCatSitter).map(u => ({
+        const catSitters: CatSitter[] = users.filter(u => u.isCatSitter).map(u => ({
           id: u.id,
           userId: u.id,
           name: u.name || `${u.firstName} ${u.lastName}`.trim(),
@@ -357,7 +357,9 @@ export const [BookingContext, useBooking] = createContextHook(() => {
     if (!sitter || !sitter.availability[date]) return [];
     
     const dayAvailability = sitter.availability[date];
-    const availableSlots = [];
+    if (!dayAvailability) return [];
+    
+    const availableSlots: string[] = [];
     
     if (dayAvailability.morning) availableSlots.push('morning');
     if (dayAvailability.afternoon) availableSlots.push('afternoon');

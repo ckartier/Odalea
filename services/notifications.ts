@@ -124,7 +124,7 @@ export async function schedulePushNotification(
         data,
         sound: true,
       },
-      trigger: { type: 'timeInterval' as const, seconds },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds, repeats: false },
     });
     console.log('✅ Notification scheduled with ID:', id);
     return id;

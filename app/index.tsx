@@ -11,6 +11,10 @@ import { COLORS } from '@/constants/colors';
 export default function IndexScreen() {
   const { user, loading } = useUser();
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    console.log('[IndexScreen] Auth state update', { loading, hasUser: Boolean(user) });
+  }, [loading, user]);
   const scaleAnim = useRef(new Animated.Value(0.5)).current;
   const heartbeatAnim = useRef(new Animated.Value(1)).current;
   const gradientAnim = useRef(new Animated.Value(0)).current;

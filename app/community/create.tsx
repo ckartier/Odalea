@@ -88,7 +88,7 @@ export default function CreatePostScreen() {
         { text: 'Cancel', style: 'cancel' },
         { 
           text: 'Add', 
-          onPress: (text) => {
+          onPress: (text?: string) => {
             if (text && text.trim()) {
               setLocation(text.trim());
             }

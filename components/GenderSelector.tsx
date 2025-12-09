@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
   View,
   TouchableOpacity,
   ViewStyle,
+  Animated,
+  Easing,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SHADOWS } from '@/constants/colors';
@@ -32,6 +34,39 @@ const GenderSelector: React.FC<GenderSelectorProps> = ({
   containerStyle,
   style,
 }) => {
+  const maleScale = useRef(new Animated.Value(1)).current;
+  const femaleScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (value === 'male') {
+      Animated.parallel([
+        Animated.spring(maleScale, {
+          toValue: 1.05,
+          useNativeDriver: true,
+          friction: 5,
+        }),
+        Animated.spring(femaleScale, {
+          toValue: 1,
+          useNativeDriver: true,
+          friction: 5,
+        }),
+      ]).start();
+    } else if (value === 'female') {
+      Animated.parallel([
+        Animated.spring(femaleScale, {
+          toValue: 1.05,
+          useNativeDriver: true,
+          friction: 5,
+        }),
+        Animated.spring(maleScale, {
+          toValue: 1,
+          useNativeDriver: true,
+          friction: 5,
+        }),
+      ]).start();
+    }
+  }, [value]);
+
   return (
     <View style={[styles.container, containerStyle, style]}>
       {label && <Text style={styles.label}>{label}</Text>}
@@ -39,82 +74,86 @@ const GenderSelector: React.FC<GenderSelectorProps> = ({
       <View style={styles.selectorContainer}>
         <TouchableOpacity
           testID="gender-male"
-          style={[
-            styles.option,
-            value === 'male' ? styles.selectedFrame : styles.unselected,
-            SHADOWS.small,
-          ]}
-          onPress={() => {
-            console.log('[GenderSelector] Male pressed');
-            onChange('male');
-          }}
+          style={{ flex: 1 }}
+          onPress={() => onChange('male')}
           activeOpacity={0.9}
         >
-          {value === 'male' && (
-            <>
-              <LinearGradient
-                colors={[...MALE_GRADIENT_COLORS]}
-                start={GRADIENT_START}
-                end={GRADIENT_END}
-                style={styles.gradientBg}
-              />
-              <View style={styles.innerStroke} />
-              <LinearGradient
-                colors={['rgba(255,255,255,0.45)', 'rgba(255,255,255,0.15)', 'rgba(255,255,255,0)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.glossOverlay}
-              />
-            </>
-          )}
-          <Text
+          <Animated.View
             style={[
-              styles.optionText,
-              value === 'male' ? styles.selectedText : styles.unselectedText,
+              styles.option,
+              value === 'male' ? styles.selectedFrame : styles.unselected,
+              SHADOWS.small,
+              { transform: [{ scale: maleScale }] },
             ]}
           >
-            Male
-          </Text>
+            {value === 'male' && (
+              <>
+                <LinearGradient
+                  colors={[...MALE_GRADIENT_COLORS]}
+                  start={GRADIENT_START}
+                  end={GRADIENT_END}
+                  style={styles.gradientBg}
+                />
+                <View style={styles.innerStroke} />
+                <LinearGradient
+                  colors={['rgba(255,255,255,0.45)', 'rgba(255,255,255,0.15)', 'rgba(255,255,255,0)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.glossOverlay}
+                />
+              </>
+            )}
+            <Text
+              style={[
+                styles.optionText,
+                value === 'male' ? styles.selectedText : styles.unselectedText,
+              ]}
+            >
+              Male
+            </Text>
+          </Animated.View>
         </TouchableOpacity>
 
         <TouchableOpacity
           testID="gender-female"
-          style={[
-            styles.option,
-            value === 'female' ? styles.selectedFrame : styles.unselected,
-            SHADOWS.small,
-          ]}
-          onPress={() => {
-            console.log('[GenderSelector] Female pressed');
-            onChange('female');
-          }}
+          style={{ flex: 1 }}
+          onPress={() => onChange('female')}
           activeOpacity={0.9}
         >
-          {value === 'female' && (
-            <>
-              <LinearGradient
-                colors={[...FEMALE_GRADIENT_COLORS]}
-                start={GRADIENT_START}
-                end={GRADIENT_END}
-                style={styles.gradientBg}
-              />
-              <View style={styles.innerStroke} />
-              <LinearGradient
-                colors={['rgba(255,255,255,0.45)', 'rgba(255,255,255,0.15)', 'rgba(255,255,255,0)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.glossOverlay}
-              />
-            </>
-          )}
-          <Text
+          <Animated.View
             style={[
-              styles.optionText,
-              value === 'female' ? styles.selectedText : styles.unselectedText,
+              styles.option,
+              value === 'female' ? styles.selectedFrame : styles.unselected,
+              SHADOWS.small,
+              { transform: [{ scale: femaleScale }] },
             ]}
           >
-            Female
-          </Text>
+            {value === 'female' && (
+              <>
+                <LinearGradient
+                  colors={[...FEMALE_GRADIENT_COLORS]}
+                  start={GRADIENT_START}
+                  end={GRADIENT_END}
+                  style={styles.gradientBg}
+                />
+                <View style={styles.innerStroke} />
+                <LinearGradient
+                  colors={['rgba(255,255,255,0.45)', 'rgba(255,255,255,0.15)', 'rgba(255,255,255,0)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.glossOverlay}
+                />
+              </>
+            )}
+            <Text
+              style={[
+                styles.optionText,
+                value === 'female' ? styles.selectedText : styles.unselectedText,
+              ]}
+            >
+              Female
+            </Text>
+          </Animated.View>
         </TouchableOpacity>
       </View>
 
@@ -140,13 +179,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   option: {
-    flex: 1,
     height: 52,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
     position: 'relative',
+    width: '100%',
   } as ViewStyle,
   selectedFrame: {
     backgroundColor: 'transparent',

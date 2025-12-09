@@ -151,7 +151,13 @@ export const [ChallengesContext, useChallenges] = createContextHook(() => {
     queryKey: ['challenges', activeCategory],
     queryFn: async () => {
       const list = await databaseService.challenge.getActiveChallenges();
-      const items = (list as unknown as Challenge[]);
+      let items = (list as unknown as Challenge[]);
+      
+      if (!items || items.length === 0) {
+        console.log('No challenges found in Firestore, using defaults');
+        items = getDefaultChallenges();
+      }
+      
       return activeCategory === 'all' ? items : items.filter(c => c.category === activeCategory);
     },
   });

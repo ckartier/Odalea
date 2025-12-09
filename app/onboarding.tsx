@@ -199,7 +199,7 @@ export default function OnboardingScreen() {
   const renderSlide = (slide: OnboardingSlide, index: number) => {
     const IconComponent = slide.icon;
     
-    let iconTransform: Array<{ scale?: Animated.Value; translateY?: Animated.Value }> = [];
+    let iconTransform: any = [];
     if (index === 0) {
       iconTransform = [{ scale: heartbeatAnim }];
     } else if (index === 1) {

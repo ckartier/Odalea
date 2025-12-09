@@ -422,3 +422,14 @@ export interface Notification {
   isRead: boolean;
   createdAt: Date;
 }
+
+export interface EmergencyContact {
+  id: string;
+  name: string;
+  phone: string;
+  relation: string;
+  isVeterinarian: boolean;
+  isActive: boolean;
+  email?: string;
+  address?: string;
+}

@@ -78,6 +78,8 @@ export const COLORS = {
   menuBackground: 'rgba(255, 255, 255, 0.95)',
   menuShadow: 'rgba(0, 0, 0, 0.15)',
   
+  alertBackground: '#F8FAFC',
+
   liquidGlassMale: 'rgba(163, 213, 255, 0.25)',
   liquidGlassFemale: 'rgba(255, 179, 217, 0.25)',
   liquidGlassNeutral: 'rgba(255, 255, 255, 0.25)',

@@ -125,6 +125,13 @@ function HomeScreen() {
     { key: 'lost_found', label: t('lost_found.lost_found') },
   ];
 
+  const filteredPosts = React.useMemo(() => {
+    if (activeFilter === 'all') return posts;
+    if (activeFilter === 'lost_found') return posts.filter(p => p.type === 'lost');
+    // For mock purposes, return all for other filters
+    return posts;
+  }, [posts, activeFilter]);
+
   const renderPost = (post: any) => (
     <ResponsiveCard
       key={post.id}
@@ -247,7 +254,7 @@ function HomeScreen() {
         style={styles.feed}
       >
         {/* <FirebaseTest testId="firebase-test" /> */}
-        {posts.map(renderPost)}
+        {filteredPosts.map(renderPost)}
         
         <View style={styles.endOfFeed}>
           <Text style={styles.endOfFeedText}>{t('common.view_all')}</Text>

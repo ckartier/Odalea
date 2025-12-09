@@ -79,7 +79,8 @@ const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       if (Platform.OS === 'web') {
         return uri;
       }
-      const dir = FileSystem.documentDirectory + 'images/';
+      const fs = FileSystem as any;
+      const dir = (fs.documentDirectory || fs.cacheDirectory) + 'images/';
       const ext = uri.split('.').pop() ?? 'jpg';
       const fileName = `photo_${Date.now()}.${ext}`;
       const dest = dir + fileName;

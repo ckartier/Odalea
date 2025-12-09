@@ -269,10 +269,18 @@ export const [FirebaseUserContext, useFirebaseUser] = createContextHook(() => {
     try {
       const updatedUser = { ...authState.user, ...userData } as User;
 
-      if (userData.firstName || userData.lastName) {
-        await updateProfile(authState.firebaseUser, {
-          displayName: `${updatedUser.firstName} ${updatedUser.lastName}`,
-        });
+      if (userData.firstName || userData.lastName || userData.photo) {
+        const profileUpdates: { displayName?: string; photoURL?: string } = {};
+        
+        if (userData.firstName || userData.lastName) {
+          profileUpdates.displayName = `${updatedUser.firstName} ${updatedUser.lastName}`;
+        }
+        
+        if (userData.photo) {
+          profileUpdates.photoURL = userData.photo;
+        }
+
+        await updateProfile(authState.firebaseUser, profileUpdates);
       }
 
       await databaseService.user.saveUser(updatedUser);

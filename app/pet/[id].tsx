@@ -16,8 +16,7 @@ import Button from '@/components/Button';
 import { usePets } from '@/hooks/pets-store';
 import { useMessaging } from '@/hooks/messaging-store';
 import { useAuth } from '@/hooks/auth-store';
-import { Pet } from '@/types';
-import { DemoUser } from '@/mocks/demo-users';
+import { Pet, User } from '@/types';
 import { 
   Calendar, 
   Clock, 
@@ -47,7 +46,7 @@ export default function PetProfileScreen() {
   } = useMessaging();
   
   const [pet, setPet] = useState<Pet | null>(null);
-  const [petOwner, setPetOwner] = useState<DemoUser | null>(null);
+  const [petOwner, setPetOwner] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   
@@ -140,7 +139,7 @@ export default function PetProfileScreen() {
   // Get display name for pet owner (using pseudonym for privacy)
   const getOwnerDisplayName = () => {
     if (petOwner) {
-      return `@${petOwner.pseudonym}`;
+      return `@${petOwner.pseudo}`;
     }
     return 'Unknown Owner';
   };

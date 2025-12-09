@@ -170,7 +170,7 @@ const ResponsiveCard: React.FC<ResponsiveCardProps> = ({
   if (variant === 'gradient') {
     return (
       <LinearGradient
-        colors={gradientColors || GRADIENTS.primary}
+        colors={gradientColors as any || GRADIENTS.primary}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={cardStyles}

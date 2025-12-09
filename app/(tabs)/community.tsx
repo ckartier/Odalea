@@ -157,6 +157,14 @@ export default function CommunityScreen() {
     return `${Math.floor(diffInMinutes / 1440)}d`;
   };
 
+  const filteredPosts = useMemo(() => {
+    if (activeFilter === 'all') return posts;
+    if (activeFilter === 'following') return posts; // Placeholder for following logic
+    if (activeFilter === 'nearby') return posts.filter(p => p.location);
+    if (activeFilter === 'lost_found') return posts.filter(p => p.type === 'lost' || p.type === 'found');
+    return posts;
+  }, [posts, activeFilter]);
+
   const renderPost = (post: any) => {
     const isLiked = isPostLiked(post.id);
     const isUrgent = post.type === 'lost' || post.type === 'found';
@@ -277,16 +285,16 @@ export default function CommunityScreen() {
               <Text style={styles.retryText}>Retry</Text>
             </TouchableOpacity>
           </View>
-        ) : posts.length === 0 ? (
+        ) : filteredPosts.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No posts yet</Text>
-            <Text style={styles.emptySubtext}>Be the first to share something!</Text>
+            <Text style={styles.emptyText}>No posts found</Text>
+            <Text style={styles.emptySubtext}>Try changing your filters</Text>
           </View>
         ) : (
-          posts.map(renderPost)
+          filteredPosts.map(renderPost)
         )}
         
-        {posts.length > 0 && (
+        {filteredPosts.length > 0 && (
           <View style={styles.endOfFeed}>
             <Text style={styles.endOfFeedText}>You&apos;re all caught up!</Text>
           </View>

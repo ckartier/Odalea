@@ -86,8 +86,8 @@ function parseUser(id: string, raw: any): User | null {
       pets,
       animalType: raw?.animalType ? String(raw.animalType) : undefined,
       animalName: raw?.animalName ? String(raw.animalName) : undefined,
-      isProfessional: raw?.isProfessional ? Boolean(raw.isProfessional) : undefined,
-      professionalData: raw?.professionalData,
+      isActive: Boolean(raw?.isActive ?? true),
+      profileComplete: Boolean(raw?.profileComplete ?? true),
     };
 
     if (!user.pseudo || !user.email) return null;
