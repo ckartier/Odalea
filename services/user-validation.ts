@@ -1,4 +1,4 @@
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from './firebase';
 
 export async function isPseudoTaken(pseudo: string): Promise<boolean> {
@@ -38,6 +38,27 @@ export async function isEmailTaken(email: string): Promise<boolean> {
     return !qs2.empty;
   } catch (error) {
     console.log('Error while checking email availability:', error);
+    return false;
+  }
+}
+
+export async function doesVeterinarianProfileExist(userId: string): Promise<boolean> {
+  try {
+    const trimmed = userId.trim();
+    if (!trimmed) return false;
+
+    const vetDocRef = doc(db, 'veterinarians', trimmed);
+    const vetDocSnap = await getDoc(vetDocRef);
+    if (vetDocSnap.exists()) {
+      return true;
+    }
+
+    const vetsRef = collection(db, 'veterinarians');
+    const q = query(vetsRef, where('userId', '==', trimmed));
+    const qs = await getDocs(q);
+    return !qs.empty;
+  } catch (error) {
+    console.log('Error while checking veterinarian profile existence:', error);
     return false;
   }
 }
