@@ -331,28 +331,6 @@ function SignInScreen() {
             </View>
           )}
 
-          <TouchableOpacity
-            accessibilityRole="button"
-            testID="prefill-test"
-            onPress={() => {
-              setSignInMethod('email');
-              setEmail('sophie.martin@example.com');
-              setPassword('Test123456!');
-            }}
-            style={styles.fillTestButton}
-          >
-            <Text style={styles.fillTestText}>Remplir test (Sophie)</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            accessibilityRole="button"
-            testID="open-seed"
-            onPress={() => router.push('/firebase-seed')}
-            style={styles.seedLinkButton}
-          >
-            <Text style={styles.seedLinkText}>Ouvrir Seed Firestore</Text>
-          </TouchableOpacity>
-          
           <View style={styles.dividerContainer}>
             <View style={styles.divider} />
             <Text style={styles.dividerText}>{t('auth.or_continue_with')}</Text>
@@ -546,33 +524,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  fillTestButton: {
-    marginTop: 10,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-  },
-  fillTestText: {
-    color: COLORS.black,
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  seedLinkButton: {
-    marginTop: 12,
-    alignSelf: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  seedLinkText: {
-    color: COLORS.black,
-    fontSize: 13,
-    fontWeight: '700' as const,
-    textDecorationLine: 'underline' as const,
   },
   footer: {
     flexDirection: 'row',
