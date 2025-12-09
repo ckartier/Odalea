@@ -22,6 +22,7 @@ import { FirebaseUserContext } from "@/hooks/firebase-user-store";
 import { SocialContext } from "@/hooks/social-store";
 import { trpc, trpcClient } from "@/lib/trpc";
 import AppBackground from "@/components/AppBackground";
+import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
 import { useNotifications } from "@/hooks/use-notifications";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -153,13 +154,15 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <trpc.Provider client={trpcClient} queryClient={queryClient}>
-          <GestureHandlerRootView style={gestureHandlerStyle}>
-            <AppProviders>
-              <AppBackground>
-                <RootLayoutNav />
-              </AppBackground>
-            </AppProviders>
-          </GestureHandlerRootView>
+          <GlobalErrorBoundary>
+            <GestureHandlerRootView style={gestureHandlerStyle}>
+              <AppProviders>
+                <AppBackground>
+                  <RootLayoutNav />
+                </AppBackground>
+              </AppProviders>
+            </GestureHandlerRootView>
+          </GlobalErrorBoundary>
         </trpc.Provider>
       </QueryClientProvider>
     </SafeAreaProvider>
