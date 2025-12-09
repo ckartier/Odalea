@@ -17,6 +17,56 @@ interface MapViewProps {
   [key: string]: unknown;
 }
 
+type MapTypeId = 'roadmap' | 'satellite' | 'hybrid' | 'terrain' | string;
+
+interface GoogleMapTypeStyle {
+  featureType?: string;
+  elementType?: string;
+  stylers?: Record<string, unknown>[];
+}
+
+interface GoogleMapOptions {
+  center?: { lat: number; lng: number };
+  zoom?: number;
+  mapTypeId?: MapTypeId;
+  styles?: GoogleMapTypeStyle[];
+  disableDefaultUI?: boolean;
+  clickableIcons?: boolean;
+}
+
+interface GoogleLatLngBounds {
+  getNorthEast(): GoogleLatLng;
+  getSouthWest(): GoogleLatLng;
+}
+
+interface GoogleLatLng {
+  lat(): number;
+  lng(): number;
+}
+
+interface GoogleMapInstance {
+  setCenter(latLng: GoogleLatLng): void;
+  addListener(eventName: string, handler: () => void): void;
+  getBounds(): GoogleLatLngBounds | undefined;
+  getCenter(): GoogleLatLng;
+}
+
+interface GoogleMapsNamespace {
+  Map: new (el: HTMLElement, opts?: GoogleMapOptions) => GoogleMapInstance;
+  MapTypeId: Record<string, MapTypeId>;
+  LatLng: new (lat: number, lng: number) => GoogleLatLng;
+}
+
+interface GoogleNamespace {
+  maps: GoogleMapsNamespace;
+}
+
+declare global {
+  interface Window {
+    google?: GoogleNamespace;
+  }
+}
+
 const DEFAULT_LAT = 48.8566;
 const DEFAULT_LNG = 2.3522;
 
@@ -31,7 +81,7 @@ const MapView: React.FC<MapViewProps> = ({
   ...props
 }) => {
   const mapRef = useRef<HTMLDivElement | null>(null);
-  const googleMapRef = useRef<google.maps.Map | null>(null);
+  const googleMapRef = useRef<GoogleMapInstance | null>(null);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -41,7 +91,7 @@ const MapView: React.FC<MapViewProps> = ({
     const centerLat = typeof region?.latitude === 'number' ? region.latitude : DEFAULT_LAT;
     const centerLng = typeof region?.longitude === 'number' ? region.longitude : DEFAULT_LNG;
 
-    const mapOptions: google.maps.MapOptions = {
+    const mapOptions: GoogleMapOptions = {
       center: { lat: centerLat, lng: centerLng },
       zoom: 13,
       mapTypeId: window.google.maps.MapTypeId.ROADMAP,
@@ -166,40 +216,3 @@ const styles = StyleSheet.create({
 
 export default MapView;
 export const PROVIDER_GOOGLE = 'google';
-
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace google {
-    export namespace maps {
-      class Map {
-        constructor(el: HTMLElement, opts?: MapOptions);
-        setCenter(latLng: LatLng): void;
-        addListener(eventName: string, handler: () => void): void;
-        getBounds(): LatLngBounds | undefined;
-        getCenter(): LatLng;
-      }
-      type MapTypeId = any;
-      const MapTypeId: { ROADMAP: MapTypeId };
-      interface MapOptions {
-        center?: { lat: number; lng: number };
-        zoom?: number;
-        mapTypeId?: MapTypeId;
-        styles?: unknown[];
-        disableDefaultUI?: boolean;
-        clickableIcons?: boolean;
-      }
-      class LatLng {
-        constructor(lat: number, lng: number);
-        lat(): number;
-        lng(): number;
-      }
-      interface LatLngBounds {
-        getNorthEast(): LatLng;
-        getSouthWest(): LatLng;
-      }
-    }
-  }
-  interface Window {
-    google: typeof google | undefined;
-  }
-}
