@@ -19,7 +19,6 @@ import Input from '@/components/Input';
 import CountryCodePicker from '@/components/CountryCodePicker';
 import { useAuth } from '@/hooks/auth-store';
 import {
-  ArrowLeft,
   Mail,
   User,
   Phone,
@@ -310,16 +309,6 @@ export default function ProRegisterScreen() {
       setStep(3);
     } else if (step === 3 && validateStep3()) {
       handleSignUp();
-    }
-  };
-
-  const handlePreviousStep = () => {
-    if (step > 1) {
-      setStep(step - 1);
-    } else if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/auth/signin');
     }
   };
 
@@ -801,10 +790,6 @@ export default function ProRegisterScreen() {
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
         >
-          <TouchableOpacity style={styles.backButton} onPress={handlePreviousStep} testID="back-button">
-            <ArrowLeft size={24} color={COLORS.black} />
-          </TouchableOpacity>
-
           {step === 1 ? renderStep1() : step === 2 ? renderStep2() : renderStep3()}
 
           <View style={styles.footer}>
@@ -837,12 +822,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 36,
     paddingBottom: 24,
-  },
-  backButton: {
-    position: 'absolute',
-    top: 60,
-    left: 24,
-    zIndex: 10,
   },
   headerContainer: {
     alignItems: 'center',

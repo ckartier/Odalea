@@ -67,7 +67,7 @@ const RootLayoutNav = React.memo(() => {
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="auth/signin" options={{ headerShown: true }} />
       <Stack.Screen name="auth/signup" options={{ headerShown: true }} />
-      <Stack.Screen name="auth/pro-register" options={{ headerShown: true }} />
+      <Stack.Screen name="auth/pro-register" options={{ headerShown: false }} />
       <Stack.Screen name="auth/verify" options={{ headerShown: true }} />
       <Stack.Screen name="menu" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
