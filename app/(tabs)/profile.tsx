@@ -13,7 +13,7 @@ import {
   Switch,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { Href, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import PetCard from '@/components/PetCard';
@@ -50,6 +50,7 @@ import {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const toHref = (path: string): Href => path as Href;
   const { user, signOut, updateUser } = useUser();
   const { getUnlockedBadges } = useBadges();
   const { getUserActiveChallenges, getUserCompletedChallenges } = useChallenges();
@@ -105,11 +106,11 @@ export default function ProfileScreen() {
   };
   
   const handleAddPet = () => {
-    router.push('/pet/add');
+    router.push(toHref('/pet/add'));
   };
   
   const handleEditProfile = () => {
-    router.push('/profile/edit');
+    router.push(toHref('/profile/edit'));
   };
   
   const handlePhotoChange = async (uri: string | null) => {
@@ -138,7 +139,7 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             await signOut();
-            router.replace('/splash');
+            router.replace(toHref('/splash'));
           },
         },
       ]
@@ -194,14 +195,14 @@ export default function ProfileScreen() {
         <View style={styles.headerActions}>
           <TouchableOpacity
             style={[styles.headerButton, SHADOWS.small]}
-            onPress={() => router.push('/cat-sitter')}
+            onPress={() => router.push(toHref('/cat-sitter'))}
           >
             <Heart size={20} color={COLORS.primary} />
           </TouchableOpacity>
           
           <TouchableOpacity
             style={[styles.headerButton, SHADOWS.small]}
-            onPress={() => router.push('/friends')}
+            onPress={() => router.push(toHref('/friends'))}
           >
             <Users size={20} color={COLORS.primary} />
           </TouchableOpacity>
@@ -260,7 +261,7 @@ export default function ProfileScreen() {
         {/* Membership Status */}
         <TouchableOpacity 
           style={[styles.membershipCard, SHADOWS.medium]}
-          onPress={() => router.push('/premium')}
+          onPress={() => router.push(toHref('/premium'))}
           activeOpacity={0.8}
         >
           <View style={styles.membershipInfo}>
@@ -286,7 +287,7 @@ export default function ProfileScreen() {
           {!isPremium ? (
             <Button
               title="Passer à Premium"
-              onPress={() => router.push('/premium')}
+              onPress={() => router.push(toHref('/premium'))}
               variant="primary"
               size="small"
             />
@@ -298,7 +299,7 @@ export default function ProfileScreen() {
         {/* Friends Section */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Mes amis</Text>
-          <TouchableOpacity onPress={() => router.push('/friends')}>
+          <TouchableOpacity onPress={() => router.push(toHref('/friends'))}>
             <Text style={styles.seeAllText}>Voir tout</Text>
           </TouchableOpacity>
         </View>
@@ -308,7 +309,7 @@ export default function ProfileScreen() {
           renderItem={({ item }) => (
             <TouchableOpacity 
               style={[styles.friendItem, SHADOWS.small]}
-              onPress={() => router.push(`/messages/${item.id}`)}
+              onPress={() => router.push(toHref(`/messages/${item.id}`))}
             >
               <Image source={{ uri: item.avatar }} style={styles.friendAvatar} />
               <View style={styles.friendInfo}>
@@ -353,7 +354,7 @@ export default function ProfileScreen() {
         {/* Challenges Section */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Mes défis</Text>
-          <TouchableOpacity onPress={() => router.push('/(tabs)/challenges')}>
+          <TouchableOpacity onPress={() => router.push(toHref('/(tabs)/challenges'))}>
             <Text style={styles.seeAllText}>Voir tout</Text>
           </TouchableOpacity>
         </View>
@@ -378,7 +379,7 @@ export default function ProfileScreen() {
           <>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Vos badges</Text>
-              <TouchableOpacity onPress={() => router.push('/badges')}>
+              <TouchableOpacity onPress={() => router.push(toHref('/badges'))}>
                 <Text style={styles.seeAllText}>Voir tout</Text>
               </TouchableOpacity>
             </View>
@@ -411,7 +412,7 @@ export default function ProfileScreen() {
               >
                 <TrendingUp size={18} color={selectedCatSitterTab === 'overview' ? COLORS.primary : COLORS.darkGray} />
                 <Text style={[styles.catSitterTabText, selectedCatSitterTab === 'overview' && styles.activeCatSitterTabText]}>
-                  Vue d'ensemble
+                  Vue d&apos;ensemble
                 </Text>
               </TouchableOpacity>
 
@@ -535,7 +536,7 @@ export default function ProfileScreen() {
 
                     <TouchableOpacity 
                       style={styles.catSitterActionButton}
-                      onPress={() => router.push('/cat-sitter-settings')}
+                      onPress={() => router.push(toHref('/cat-sitter-settings'))}
                     >
                       <View style={styles.catSitterActionIcon}>
                         <Settings size={18} color={COLORS.primary} />
@@ -617,7 +618,7 @@ export default function ProfileScreen() {
                   {bookingRequests.length > 3 && (
                     <TouchableOpacity 
                       style={styles.catSitterViewAllButton}
-                      onPress={() => router.push('/cat-sitter-dashboard')}
+                      onPress={() => router.push(toHref('/cat-sitter-dashboard'))}
                     >
                       <Text style={styles.catSitterViewAllButtonText}>Voir toutes les demandes</Text>
                     </TouchableOpacity>
@@ -639,7 +640,7 @@ export default function ProfileScreen() {
                       <TouchableOpacity
                         key={message.id}
                         style={[styles.catSitterMessageCard, SHADOWS.small, !message.isRead && styles.catSitterUnreadMessage]}
-                        onPress={() => router.push(`/messages/${message.fromId}`)}
+                        onPress={() => router.push(toHref(`/messages/${message.fromId}`))}
                       >
                         <Image source={{ uri: message.fromAvatar }} style={styles.catSitterMessageAvatar} />
                         <View style={styles.catSitterMessageContent}>
@@ -664,7 +665,7 @@ export default function ProfileScreen() {
                   {catSitterMessages.length > 3 && (
                     <TouchableOpacity 
                       style={styles.catSitterViewAllButton}
-                      onPress={() => router.push('/cat-sitter-dashboard')}
+                      onPress={() => router.push(toHref('/cat-sitter-dashboard'))}
                     >
                       <Text style={styles.catSitterViewAllButtonText}>Voir tous les messages</Text>
                     </TouchableOpacity>
