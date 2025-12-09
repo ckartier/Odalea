@@ -10,7 +10,7 @@ import {
   Alert,
   Animated,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import Button from '@/components/Button';
@@ -214,6 +214,7 @@ function SignInScreen() {
 
   return (
     <View style={styles.container}>
+      <Stack.Screen options={{ headerShown: false }} />
       <View style={StyleSheet.absoluteFill} />
       <KeyboardAvoidingView
         style={styles.keyboardView}

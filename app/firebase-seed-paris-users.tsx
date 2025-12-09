@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { COLORS } from '@/constants/colors';
 import { ArrowLeft, Users, Check } from 'lucide-react-native';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
@@ -326,6 +326,7 @@ export default function FirebaseSeedParisUsersScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ArrowLeft size={24} color={COLORS.black} />

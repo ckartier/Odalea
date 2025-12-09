@@ -9,7 +9,7 @@ import {
   Platform,
   Animated,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import Button from '@/components/Button';
@@ -204,6 +204,7 @@ export default function VerifyScreen() {
   
   return (
     <View style={styles.container}>
+      <Stack.Screen options={{ headerShown: false }} />
       <View style={StyleSheet.absoluteFill} />
       <StatusBar style="dark" />
       
