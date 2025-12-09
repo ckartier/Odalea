@@ -5,6 +5,19 @@ import Constants from 'expo-constants';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
+const resolveProjectId = (): string => {
+  const projectId =
+    Constants.expoConfig?.extra?.eas?.projectId ??
+    Constants.easConfig?.projectId ??
+    process.env.EXPO_PUBLIC_APP_ID;
+
+  if (!projectId) {
+    throw new Error('Project ID not found. Please set EXPO_PUBLIC_APP_ID in your environment.');
+  }
+
+  return projectId;
+};
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -42,15 +55,13 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
     }
 
     try {
-      const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
-      
-      if (!projectId) {
-        console.warn('⚠️ Project ID not found. Push notifications may not work.');
-      }
+      const projectId = resolveProjectId();
 
-      token = (await Notifications.getExpoPushTokenAsync({
-        projectId,
-      })).data;
+      token = (
+        await Notifications.getExpoPushTokenAsync({
+          projectId,
+        })
+      ).data;
       
       console.log('✅ Push notification token:', token);
     } catch (error) {
