@@ -39,6 +39,72 @@ export interface User {
   isSuperAdmin?: boolean;
 }
 
+export type ProfessionalActivityType = 'vet' | 'shelter' | 'breeder' | 'boutique';
+
+export interface ProfessionalCommonInfo {
+  displayName: string;
+  contactEmail: string;
+  contactPhone: string;
+  address: {
+    street: string;
+    postcode: string;
+    city: string;
+    country: string;
+  };
+  description: string;
+  identityProofUrl: string;
+}
+
+export interface ProfessionalDocument {
+  type: string;
+  label: string;
+  url: string;
+  uploadedAt: number;
+}
+
+export interface VetProfile {
+  fullName: string;
+  ordinalNumber: string;
+  clinicName: string;
+  clinicPhone: string;
+  clinicEmail: string;
+  specialties: string[];
+  services: string[];
+  accreditationDocumentUrl: string;
+}
+
+export interface ShelterProfile {
+  structureName: string;
+  siren: string;
+  prefecturalApproval: string;
+  shelterAddress: string;
+  capacity: string;
+  coverageArea: string;
+  referentName: string;
+  referentPhone: string;
+  justificationDocumentUrl: string;
+}
+
+export interface BreederProfile {
+  affix: string;
+  breeds: string[];
+  breederNumber: string;
+  healthCertificatesUrl: string;
+  transferConditions: string;
+  farmWebsite: string;
+  activityProofUrl: string;
+}
+
+export interface BoutiqueProfile {
+  tradeName: string;
+  siret: string;
+  boutiqueAddress: string;
+  animalLicenseNumber: string;
+  catalogCategories: string[];
+  openingHours: string;
+  registrationProofUrl: string;
+}
+
 export interface ProfessionalData {
   companyName: string;
   siret: string;
@@ -56,6 +122,13 @@ export interface ProfessionalData {
   products: ProfessionalProduct[];
   orders: Order[];
   analytics: BusinessAnalytics;
+  activityType?: ProfessionalActivityType;
+  commonInfo?: ProfessionalCommonInfo;
+  vetProfile?: VetProfile;
+  shelterProfile?: ShelterProfile;
+  breederProfile?: BreederProfile;
+  boutiqueProfile?: BoutiqueProfile;
+  documents?: ProfessionalDocument[];
 }
 
 export interface Pet {

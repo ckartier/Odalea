@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  ScrollView, 
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
@@ -18,42 +18,111 @@ import Button from '@/components/Button';
 import Input from '@/components/Input';
 import CountryCodePicker from '@/components/CountryCodePicker';
 import { useAuth } from '@/hooks/auth-store';
-
-import { 
-  ArrowLeft, 
-  Mail, 
-  User, 
-  Phone, 
-  MapPin, 
-  Hash, 
-  Building2, 
+import {
+  ArrowLeft,
+  Mail,
+  User,
+  Phone,
+  MapPin,
+  Hash,
+  Building2,
   Briefcase,
   CreditCard,
-  FileText,
-  Globe,
-  CheckCircle,
-  Star,
-  Shield
+  Shield,
 } from 'lucide-react-native';
-
 import { isEmailTaken } from '@/services/user-validation';
 import { trpc } from '@/lib/trpc';
 import GlassView from '@/components/GlassView';
-import { LinearGradient } from 'expo-linear-gradient';
+import ProfessionalTypeSelector from '@/components/professional/ProfessionalTypeSelector';
+import CommonInfoForm from '@/components/professional/CommonInfoForm';
+import {
+  VetForm,
+  ShelterForm,
+  BreederForm,
+  BoutiqueForm,
+} from '@/components/professional/ActivityForms';
+import {
+  createActivityInitialValues,
+  PROFESSIONAL_ACTIVITY_CONFIG,
+  ActivityValuesMap,
+  ActivityFormValues,
+  validateActivityValues,
+} from '@/constants/professionalActivities';
+import {
+  ProfessionalActivityType,
+  ProfessionalCommonInfo,
+  ProfessionalDocument,
+  VetProfile,
+  ShelterProfile,
+  BreederProfile,
+  BoutiqueProfile,
+} from '@/types';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^\+?[0-9]{8,15}$/;
+const IBAN_REGEX = /^[A-Z]{2}[0-9A-Z]{13,32}$/;
+const URL_REGEX = /^(https?:\/\/)[\w.-]+(\.[\w\.-]+)+[\w\-._~:/?#[\]@!$&'()*+,;=.]+$/i;
+
+const formatAddress = (address: ProfessionalCommonInfo['address']) =>
+  [address.street, `${address.postcode} ${address.city}`.trim(), address.country]
+    .filter(Boolean)
+    .join(', ');
+
+const sanitizeNumber = (value: string) => value.replace(/\s+/g, '');
+
+const getCompanyNameFromActivity = (
+  activityType: ProfessionalActivityType,
+  values: ActivityFormValues,
+  fallback: string,
+) => {
+  switch (activityType) {
+    case 'vet':
+      return (values.clinicName as string) || fallback;
+    case 'shelter':
+      return (values.structureName as string) || fallback;
+    case 'breeder':
+      return (values.affix as string) || fallback;
+    case 'boutique':
+      return (values.tradeName as string) || fallback;
+    default:
+      return fallback;
+  }
+};
+
+const getRegistrationNumberFromActivity = (
+  activityType: ProfessionalActivityType,
+  values: ActivityFormValues,
+) => {
+  switch (activityType) {
+    case 'boutique':
+      return sanitizeNumber((values.siret as string) || '');
+    case 'shelter':
+      return `${sanitizeNumber((values.siren as string) || '')}00000`.slice(0, 14);
+    case 'vet':
+      return `${sanitizeNumber((values.ordinalNumber as string) || '')}00000000000000`.slice(0, 14);
+    case 'breeder':
+      return `${sanitizeNumber((values.breederNumber as string) || '')}00000000000000`.slice(0, 14);
+    default:
+      return '';
+  }
+};
+
+const toStringValue = (value: string | string[] | undefined) => (typeof value === 'string' ? value : '');
+const toArrayValue = (value: string | string[] | undefined) => (Array.isArray(value) ? value : []);
 
 export default function ProRegisterScreen() {
   const { height: windowHeight } = useWindowDimensions();
   const isCompactScreen = windowHeight < 720;
   const router = useRouter();
   const { signUp } = useAuth();
-  
+
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const iconScale = useRef(new Animated.Value(0.5)).current;
-  
+
   useEffect(() => {
     fadeAnim.setValue(0);
     slideAnim.setValue(50);
@@ -79,8 +148,8 @@ export default function ProRegisterScreen() {
         }),
       ]),
     ]).start();
-  }, [step]);
-  
+  }, [step, fadeAnim, slideAnim, iconScale]);
+
   // Personal data
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -91,118 +160,144 @@ export default function ProRegisterScreen() {
   const [address, setAddress] = useState('');
   const [zipCode, setZipCode] = useState('');
   const [city, setCity] = useState('');
-  
+
   // Professional data
-  const [companyName, setCompanyName] = useState('');
-  const [siret, setSiret] = useState('');
-  const [businessAddress, setBusinessAddress] = useState('');
-  const [businessEmail, setBusinessEmail] = useState('');
-  const [businessPhone, setBusinessPhone] = useState('');
-  const [businessDescription, setBusinessDescription] = useState('');
+  const [selectedActivity, setSelectedActivity] = useState<ProfessionalActivityType>('vet');
+  const [commonInfo, setCommonInfo] = useState<ProfessionalCommonInfo>({
+    displayName: '',
+    contactEmail: '',
+    contactPhone: '',
+    address: {
+      street: '',
+      postcode: '',
+      city: '',
+      country: 'France',
+    },
+    description: '',
+    identityProofUrl: '',
+  });
+  const [activityForms, setActivityForms] = useState<ActivityValuesMap>(() => createActivityInitialValues());
   const [iban, setIban] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<'fr' | 'en'>('fr');
-  
 
-  
+  const activityOptions = useMemo(
+    () => Object.values(PROFESSIONAL_ACTIVITY_CONFIG),
+    [],
+  );
+
+  const handleCommonInfoChange = useCallback((path: string, value: string) => {
+    setCommonInfo(prev => {
+      if (path.startsWith('address.')) {
+        const [, field] = path.split('.');
+        return {
+          ...prev,
+          address: {
+            ...prev.address,
+            [field]: value,
+          },
+        };
+      }
+      return {
+        ...prev,
+        [path]: value,
+      } as ProfessionalCommonInfo;
+    });
+  }, []);
+
+  const handleActivityValueChange = useCallback(
+    (key: string, value: string | string[]) => {
+      setActivityForms(prev => ({
+        ...prev,
+        [selectedActivity]: {
+          ...prev[selectedActivity],
+          [key]: value,
+        },
+      }));
+    },
+    [selectedActivity],
+  );
+
+  const handleActivitySelect = useCallback((type: ProfessionalActivityType) => {
+    console.log('📌 Selecting professional activity', type);
+    setSelectedActivity(type);
+  }, []);
+
   // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   const validateStep1 = () => {
     const newErrors: Record<string, string> = {};
-    
-    if (!firstName.trim()) {
-      newErrors.firstName = 'Prénom requis';
-    }
-    
-    if (!lastName.trim()) {
-      newErrors.lastName = 'Nom requis';
-    }
-    
-    if (!email.trim()) {
-      newErrors.email = 'Email requis';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Email invalide';
-    }
-    
-    if (!password.trim()) {
-      newErrors.password = 'Mot de passe requis';
-    } else if (password.length < 6) {
-      newErrors.password = 'Le mot de passe doit contenir au moins 6 caractères';
-    }
-    
-    if (!phoneNumber.trim()) {
-      newErrors.phoneNumber = 'Numéro de téléphone requis';
-    }
-    
-    if (!address.trim()) {
-      newErrors.address = 'Adresse requise';
-    }
-    
-    if (!zipCode.trim()) {
-      newErrors.zipCode = 'Code postal requis';
-    }
-    
-    if (!city.trim()) {
-      newErrors.city = 'Ville requise';
-    }
-    
+
+    if (!firstName.trim()) newErrors.firstName = 'Prénom requis';
+    if (!lastName.trim()) newErrors.lastName = 'Nom requis';
+
+    if (!email.trim()) newErrors.email = 'Email requis';
+    else if (!EMAIL_REGEX.test(email.trim())) newErrors.email = 'Email invalide';
+
+    if (!password.trim()) newErrors.password = 'Mot de passe requis';
+    else if (password.length < 6) newErrors.password = '6 caractères minimum';
+
+    if (!phoneNumber.trim()) newErrors.phoneNumber = 'Numéro requis';
+
+    if (!address.trim()) newErrors.address = 'Adresse requise';
+    if (!zipCode.trim()) newErrors.zipCode = 'Code postal requis';
+    if (!city.trim()) newErrors.city = 'Ville requise';
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
-  const validateStep2 = () => {
+
+  const validateCommonInfo = () => {
     const newErrors: Record<string, string> = {};
-    
-    if (!companyName.trim()) {
-      newErrors.companyName = 'Nom de l\'entreprise requis';
-    }
-    
-    if (!siret.trim()) {
-      newErrors.siret = 'Numéro SIRET requis';
-    } else if (siret.length !== 14) {
-      newErrors.siret = 'Le numéro SIRET doit contenir 14 chiffres';
-    }
-    
-    if (!businessAddress.trim()) {
-      newErrors.businessAddress = 'Adresse de l\'entreprise requise';
-    }
-    
-    if (!businessEmail.trim()) {
-      newErrors.businessEmail = 'Email professionnel requis';
-    } else if (!/\S+@\S+\.\S+/.test(businessEmail)) {
-      newErrors.businessEmail = 'Email professionnel invalide';
-    }
-    
-    if (!businessPhone.trim()) {
-      newErrors.businessPhone = 'Téléphone professionnel requis';
-    }
-    
-    if (!businessDescription.trim()) {
-      newErrors.businessDescription = 'Description de l\'entreprise requise';
-    }
-    
-    if (!iban.trim()) {
-      newErrors.iban = 'IBAN requis';
-    } else if (iban.length < 15 || iban.length > 34) {
-      newErrors.iban = 'Format IBAN invalide';
-    }
-    
+    if (!commonInfo.displayName.trim()) newErrors['common.displayName'] = 'Nom requis';
+    if (!commonInfo.contactEmail.trim()) newErrors['common.contactEmail'] = 'Email requis';
+    else if (!EMAIL_REGEX.test(commonInfo.contactEmail.trim())) newErrors['common.contactEmail'] = 'Email invalide';
+
+    if (!commonInfo.contactPhone.trim()) newErrors['common.contactPhone'] = 'Téléphone requis';
+    else if (!PHONE_REGEX.test(commonInfo.contactPhone.trim())) newErrors['common.contactPhone'] = 'Format international requis';
+
+    if (!commonInfo.address.street.trim()) newErrors['common.address.street'] = 'Rue requise';
+    if (!commonInfo.address.postcode.trim()) newErrors['common.address.postcode'] = 'Code postal requis';
+    if (!commonInfo.address.city.trim()) newErrors['common.address.city'] = 'Ville requise';
+    if (!commonInfo.address.country.trim()) newErrors['common.address.country'] = 'Pays requis';
+
+    if (!commonInfo.description.trim()) newErrors['common.description'] = 'Description requise';
+
+    if (!commonInfo.identityProofUrl.trim()) newErrors['common.identityProofUrl'] = 'Preuve requise';
+    else if (!URL_REGEX.test(commonInfo.identityProofUrl.trim())) newErrors['common.identityProofUrl'] = 'URL invalide';
+
+    return newErrors;
+  };
+
+  const validateStep2 = () => {
+    const commonErrors = validateCommonInfo();
+    const activityErrors = validateActivityValues(selectedActivity, activityForms[selectedActivity]);
+
+    const scopedActivityErrors: Record<string, string> = {};
+    Object.entries(activityErrors).forEach(([key, value]) => {
+      scopedActivityErrors[`activity.${selectedActivity}.${key}`] = value;
+    });
+
+    const newErrors: Record<string, string> = {
+      ...commonErrors,
+      ...scopedActivityErrors,
+    };
+
+    if (!iban.trim()) newErrors.iban = 'IBAN requis';
+    else if (!IBAN_REGEX.test(iban.replace(/\s+/g, '').toUpperCase())) newErrors.iban = 'Format IBAN invalide';
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
+
   const validateStep3 = () => {
     const newErrors: Record<string, string> = {};
-    
-    if (!acceptedTerms) {
-      newErrors.acceptedTerms = 'Vous devez accepter les conditions générales';
-    }
-    
+    if (!acceptedTerms) newErrors.acceptedTerms = 'Vous devez accepter les conditions';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
+
   const handleNextStep = () => {
     if (step === 1 && validateStep1()) {
       setStep(2);
@@ -212,29 +307,105 @@ export default function ProRegisterScreen() {
       handleSignUp();
     }
   };
-  
+
   const handlePreviousStep = () => {
     if (step > 1) {
       setStep(step - 1);
+    } else if (router.canGoBack()) {
+      router.back();
     } else {
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace('/auth/signin');
-      }
+      router.replace('/auth/signin');
     }
   };
-  
+
   const availabilityQuery = trpc.users.checkAvailability.useQuery(
-    { email: /\S+@\S+\.\S+/.test(email) ? email.trim().toLowerCase() : undefined },
-    { enabled: false }
+    { email: EMAIL_REGEX.test(email) ? email.trim().toLowerCase() : undefined },
+    { enabled: false },
   );
+
+  const buildDocumentsPayload = (
+    activityType: ProfessionalActivityType,
+    values: ActivityFormValues,
+  ): ProfessionalDocument[] => {
+    const docs: ProfessionalDocument[] = [];
+    const timestamp = Date.now();
+    if (commonInfo.identityProofUrl.trim()) {
+      docs.push({
+        type: 'identity-common',
+        label: 'Preuve identité',
+        url: commonInfo.identityProofUrl.trim(),
+        uploadedAt: timestamp,
+      });
+    }
+
+    const config = PROFESSIONAL_ACTIVITY_CONFIG[activityType];
+    config.sections.forEach(section => {
+      section.fields.forEach(field => {
+        if (field.inputType === 'url') {
+          const urlValue = values[field.key];
+          if (typeof urlValue === 'string' && urlValue.trim()) {
+            docs.push({
+              type: `${activityType}-${field.key}`,
+              label: field.label,
+              url: urlValue.trim(),
+              uploadedAt: timestamp,
+            });
+          }
+        }
+      });
+    });
+    return docs;
+  };
+
+  const buildVetProfile = (values: ActivityFormValues): VetProfile => ({
+    fullName: toStringValue(values.fullName),
+    ordinalNumber: toStringValue(values.ordinalNumber),
+    clinicName: toStringValue(values.clinicName),
+    clinicPhone: toStringValue(values.clinicPhone),
+    clinicEmail: toStringValue(values.clinicEmail),
+    specialties: toArrayValue(values.specialties),
+    services: toArrayValue(values.services),
+    accreditationDocumentUrl: toStringValue(values.accreditationDocumentUrl),
+  });
+
+  const buildShelterProfile = (values: ActivityFormValues): ShelterProfile => ({
+    structureName: toStringValue(values.structureName),
+    siren: toStringValue(values.siren),
+    prefecturalApproval: toStringValue(values.prefecturalApproval),
+    shelterAddress: toStringValue(values.shelterAddress),
+    capacity: toStringValue(values.capacity),
+    coverageArea: toStringValue(values.coverageArea),
+    referentName: toStringValue(values.referentName),
+    referentPhone: toStringValue(values.referentPhone),
+    justificationDocumentUrl: toStringValue(values.justificationDocumentUrl),
+  });
+
+  const buildBreederProfile = (values: ActivityFormValues): BreederProfile => ({
+    affix: toStringValue(values.affix),
+    breeds: toArrayValue(values.breeds),
+    breederNumber: toStringValue(values.breederNumber),
+    healthCertificatesUrl: toStringValue(values.healthCertificatesUrl),
+    transferConditions: toStringValue(values.transferConditions),
+    farmWebsite: toStringValue(values.farmWebsite),
+    activityProofUrl: toStringValue(values.activityProofUrl),
+  });
+
+  const buildBoutiqueProfile = (values: ActivityFormValues): BoutiqueProfile => ({
+    tradeName: toStringValue(values.tradeName),
+    siret: sanitizeNumber(toStringValue(values.siret)),
+    boutiqueAddress: toStringValue(values.boutiqueAddress),
+    animalLicenseNumber: toStringValue(values.animalLicenseNumber),
+    catalogCategories: toArrayValue(values.catalogCategories),
+    openingHours: toStringValue(values.openingHours),
+    registrationProofUrl: toStringValue(values.registrationProofUrl),
+  });
 
   const handleSignUp = async () => {
     setLoading(true);
-    
+    const activityValues = activityForms[selectedActivity];
+
     try {
-      if (/\S+@\S+\.\S+/.test(email)) {
+      if (EMAIL_REGEX.test(email)) {
         const [localEmailTaken, server] = await Promise.all([
           isEmailTaken(email),
           availabilityQuery.refetch(),
@@ -246,6 +417,76 @@ export default function ProRegisterScreen() {
           return;
         }
       }
+
+      const normalizedIban = iban.replace(/\s+/g, '').toUpperCase();
+      const formattedAddress = formatAddress({
+        street: commonInfo.address.street.trim(),
+        postcode: commonInfo.address.postcode.trim(),
+        city: commonInfo.address.city.trim(),
+        country: commonInfo.address.country.trim(),
+      });
+
+      const companyName = getCompanyNameFromActivity(
+        selectedActivity,
+        activityValues,
+        commonInfo.displayName.trim(),
+      );
+      const registrationNumber = getRegistrationNumberFromActivity(selectedActivity, activityValues);
+
+      const documents = buildDocumentsPayload(selectedActivity, activityValues);
+
+      const professionalBase = {
+        companyName,
+        siret: registrationNumber,
+        businessAddress: formattedAddress,
+        businessEmail: commonInfo.contactEmail.trim(),
+        businessPhone: commonInfo.contactPhone.trim(),
+        businessDescription: commonInfo.description.trim(),
+        companyLogo: undefined,
+        iban: normalizedIban,
+        acceptedTerms,
+        language: selectedLanguage,
+        isVerified: false,
+        subscriptionType: 'basic' as const,
+        subscriptionExpiry: undefined,
+        products: [],
+        orders: [],
+        analytics: {
+          totalSales: 0,
+          totalOrders: 0,
+          averageOrderValue: 0,
+          topProducts: [],
+          monthlyRevenue: [],
+          customerRetention: 0,
+        },
+        activityType: selectedActivity,
+        commonInfo: {
+          displayName: commonInfo.displayName.trim(),
+          contactEmail: commonInfo.contactEmail.trim(),
+          contactPhone: commonInfo.contactPhone.trim(),
+          address: {
+            street: commonInfo.address.street.trim(),
+            postcode: commonInfo.address.postcode.trim(),
+            city: commonInfo.address.city.trim(),
+            country: commonInfo.address.country.trim(),
+          },
+          description: commonInfo.description.trim(),
+          identityProofUrl: commonInfo.identityProofUrl.trim(),
+        },
+        documents,
+      };
+
+      const vetProfile = selectedActivity === 'vet' ? buildVetProfile(activityValues) : undefined;
+      const shelterProfile = selectedActivity === 'shelter' ? buildShelterProfile(activityValues) : undefined;
+      const breederProfile = selectedActivity === 'breeder' ? buildBreederProfile(activityValues) : undefined;
+      const boutiqueProfile = selectedActivity === 'boutique' ? buildBoutiqueProfile(activityValues) : undefined;
+
+      console.log('🚀 Submitting professional registration', {
+        selectedActivity,
+        commonInfo,
+        activityValues,
+      });
+
       const userData = {
         firstName,
         lastName,
@@ -260,36 +501,18 @@ export default function ProRegisterScreen() {
         isCatSitter: false,
         isProfessional: true,
         professionalData: {
-          companyName,
-          siret: siret.replace(/\s/g, ''), // Remove spaces
-          businessAddress,
-          businessEmail,
-          businessPhone,
-          businessDescription,
-          iban: iban.replace(/\s/g, '').toUpperCase(), // Format IBAN
-          acceptedTerms,
-          language: selectedLanguage,
-          isVerified: false,
-          subscriptionType: 'basic' as const,
-          products: [],
-          orders: [],
-          analytics: {
-            totalSales: 0,
-            totalOrders: 0,
-            averageOrderValue: 0,
-            topProducts: [],
-            monthlyRevenue: [],
-            customerRetention: 0,
-          },
+          ...professionalBase,
+          vetProfile,
+          shelterProfile,
+          breederProfile,
+          boutiqueProfile,
         },
       };
-      
+
       const result = await signUp(userData);
-      
+
       if (result.success) {
-        // Clear sensitive data from memory
         setIban('');
-        setSiret('');
         setPassword('');
         router.push('/auth/verify?type=professional');
       } else {
@@ -302,297 +525,211 @@ export default function ProRegisterScreen() {
       setLoading(false);
     }
   };
-  
+
+  const renderActivityForm = () => {
+    const props = {
+      values: activityForms[selectedActivity],
+      onChange: handleActivityValueChange,
+      errors,
+      testIDPrefix: `activity-${selectedActivity}`,
+    };
+
+    switch (selectedActivity) {
+      case 'vet':
+        return <VetForm {...props} />;
+      case 'shelter':
+        return <ShelterForm {...props} />;
+      case 'breeder':
+        return <BreederForm {...props} />;
+      case 'boutique':
+      default:
+        return <BoutiqueForm {...props} />;
+    }
+  };
+
   const renderStep1 = () => (
     <>
-      <Animated.View style={[styles.headerContainer, {
-        opacity: fadeAnim,
-        transform: [{ translateY: slideAnim }],
-      }]}>
-        <Animated.View style={[styles.iconContainer, {
-          transform: [{ scale: iconScale }],
-        }]}>
+      <Animated.View style={[styles.headerContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }] }>
+        <Animated.View style={[styles.iconContainer, { transform: [{ scale: iconScale }] }] }>
           <Briefcase size={32} color={COLORS.maleAccent} />
         </Animated.View>
         <Text style={styles.stepText}>Étape 1 sur 3</Text>
         <Text style={styles.title}>Compte Professionnel</Text>
         <Text style={styles.subtitle}>Créez votre compte professionnel pour vendre sur Coppet</Text>
       </Animated.View>
-      
-      <Animated.View style={[styles.benefitsContainer, {
-        opacity: fadeAnim,
-        transform: [{ translateY: slideAnim }],
-      }]}>
-        <View style={styles.benefitItem}>
-          <CheckCircle size={20} color={COLORS.success} />
-          <Text style={styles.benefitText}>Vendez vos produits sur la marketplace</Text>
-        </View>
-        <View style={styles.benefitItem}>
-          <Star size={20} color={COLORS.success} />
-          <Text style={styles.benefitText}>Tableau de bord analytique avancé</Text>
-        </View>
-        <View style={styles.benefitItem}>
-          <Shield size={20} color={COLORS.success} />
-          <Text style={styles.benefitText}>Badge de vérification professionnel</Text>
-        </View>
-      </Animated.View>
-      
-      <Animated.View style={{
-        opacity: fadeAnim,
-        transform: [{ translateY: slideAnim }],
-      }}>
-      <GlassView style={styles.formContainer} liquidGlass tint="neutral" intensity={40}>
-        <Input
-          label="Prénom"
-          placeholder="Entrez votre prénom"
-          value={firstName}
-          onChangeText={setFirstName}
-          error={errors.firstName}
-          leftIcon={<User size={20} color={COLORS.darkGray} />}
-        />
-        
-        <Input
-          label="Nom"
-          placeholder="Entrez votre nom"
-          value={lastName}
-          onChangeText={setLastName}
-          error={errors.lastName}
-          leftIcon={<User size={20} color={COLORS.darkGray} />}
-        />
-        
-        <Input
-          label="Email"
-          placeholder="Entrez votre email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          error={errors.email}
-          leftIcon={<Mail size={20} color={COLORS.darkGray} />}
-        />
-        
-        <Input
-          label="Mot de passe"
-          placeholder="Créez un mot de passe"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          isPassword
-          error={errors.password}
-        />
-        
-        <View style={styles.phoneContainer}>
-          <CountryCodePicker
-            value={countryCode}
-            onChange={setCountryCode}
-            style={styles.countryCode}
-          />
-          
+
+      <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+        <GlassView style={styles.formContainer} liquidGlass tint="neutral" intensity={40}>
           <Input
-            label="Numéro de téléphone"
-            placeholder="Entrez votre numéro de téléphone"
-            value={phoneNumber}
-            onChangeText={setPhoneNumber}
-            keyboardType="phone-pad"
-            error={errors.phoneNumber}
-            containerStyle={styles.phoneInput}
-            leftIcon={<Phone size={20} color={COLORS.darkGray} />}
+            label="Prénom"
+            placeholder="Entrez votre prénom"
+            value={firstName}
+            onChangeText={setFirstName}
+            error={errors.firstName}
+            leftIcon={<User size={20} color={COLORS.darkGray} />}
+            testID="personal-firstName"
           />
-        </View>
-        
-        <Input
-          label="Adresse"
-          placeholder="Entrez votre adresse"
-          value={address}
-          onChangeText={setAddress}
-          error={errors.address}
-          leftIcon={<MapPin size={20} color={COLORS.darkGray} />}
-        />
-        
-        <View style={styles.rowContainer}>
           <Input
-            label="Code postal"
-            placeholder="Code postal"
-            value={zipCode}
-            onChangeText={setZipCode}
-            error={errors.zipCode}
-            containerStyle={styles.zipInput}
-            leftIcon={<Hash size={20} color={COLORS.darkGray} />}
+            label="Nom"
+            placeholder="Entrez votre nom"
+            value={lastName}
+            onChangeText={setLastName}
+            error={errors.lastName}
+            leftIcon={<User size={20} color={COLORS.darkGray} />}
+            testID="personal-lastName"
           />
-          
           <Input
-            label="Ville"
-            placeholder="Ville"
-            value={city}
-            onChangeText={setCity}
-            error={errors.city}
-            containerStyle={styles.cityInput}
-            leftIcon={<Building2 size={20} color={COLORS.darkGray} />}
+            label="Email"
+            placeholder="Entrez votre email"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            error={errors.email}
+            leftIcon={<Mail size={20} color={COLORS.darkGray} />}
+            testID="personal-email"
           />
-        </View>
-        
-        <Button
-          title="Suivant"
-          onPress={handleNextStep}
-          style={styles.button}
-        />
-      </GlassView>
+          <Input
+            label="Mot de passe"
+            placeholder="Créez un mot de passe"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            isPassword
+            error={errors.password}
+            testID="personal-password"
+          />
+          <View style={styles.phoneContainer}>
+            <CountryCodePicker value={countryCode} onChange={setCountryCode} style={styles.countryCode} />
+            <Input
+              label="Numéro de téléphone"
+              placeholder="Entrez votre numéro"
+              value={phoneNumber}
+              onChangeText={setPhoneNumber}
+              keyboardType="phone-pad"
+              error={errors.phoneNumber}
+              containerStyle={styles.phoneInput}
+              leftIcon={<Phone size={20} color={COLORS.darkGray} />}
+              testID="personal-phone"
+            />
+          </View>
+          <Input
+            label="Adresse"
+            placeholder="Entrez votre adresse"
+            value={address}
+            onChangeText={setAddress}
+            error={errors.address}
+            leftIcon={<MapPin size={20} color={COLORS.darkGray} />}
+            testID="personal-address"
+          />
+          <View style={styles.rowContainer}>
+            <Input
+              label="Code postal"
+              placeholder="Code postal"
+              value={zipCode}
+              onChangeText={setZipCode}
+              error={errors.zipCode}
+              containerStyle={styles.zipInput}
+              leftIcon={<Hash size={20} color={COLORS.darkGray} />}
+              testID="personal-zip"
+            />
+            <Input
+              label="Ville"
+              placeholder="Ville"
+              value={city}
+              onChangeText={setCity}
+              error={errors.city}
+              containerStyle={styles.cityInput}
+              leftIcon={<Building2 size={20} color={COLORS.darkGray} />}
+              testID="personal-city"
+            />
+          </View>
+          <Button title="Suivant" onPress={handleNextStep} style={styles.button} />
+        </GlassView>
       </Animated.View>
     </>
   );
-  
+
   const renderStep2 = () => (
     <>
-      <Animated.View style={[styles.headerContainer, {
-        opacity: fadeAnim,
-        transform: [{ translateY: slideAnim }],
-      }]}>
-        <Animated.View style={[styles.iconContainer, {
-          transform: [{ scale: iconScale }],
-        }]}>
+      <Animated.View style={[styles.headerContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }] }>
+        <Animated.View style={[styles.iconContainer, { transform: [{ scale: iconScale }] }] }>
           <Building2 size={32} color={COLORS.maleAccent} />
         </Animated.View>
         <Text style={styles.stepText}>Étape 2 sur 3</Text>
         <Text style={styles.title}>Informations Entreprise</Text>
-        <Text style={styles.subtitle}>Renseignez les détails de votre entreprise</Text>
+        <Text style={styles.subtitle}>Sélectionnez votre activité et complétez les sections dédiées</Text>
       </Animated.View>
-      
-      <Animated.View style={{
-        opacity: fadeAnim,
-        transform: [{ translateY: slideAnim }],
-      }}>
-      <GlassView style={styles.formContainer} liquidGlass tint="neutral" intensity={40}>
-        <Input
-          label="Nom de l'entreprise"
-          placeholder="Entrez le nom de votre entreprise"
-          value={companyName}
-          onChangeText={setCompanyName}
-          error={errors.companyName}
-          leftIcon={<Building2 size={20} color={COLORS.darkGray} />}
-        />
-        
-        <Input
-          label="Numéro SIRET"
-          placeholder="Entrez votre numéro SIRET"
-          value={siret}
-          onChangeText={setSiret}
-          error={errors.siret}
-          secureTextEntry
-          leftIcon={<Hash size={20} color={COLORS.darkGray} />}
-        />
-        
-        <Input
-          label="Adresse de l'entreprise"
-          placeholder="Entrez l'adresse de votre entreprise"
-          value={businessAddress}
-          onChangeText={setBusinessAddress}
-          error={errors.businessAddress}
-          leftIcon={<MapPin size={20} color={COLORS.darkGray} />}
-        />
-        
-        <Input
-          label="Email professionnel"
-          placeholder="Entrez votre email professionnel"
-          value={businessEmail}
-          onChangeText={setBusinessEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          error={errors.businessEmail}
-          leftIcon={<Mail size={20} color={COLORS.darkGray} />}
-        />
-        
-        <Input
-          label="Téléphone professionnel"
-          placeholder="Entrez votre téléphone professionnel"
-          value={businessPhone}
-          onChangeText={setBusinessPhone}
-          keyboardType="phone-pad"
-          error={errors.businessPhone}
-          leftIcon={<Phone size={20} color={COLORS.darkGray} />}
-        />
-        
-        <Input
-          label="Description de l'entreprise"
-          placeholder="Décrivez brièvement votre activité"
-          value={businessDescription}
-          onChangeText={setBusinessDescription}
-          multiline
-          numberOfLines={3}
-          error={errors.businessDescription}
-          leftIcon={<FileText size={20} color={COLORS.darkGray} />}
-        />
-        
-        <Input
-          label="IBAN"
-          placeholder="Entrez votre IBAN pour les paiements"
-          value={iban}
-          onChangeText={setIban}
-          error={errors.iban}
-          secureTextEntry
-          leftIcon={<CreditCard size={20} color={COLORS.darkGray} />}
-        />
-        
-        <View style={styles.languageContainer}>
-          <Text style={styles.languageLabel}>Langue préférée</Text>
-          <View style={styles.languageOptions}>
-            <TouchableOpacity
-              style={[
-                styles.languageOption,
-                selectedLanguage === 'fr' ? styles.languageOptionActive : null,
-              ]}
-              onPress={() => setSelectedLanguage('fr')}
-            >
-              <Text style={[
-                styles.languageOptionText,
-                selectedLanguage === 'fr' ? styles.languageOptionTextActive : null,
-              ]}>Français</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[
-                styles.languageOption,
-                selectedLanguage === 'en' ? styles.languageOptionActive : null,
-              ]}
-              onPress={() => setSelectedLanguage('en')}
-            >
-              <Text style={[
-                styles.languageOptionText,
-                selectedLanguage === 'en' ? styles.languageOptionTextActive : null,
-              ]}>English</Text>
-            </TouchableOpacity>
+
+      <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+        <GlassView style={styles.formContainer} liquidGlass tint="neutral" intensity={40}>
+          <ProfessionalTypeSelector
+            selectedType={selectedActivity}
+            onSelect={handleActivitySelect}
+            options={activityOptions}
+          />
+
+          <CommonInfoForm values={commonInfo} onChange={handleCommonInfoChange} errors={errors} />
+
+          <View style={styles.activityWrapper}>{renderActivityForm()}</View>
+
+          <Input
+            label="IBAN"
+            placeholder="Entrez votre IBAN pour les paiements"
+            value={iban}
+            onChangeText={setIban}
+            error={errors.iban}
+            secureTextEntry
+            leftIcon={<CreditCard size={20} color={COLORS.darkGray} />}
+            testID="professional-iban"
+          />
+
+          <View style={styles.languageContainer}>
+            <Text style={styles.languageLabel}>Langue préférée</Text>
+            <View style={styles.languageOptions}>
+              <TouchableOpacity
+                style={[styles.languageOption, selectedLanguage === 'fr' && styles.languageOptionActive]}
+                onPress={() => setSelectedLanguage('fr')}
+                testID="language-fr"
+              >
+                <Text
+                  style={[styles.languageOptionText, selectedLanguage === 'fr' && styles.languageOptionTextActive]}
+                >
+                  Français
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.languageOption, selectedLanguage === 'en' && styles.languageOptionActive]}
+                onPress={() => setSelectedLanguage('en')}
+                testID="language-en"
+              >
+                <Text
+                  style={[styles.languageOptionText, selectedLanguage === 'en' && styles.languageOptionTextActive]}
+                >
+                  English
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-        
-        <Button
-          title="Suivant"
-          onPress={handleNextStep}
-          style={styles.button}
-        />
-      </GlassView>
+
+          <Button title="Suivant" onPress={handleNextStep} style={styles.button} />
+        </GlassView>
       </Animated.View>
     </>
   );
-  
+
   const renderStep3 = () => (
     <>
-      <Animated.View style={[styles.headerContainer, {
-        opacity: fadeAnim,
-        transform: [{ translateY: slideAnim }],
-      }]}>
-        <Animated.View style={[styles.iconContainer, {
-          transform: [{ scale: iconScale }],
-        }]}>
+      <Animated.View style={[styles.headerContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }] }>
+        <Animated.View style={[styles.iconContainer, { transform: [{ scale: iconScale }] }] }>
           <Shield size={32} color={COLORS.maleAccent} />
         </Animated.View>
         <Text style={styles.stepText}>Étape 3 sur 3</Text>
         <Text style={styles.title}>Conditions Légales</Text>
         <Text style={styles.subtitle}>Acceptez les conditions pour finaliser votre inscription</Text>
       </Animated.View>
-      
-      <Animated.View style={[styles.legalInfoContainer, {
-        opacity: fadeAnim,
-        transform: [{ translateY: slideAnim }],
-      }]}>
+
+      <Animated.View style={[styles.legalInfoContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }] }>
         <Text style={styles.legalInfoTitle}>Votre compte professionnel inclut :</Text>
         <View style={styles.legalInfoList}>
           <Text style={styles.legalInfoItem}>• Accès au tableau de bord vendeur</Text>
@@ -602,100 +739,76 @@ export default function ProRegisterScreen() {
           <Text style={styles.legalInfoItem}>• Badge de vérification</Text>
         </View>
       </Animated.View>
-      
-      <Animated.View style={{
-        opacity: fadeAnim,
-        transform: [{ translateY: slideAnim }],
-      }}>
-      <GlassView style={styles.formContainer} liquidGlass tint="neutral" intensity={40}>
-        <View style={styles.legalSection}>
-          <Text style={styles.legalText}>
-            En continuant, vous acceptez les{' '}
-            <Text 
-              style={styles.linkText}
-              onPress={() => router.push('/legal/terms')}
-            >
-              conditions générales d&apos;utilisation
-            </Text>
-            {' '}et la{' '}
-            <Text 
-              style={styles.linkText}
-              onPress={() => router.push('/legal/privacy')}
-            >
-              politique de confidentialité
-            </Text>
-            {' '}pour les comptes professionnels.
-          </Text>
-        </View>
-        
-        <TouchableOpacity
-          style={[
-            styles.termsContainer,
-            acceptedTerms ? styles.termsActive : null,
-          ]}
-          onPress={() => setAcceptedTerms(!acceptedTerms)}
-        >
-          <View style={[
-            styles.checkbox,
-            acceptedTerms ? styles.checkboxActive : null,
-          ]}>
-            {acceptedTerms && <View style={styles.checkboxInner} />}
-          </View>
-          <View style={styles.termsTextContainer}>
-            <Text style={styles.termsText}>
-              J'accepte les conditions générales et je confirme être un professionnel
+
+      <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+        <GlassView style={styles.formContainer} liquidGlass tint="neutral" intensity={40}>
+          <View style={styles.legalSection}>
+            <Text style={styles.legalText}>
+              En continuant, vous acceptez les{' '}
+              <Text style={styles.linkText} onPress={() => router.push('/legal/terms')}>
+                conditions générales d’utilisation
+              </Text>
+              {' '}et la{' '}
+              <Text style={styles.linkText} onPress={() => router.push('/legal/privacy')}>
+                politique de confidentialité
+              </Text>
+              {' '}pour les comptes professionnels.
             </Text>
           </View>
-        </TouchableOpacity>
-        
-        {errors.acceptedTerms && (
-          <Text style={styles.errorText}>{errors.acceptedTerms}</Text>
-        )}
-        
-        <Button
-          title="Créer mon compte professionnel"
-          onPress={handleNextStep}
-          loading={loading}
-          disabled={!acceptedTerms}
-          style={[
-            styles.professionalButton,
-            !acceptedTerms ? styles.disabledButton : null,
-          ]}
-        />
-      </GlassView>
+          <TouchableOpacity
+            style={[styles.termsContainer, acceptedTerms && styles.termsActive]}
+            onPress={() => setAcceptedTerms(!acceptedTerms)}
+            testID="terms-checkbox"
+          >
+            <View style={[styles.checkbox, acceptedTerms && styles.checkboxActive]}>
+              {acceptedTerms && <View style={styles.checkboxInner} />}
+            </View>
+            <View style={styles.termsTextContainer}>
+              <Text style={styles.termsText}>
+                J’accepte les conditions générales et je confirme être un professionnel
+              </Text>
+            </View>
+          </TouchableOpacity>
+          {errors.acceptedTerms ? <Text style={styles.errorText}>{errors.acceptedTerms}</Text> : null}
+          <Button
+            title="Créer mon compte professionnel"
+            onPress={handleNextStep}
+            loading={loading}
+            disabled={!acceptedTerms}
+            style={[styles.professionalButton, !acceptedTerms && styles.disabledButton]}
+          />
+        </GlassView>
       </Animated.View>
     </>
   );
-  
+
   return (
     <View style={styles.container}>
-      <View style={StyleSheet.absoluteFill} />
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <StatusBar style="dark" />
-      
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, isCompactScreen ? styles.scrollContentCompact : null]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-      >
-        <TouchableOpacity style={styles.backButton} onPress={handlePreviousStep}>
-          <ArrowLeft size={24} color={COLORS.black} />
-        </TouchableOpacity>
-        
-        {step === 1 ? renderStep1() : step === 2 ? renderStep2() : renderStep3()}
-        
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Vous avez déjà un compte ?</Text>
-          <TouchableOpacity onPress={() => router.push('/auth/signin')}>
-            <Text style={styles.footerLink}>Se connecter</Text>
+        <ScrollView
+          contentContainerStyle={[styles.scrollContent, isCompactScreen && styles.scrollContentCompact]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+        >
+          <TouchableOpacity style={styles.backButton} onPress={handlePreviousStep} testID="back-button">
+            <ArrowLeft size={24} color={COLORS.black} />
           </TouchableOpacity>
-        </View>
-      </ScrollView>
+
+          {step === 1 ? renderStep1() : step === 2 ? renderStep2() : renderStep3()}
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Vous avez déjà un compte ?</Text>
+            <TouchableOpacity onPress={() => router.push('/auth/signin')}>
+              <Text style={styles.footerLink}>Se connecter</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
@@ -761,26 +874,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
-  benefitsContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 32,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-    ...SHADOWS.small,
-  },
-  benefitItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  benefitText: {
-    fontSize: 14,
-    color: COLORS.black,
-    marginLeft: 12,
-    flex: 1,
-  },
   legalInfoContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 12,
@@ -840,7 +933,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   languageOptions: {
-    flexDirection: 'row' as const,
+    flexDirection: 'row',
     gap: 12,
   },
   languageOption: {
@@ -850,7 +943,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.4)',
-    alignItems: 'center' as const,
+    alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   languageOptionActive: {
@@ -863,6 +956,7 @@ const styles = StyleSheet.create({
   },
   languageOptionTextActive: {
     color: COLORS.black,
+    fontWeight: '600' as const,
   },
   legalSection: {
     marginBottom: 16,
@@ -874,8 +968,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   termsContainer: {
-    flexDirection: 'row' as const,
-    alignItems: 'flex-start' as const,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     paddingVertical: 12,
   },
   termsActive: {
@@ -914,7 +1008,7 @@ const styles = StyleSheet.create({
   linkText: {
     color: COLORS.black,
     fontWeight: '600' as const,
-    textDecorationLine: 'underline' as const,
+    textDecorationLine: 'underline',
   },
   errorText: {
     fontSize: 12,
@@ -947,5 +1041,9 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.5,
+  },
+  activityWrapper: {
+    marginBottom: 16,
+    gap: 16,
   },
 });
