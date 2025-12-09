@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,11 +12,15 @@ import {
   Dimensions,
   TouchableOpacity,
   Platform,
-  Alert,
+  ScrollView,
+  Animated,
+  Easing,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as Location from 'expo-location';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import MapView, { PROVIDER_GOOGLE } from '@/components/MapView';
 import MapMarker from '@/components/MapMarker';
@@ -22,12 +32,22 @@ import { usePremium } from '@/hooks/premium-store';
 import { useI18n } from '@/hooks/i18n-store';
 import { useTheme } from '@/hooks/theme-store';
 import { Pet, User } from '@/types';
-import { Compass, Layers, Filter, Users, Heart, Search, Stethoscope } from 'lucide-react-native';
+import {
+  Compass,
+  Layers,
+  Filter,
+  Users,
+  Heart,
+  Search,
+  Stethoscope,
+  ShieldCheck,
+  RefreshCcw,
+} from 'lucide-react-native';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { petService, userService } from '@/services/database';
 import { getBlurredUserLocation, getBlurredPetLocation } from '@/services/location-privacy';
+import { track } from '@/services/tracking';
 
-// Type definitions for map region
 interface Region {
   latitude: number;
   longitude: number;
@@ -48,12 +68,36 @@ interface VetPlace {
 
 type AllPet = Pet & { owner?: User | undefined; isUserPet?: boolean };
 
+interface PopupConfig {
+  type: 'error' | 'info' | 'success';
+  title: string;
+  message: string;
+}
+
+const popupColors: Record<PopupConfig['type'], { bg: string; accent: string }> = {
+  error: { bg: 'rgba(239,68,68,0.92)', accent: '#fee2e2' },
+  info: { bg: 'rgba(59,130,246,0.92)', accent: '#dbeafe' },
+  success: { bg: 'rgba(16,185,129,0.92)', accent: '#d1fae5' },
+};
+
+const FILTERS: {
+  key: MapFilter;
+  label: string;
+  Icon: typeof Layers;
+  gradient: [string, string];
+}[] = [
+  { key: 'all', label: 'Tout', Icon: Layers, gradient: ['#c084fc', '#a855f7'] },
+  { key: 'pets', label: 'Animaux', Icon: Heart, gradient: ['#fb7185', '#f472b6'] },
+  { key: 'sitters', label: 'Cat Sitters', Icon: Users, gradient: ['#38bdf8', '#6366f1'] },
+  { key: 'friends', label: 'Amis', Icon: Filter, gradient: ['#f97316', '#facc15'] },
+  { key: 'lost', label: 'Perdus', Icon: Search, gradient: ['#f43f5e', '#f97316'] },
+  { key: 'vets', label: 'V��térinaires', Icon: Stethoscope, gradient: ['#34d399', '#059669'] },
+];
+
 const { width, height } = Dimensions.get('window');
 const ASPECT_RATIO = width / height;
 const LATITUDE_DELTA = 0.02;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
-
-// Default coordinates (Montmartre, Paris)
 const DEFAULT_LAT = 48.8867;
 const DEFAULT_LNG = 2.3431;
 
@@ -63,6 +107,7 @@ export default function MapScreen() {
   const { incrementActionCount, shouldShowInterstitialAd } = usePremium();
   const { t } = useI18n();
   const { getThemedColor } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [region, setRegion] = useState<Region>({
     latitude: DEFAULT_LAT,
@@ -70,16 +115,53 @@ export default function MapScreen() {
     latitudeDelta: LATITUDE_DELTA,
     longitudeDelta: LONGITUDE_DELTA,
   });
-
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [locationPermission, setLocationPermission] = useState<boolean>(false);
   const [activeFilters, setActiveFilters] = useState<Set<MapFilter>>(new Set(['all', 'pets', 'sitters', 'friends', 'lost', 'vets']));
-  const [showFilters, setShowFilters] = useState(false);
   const [vets, setVets] = useState<VetPlace[]>([]);
+  const [popup, setPopup] = useState<PopupConfig | null>(null);
+  const popupAnim = useRef(new Animated.Value(0)).current;
 
-  // Request location permission and get current location
+  const overlayTop = insets.top + 18;
+  const filtersTop = overlayTop + 68;
+
+  const userLat = userLocation?.latitude ?? DEFAULT_LAT;
+  const userLng = userLocation?.longitude ?? DEFAULT_LNG;
+
+  const showPopup = useCallback((config: PopupConfig) => {
+    console.log('🔔 Popup:', config.title);
+    setPopup(config);
+    Animated.spring(popupAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      friction: 9,
+      tension: 70,
+    }).start();
+  }, [popupAnim]);
+
+  const hidePopup = useCallback(() => {
+    Animated.timing(popupAnim, {
+      toValue: 0,
+      duration: 220,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) {
+        setPopup(null);
+      }
+    });
+  }, [popupAnim]);
+
+  useEffect(() => {
+    if (!popup) return;
+    const timeout = setTimeout(() => {
+      hidePopup();
+    }, 5500);
+    return () => clearTimeout(timeout);
+  }, [popup, hidePopup]);
+
   useEffect(() => {
     (async () => {
       try {
@@ -87,6 +169,7 @@ export default function MapScreen() {
           if (typeof navigator !== 'undefined' && navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
               (pos) => {
+                console.log('🌍 Web geolocation success');
                 setLocationPermission(true);
                 const userCoords = {
                   latitude: pos.coords.latitude,
@@ -101,7 +184,7 @@ export default function MapScreen() {
                 });
               },
               (err) => {
-                console.log('Geolocation error on web', err);
+                console.log('⚠️ Web geolocation error', err);
                 setLocationPermission(false);
                 setUserLocation({ latitude: DEFAULT_LAT, longitude: DEFAULT_LNG });
                 setRegion({
@@ -110,10 +193,16 @@ export default function MapScreen() {
                   latitudeDelta: LATITUDE_DELTA,
                   longitudeDelta: LONGITUDE_DELTA,
                 });
+                showPopup({
+                  type: 'info',
+                  title: 'Localisation',
+                  message: "Nous n'avons pas pu accéder à votre localisation sur le navigateur. Paris est utilisée par défaut.",
+                });
               },
-              { enableHighAccuracy: true, timeout: 5000 }
+              { enableHighAccuracy: true, timeout: 5000 },
             );
           } else {
+            console.log('ℹ️ Web geolocation unavailable, using defaults');
             setUserLocation({ latitude: DEFAULT_LAT, longitude: DEFAULT_LNG });
             setRegion({
               latitude: DEFAULT_LAT,
@@ -125,11 +214,10 @@ export default function MapScreen() {
         } else {
           const { status } = await Location.requestForegroundPermissionsAsync();
           if (status === 'granted') {
+            console.log('✅ Location permission granted');
             setLocationPermission(true);
             try {
-              const location = await Location.getCurrentPositionAsync({
-                accuracy: Location.Accuracy.High,
-              });
+              const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
               const userCoords = {
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude,
@@ -149,7 +237,7 @@ export default function MapScreen() {
                 }
               }
             } catch (error) {
-              console.error('Error getting location:', error);
+              console.error('❌ Error getting location:', error);
               setUserLocation({ latitude: DEFAULT_LAT, longitude: DEFAULT_LNG });
               setRegion({
                 latitude: DEFAULT_LAT,
@@ -157,9 +245,14 @@ export default function MapScreen() {
                 latitudeDelta: LATITUDE_DELTA,
                 longitudeDelta: LONGITUDE_DELTA,
               });
+              showPopup({
+                type: 'error',
+                title: 'Localisation',
+                message: "Impossible d'obtenir votre position actuelle. Paris est utilisée à la place.",
+              });
             }
           } else {
-            console.log('Location permission denied, using default location');
+            console.log('🚫 Location permission denied, defaulting to Paris');
             setUserLocation({ latitude: DEFAULT_LAT, longitude: DEFAULT_LNG });
             setRegion({
               latitude: DEFAULT_LAT,
@@ -167,22 +260,23 @@ export default function MapScreen() {
               latitudeDelta: LATITUDE_DELTA,
               longitudeDelta: LONGITUDE_DELTA,
             });
-            Alert.alert(
-              'Permission de localisation',
-              "Nous avons besoin de votre localisation pour vous montrer les animaux près de chez vous. Nous utilisons Paris comme localisation par défaut.",
-              [{ text: 'OK' }]
-            );
+            showPopup({
+              type: 'info',
+              title: 'Autorisation requise',
+              message: 'Activez la localisation pour découvrir les animaux près de vous. Paris est affichée par défaut.',
+            });
           }
         }
       } catch (e) {
-        console.log('Location init failed', e);
+        console.log('❌ Location init failed', e);
+        showPopup({ type: 'error', title: 'Localisation', message: 'Une erreur est survenue lors du démarrage de la carte.' });
       }
     })();
-  }, [user]);
+  }, [user, showPopup]);
 
-  // Re-center on user location when they login
   useEffect(() => {
     if (user && userLocation) {
+      console.log('🔁 Re-centering map for logged user');
       setRegion({
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
@@ -200,7 +294,7 @@ export default function MapScreen() {
   }, [user, userLocation]);
 
   const handleMarkerPress = useCallback((pet: Pet & { owner?: User }) => {
-    console.log('Marker pressed:', pet.id, pet.name);
+    console.log('📍 Marker pressed:', pet.id, pet.name);
     setSelectedPet(pet);
     setSelectedUser(pet.owner || null);
     incrementActionCount();
@@ -214,7 +308,7 @@ export default function MapScreen() {
     if (selectedPet) {
       incrementActionCount();
       if (shouldShowInterstitialAd()) {
-        console.log('Show interstitial ad');
+        console.log('🎬 Should show interstitial ad');
       }
       router.push(`/pet/${selectedPet.id}`);
     }
@@ -228,18 +322,14 @@ export default function MapScreen() {
   };
 
   const handleFilterPress = async (filter: MapFilter) => {
+    console.log('🎛 Toggle filter', filter);
     const newFilters = new Set(activeFilters);
     if (filter === 'all') {
       if (newFilters.has('all')) {
         newFilters.clear();
       } else {
         newFilters.clear();
-        newFilters.add('all');
-        newFilters.add('pets');
-        newFilters.add('sitters');
-        newFilters.add('friends');
-        newFilters.add('lost');
-        newFilters.add('vets');
+        FILTERS.forEach((f) => newFilters.add(f.key));
       }
     } else {
       if (newFilters.has(filter)) {
@@ -252,8 +342,7 @@ export default function MapScreen() {
     setActiveFilters(newFilters);
     incrementActionCount();
     try {
-      const { track } = require('@/services/tracking');
-      track('map_filter_apply', { filters: Array.from(newFilters) });
+      track('map_filter_apply', { filters: Array.from(newFilters).join(',') });
     } catch (e) {
       console.log('track map_filter_apply failed', e);
     }
@@ -266,43 +355,57 @@ export default function MapScreen() {
   const fetchNearbyVets = async () => {
     try {
       const loc = userLocation ?? { latitude: DEFAULT_LAT, longitude: DEFAULT_LNG };
-      const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyDMh-ZNFwOqVvnviQg1-FV7tAZPDy1xxPk';
-      
+      const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || process.env.EXPO_PUBLIC_APP_ID;
+
       if (!apiKey) {
         console.error('❌ Google Maps API key not found in environment');
-        Alert.alert('Configuration', 'La clé API Google Maps est manquante. Veuillez configurer EXPO_PUBLIC_GOOGLE_MAPS_API_KEY dans votre fichier .env');
+        showPopup({
+          type: 'error',
+          title: 'Configuration manquante',
+          message: 'Ajoutez EXPO_PUBLIC_GOOGLE_MAPS_API_KEY pour activer les vétérinaires.',
+        });
         return;
       }
-      
-      console.log('🔑 Using Google Maps API key:', apiKey.substring(0, 10) + '...');
-      
+
+      console.log('🔑 Using Google Maps API key');
       const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${loc.latitude},${loc.longitude}&radius=5000&type=veterinary_care&key=${apiKey}`;
       console.log('📍 Fetching vets near:', loc);
-      
+
       const response = await fetch(url);
-      
       if (!response.ok) {
         console.error('❌ Failed to fetch vets, status:', response.status);
-        Alert.alert('Erreur', `Impossible de charger les vétérinaires (${response.status})`);
+        showPopup({
+          type: 'error',
+          title: 'Erreur API',
+          message: `Impossible de charger les vétérinaires (${response.status}). Activez la facturation Google Cloud.`,
+        });
         return;
       }
-      
+
       const data = await response.json();
       console.log('📊 Vets API response status:', data.status);
-      
+
       if (data.status === 'REQUEST_DENIED') {
         console.error('❌ Google Places API error:', data.error_message);
-        Alert.alert('Erreur API', data.error_message || 'Accès refusé à l\'API Google Places. Vérifiez que l\'API Places est activée dans votre console Google Cloud.');
+        showPopup({
+          type: 'error',
+          title: 'Google Places',
+          message: data.error_message || 'Activez la facturation et les API Places dans GCP.',
+        });
         return;
       }
-      
+
       if (data.status === 'ZERO_RESULTS') {
         console.log('ℹ️ No vets found in this area');
-        Alert.alert('Information', 'Aucun vétérinaire trouvé dans cette zone (rayon de 5km)');
+        showPopup({
+          type: 'info',
+          title: 'Aucun vétérinaire',
+          message: 'Aucun vétérinaire trouvé dans un rayon de 5 km.',
+        });
         setVets([]);
         return;
       }
-      
+
       if (data.results && data.results.length > 0) {
         const vetPlaces: VetPlace[] = data.results.map((place: any) => ({
           id: place.place_id,
@@ -315,24 +418,33 @@ export default function MapScreen() {
           rating: place.rating,
         }));
         setVets(vetPlaces);
-        console.log(`✅ Found ${vetPlaces.length} veterinarians`);
+        showPopup({
+          type: 'success',
+          title: 'Vétérinaires trouvés',
+          message: `${vetPlaces.length} établissements à proximité`,
+        });
       } else {
         console.log('⚠️ No vets in response');
         setVets([]);
       }
     } catch (error) {
       console.error('❌ Error fetching vets:', error);
-      Alert.alert('Erreur', 'Erreur lors du chargement des vétérinaires: ' + (error as Error).message);
+      showPopup({
+        type: 'error',
+        title: 'Erreur',
+        message: 'Impossible de charger les vétérinaires. Vérifiez votre connexion.',
+      });
     }
   };
 
   const handleMyLocation = async () => {
+    console.log('🎯 Recenter request');
     if (!locationPermission && Platform.OS !== 'web') {
-      Alert.alert(
-        'Permission de localisation',
-        'Nous avons besoin de votre localisation pour vous montrer les animaux près de chez vous. Veuillez activer les services de localisation dans vos paramètres.',
-        [{ text: t('common.ok') }]
-      );
+      showPopup({
+        type: 'info',
+        title: 'Localisation requise',
+        message: 'Activez les services de localisation dans vos réglages pour un centrage précis.',
+      });
       return;
     }
 
@@ -371,17 +483,15 @@ export default function MapScreen() {
       }
     } catch (error) {
       console.error('Error getting location:', error);
-      Alert.alert(t('common.error'), "Impossible d'obtenir votre position actuelle");
+      showPopup({ type: 'error', title: t('common.error'), message: "Impossible d'obtenir votre position actuelle" });
     }
   };
 
-  // Load nearby pets from Firestore when we have a location
   const nearbyPetsQuery = useQuery({
-    queryKey: ['map', 'nearbyPets', userLocation?.latitude ?? DEFAULT_LAT, userLocation?.longitude ?? DEFAULT_LNG],
+    queryKey: ['map', 'nearbyPets', userLat, userLng],
     enabled: true,
     queryFn: async () => {
-      const loc = userLocation ?? { latitude: DEFAULT_LAT, longitude: DEFAULT_LNG };
-      const list = await petService.getNearbyPets({ lat: loc.latitude, lng: loc.longitude }, 10);
+      const list = await petService.getNearbyPets({ lat: userLat, lng: userLng }, 10);
       return list;
     },
   });
@@ -389,7 +499,6 @@ export default function MapScreen() {
   const firebasePets = (nearbyPetsQuery.data ?? []).filter((p: any) => !!p.location) as Pet[];
   const firebasePetsWithOwner: AllPet[] = firebasePets.map((p) => ({ ...p, owner: undefined }));
 
-  // Fetch users from Firestore
   const usersQuery = useQuery({
     queryKey: ['map', 'users'],
     queryFn: async () => {
@@ -432,14 +541,13 @@ export default function MapScreen() {
       isActive: u.isActive ?? true,
       profileComplete: u.profileComplete ?? false,
     }),
-    []
+    [],
   );
 
-  const allUsersRaw = (usersQuery.data ?? []) as User[];
+  const allUsersRaw = useMemo(() => (usersQuery.data ?? []) as User[], [usersQuery.data]);
   const allUsersNormalized = useMemo(() => allUsersRaw.map(normalizeUser), [allUsersRaw, normalizeUser]);
 
-  // Patch incomplete profiles and missing locations with Paris defaults
-  const patchUserMutation = useMutation({
+  const { mutate: patchUser } = useMutation({
     mutationFn: async (u: User) => {
       await userService.saveUser(u);
       return u.id;
@@ -479,13 +587,12 @@ export default function MapScreen() {
   useEffect(() => {
     const missing = usersForMap.filter((u) => !u.location || u.address === '' || u.city === '' || u.zipCode === '');
     if (missing.length) {
-      missing.slice(0, 50).forEach((u) => patchUserMutation.mutate(u));
+      missing.slice(0, 50).forEach((u) => patchUser(u));
     }
-  }, [usersForMap]);
+  }, [usersForMap, patchUser]);
 
   const usersWithLocation = usersForMap.filter((u) => !!u.location);
 
-  // Add user's own pets to the list if they have location
   const userPetsWithLocation: AllPet[] = user?.pets?.filter((p) => p.location).map((p) => ({
     ...p,
     id: `user-${p.id}`,
@@ -511,18 +618,17 @@ export default function MapScreen() {
     return false;
   });
 
-  // Projection helpers for web overlay markers
   const projectPoint = useCallback(
     (lat: number, lng: number) => {
       const dx = (lng - region.longitude) / region.longitudeDelta + 0.5;
       const dy = (region.latitude - lat) / region.latitudeDelta + 0.5;
       return { left: dx * width, top: dy * height };
     },
-    [region]
+    [region],
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: getThemedColor('background') }]}>
+    <View style={[styles.container, { backgroundColor: getThemedColor('background') }]}> 
       <StatusBar style="dark" />
 
       <MapView
@@ -531,8 +637,8 @@ export default function MapScreen() {
         region={region}
         showsUserLocation={locationPermission}
         showsMyLocationButton={false}
-        scrollEnabled={true}
-        zoomEnabled={true}
+        scrollEnabled
+        zoomEnabled
         rotateEnabled={false}
         pitchEnabled={false}
         onRegionChange={Platform.OS === 'web' ? handleRegionChange : undefined}
@@ -546,8 +652,8 @@ export default function MapScreen() {
           <UserMarker key={`user-${u.id}`} user={u} onPress={() => setSelectedUser(u)} />
         ))}
         {Platform.OS !== 'web' && activeFilters.has('vets') && vets.map((vet) => (
-          <MapMarker 
-            key={`vet-${vet.id}`} 
+          <MapMarker
+            key={`vet-${vet.id}`}
             pet={{
               id: vet.id,
               name: vet.name,
@@ -558,11 +664,11 @@ export default function MapScreen() {
               mainPhoto: '',
             } as any}
             onPress={() => {
-              Alert.alert(
-                vet.name,
-                `${vet.address}${vet.rating ? `\n⭐ ${vet.rating}/5` : ''}`,
-                [{ text: 'OK' }]
-              );
+              showPopup({
+                type: 'info',
+                title: vet.name,
+                message: `${vet.address}${vet.rating ? `\n⭐ ${vet.rating}/5` : ''}`,
+              });
             }}
           />
         ))}
@@ -634,11 +740,11 @@ export default function MapScreen() {
               <TouchableOpacity
                 key={`overlay-vet-${vet.id}`}
                 onPress={() => {
-                  Alert.alert(
-                    vet.name,
-                    `${vet.address}${vet.rating ? `\n⭐ ${vet.rating}/5` : ''}`,
-                    [{ text: 'OK' }]
-                  );
+                  showPopup({
+                    type: 'info',
+                    title: vet.name,
+                    message: `${vet.address}${vet.rating ? `\n⭐ ${vet.rating}/5` : ''}`,
+                  });
                 }}
                 activeOpacity={0.8}
                 style={[styles.webPetMarker, { left, top }]}
@@ -654,112 +760,92 @@ export default function MapScreen() {
         </View>
       )}
 
-      <View style={styles.controlsContainer}>
-        <TouchableOpacity style={[styles.controlButton, SHADOWS.medium]} onPress={handleMyLocation} testID="btn-my-location">
-          <Compass size={24} color={COLORS.black} />
-        </TouchableOpacity>
+      <LinearGradient
+        colors={['rgba(9,9,11,0.25)', 'transparent']}
+        style={[styles.topFade, { height: overlayTop + 120 }]}
+        pointerEvents="none"
+      />
 
-        <TouchableOpacity
-          style={[styles.controlButton, SHADOWS.medium, showFilters && styles.controlButtonActive]}
-          onPress={() => setShowFilters(!showFilters)}
-          testID="btn-filters"
-          activeOpacity={0.8}
-        >
-          <Filter size={24} color={showFilters ? COLORS.white : (activeFilters.size > 0 && !activeFilters.has('all') ? COLORS.primary : COLORS.black)} />
-          {activeFilters.size > 0 && !activeFilters.has('all') && (
-            <View style={styles.filterBadge}>
-              <Text style={styles.filterBadgeText}>{activeFilters.size}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+      <View style={[styles.statsBar, SHADOWS.medium, { top: overlayTop }]}
+        testID="stats-chip"
+      >
+        <Text style={styles.statsTitle}>{t('map.pets')}</Text>
+        <Text style={styles.statsText}>
+          {filteredPets.length} animaux • {filteredUsers.length} utilisateurs
+        </Text>
       </View>
 
-      {showFilters && (
-        <View style={[styles.filterMenu, SHADOWS.large]} testID="filter-menu">
-          <TouchableOpacity
-            style={[styles.filterItem, activeFilters.has('all') && styles.filterItemActive]}
-            onPress={() => handleFilterPress('all')}
-            testID="filter-all"
-            activeOpacity={0.7}
-          >
-            <View style={[styles.filterIconContainer, activeFilters.has('all') && styles.filterIconActive]}>
-              <Layers size={18} color={activeFilters.has('all') ? COLORS.white : COLORS.primary} />
-            </View>
-            <Text style={[styles.filterText, activeFilters.has('all') && styles.filterTextActive]}>Tout afficher</Text>
-          </TouchableOpacity>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterRowContent}
+        style={[styles.filterRow, { top: filtersTop }]}
+        testID="filter-row"
+      >
+        {FILTERS.map(({ key, label, Icon, gradient }) => {
+          const isActive = activeFilters.has(key);
+          return (
+            <TouchableOpacity
+              key={key}
+              onPress={() => handleFilterPress(key)}
+              style={styles.filterChip}
+              testID={`chip-${key}`}
+              activeOpacity={0.85}
+            >
+              <LinearGradient
+                colors={isActive ? gradient : ['rgba(255,255,255,0.8)', 'rgba(255,255,255,0.7)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.filterChipInner, isActive && SHADOWS.small]}
+              >
+                <Icon size={16} color={isActive ? '#fff' : COLORS.primary} />
+                <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>{label}</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
 
-          <TouchableOpacity
-            style={[styles.filterItem, activeFilters.has('pets') && styles.filterItemActive]}
-            onPress={() => handleFilterPress('pets')}
-            testID="filter-pets"
-            activeOpacity={0.7}
-          >
-            <View style={[styles.filterIconContainer, activeFilters.has('pets') && styles.filterIconActive]}>
-              <Heart size={18} color={activeFilters.has('pets') ? COLORS.white : COLORS.primary} />
-            </View>
-            <Text style={[styles.filterText, activeFilters.has('pets') && styles.filterTextActive]}>Animaux</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.filterItem, activeFilters.has('sitters') && styles.filterItemActive]}
-            onPress={() => handleFilterPress('sitters')}
-            testID="filter-sitters"
-            activeOpacity={0.7}
-          >
-            <View style={[styles.filterIconContainer, activeFilters.has('sitters') && styles.filterIconActive]}>
-              <Users size={18} color={activeFilters.has('sitters') ? COLORS.white : COLORS.primary} />
-            </View>
-            <Text style={[styles.filterText, activeFilters.has('sitters') && styles.filterTextActive]}>Cat Sitters</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.filterItem, activeFilters.has('friends') && styles.filterItemActive]}
-            onPress={() => handleFilterPress('friends')}
-            testID="filter-friends"
-            activeOpacity={0.7}
-          >
-            <View style={[styles.filterIconContainer, activeFilters.has('friends') && styles.filterIconActive]}>
-              <Users size={18} color={activeFilters.has('friends') ? COLORS.white : COLORS.primary} />
-            </View>
-            <Text style={[styles.filterText, activeFilters.has('friends') && styles.filterTextActive]}>Amis</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.filterItem, activeFilters.has('lost') && styles.filterItemActive]}
-            onPress={() => handleFilterPress('lost')}
-            testID="filter-lost"
-            activeOpacity={0.7}
-          >
-            <View style={[styles.filterIconContainer, activeFilters.has('lost') && styles.filterIconActive]}>
-              <Search size={18} color={activeFilters.has('lost') ? COLORS.white : COLORS.primary} />
-            </View>
-            <Text style={[styles.filterText, activeFilters.has('lost') && styles.filterTextActive]}>Perdus</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.filterItem, activeFilters.has('vets') && styles.filterItemActive]}
-            onPress={() => handleFilterPress('vets')}
-            testID="filter-vets"
-            activeOpacity={0.7}
-          >
-            <View style={[styles.filterIconContainer, activeFilters.has('vets') && styles.filterIconActive]}>
-              <Stethoscope size={18} color={activeFilters.has('vets') ? COLORS.white : COLORS.primary} />
-            </View>
-            <Text style={[styles.filterText, activeFilters.has('vets') && styles.filterTextActive]}>Vétérinaires</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <View style={[styles.controlsContainer, { top: filtersTop + 60 }]}
+        pointerEvents="box-none"
+      >
+        <TouchableOpacity style={[styles.controlButton, SHADOWS.medium]} onPress={handleMyLocation} testID="btn-my-location">
+          <Compass size={22} color={COLORS.black} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.controlButton, SHADOWS.medium]}
+          onPress={() => {
+            setSelectedPet(null);
+            setSelectedUser(null);
+            showPopup({ type: 'info', title: 'Carte réinitialisée', message: 'Sélection effacée.' });
+          }}
+          testID="btn-reset"
+        >
+          <RefreshCcw size={20} color={COLORS.black} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.controlButton, SHADOWS.medium]}
+          onPress={() => {
+            handleFilterPress('vets');
+          }}
+          testID="btn-vets"
+        >
+          <Stethoscope size={20} color={COLORS.black} />
+        </TouchableOpacity>
+      </View>
 
       {selectedPet && (
         <View style={styles.selectedPetCardContainer} testID="selected-pet-card">
           <AdBanner size="banner" style={styles.adBannerTop} />
-          
-          <TouchableOpacity 
-            style={[styles.selectedPetCard, SHADOWS.large]} 
-            onPress={handlePetCardPress} 
+          <TouchableOpacity
+            style={[styles.selectedPetCard, SHADOWS.large]}
+            onPress={handlePetCardPress}
             activeOpacity={0.95}
           >
-            <View style={styles.petCardImageContainer}>
+            <LinearGradient
+              colors={selectedPet.gender === 'female' ? ['#fbcfe8', '#f472b6'] : ['#dbeafe', '#60a5fa']}
+              style={styles.petCardImageContainer}
+            >
               {selectedPet.mainPhoto ? (
                 <Image
                   source={{ uri: selectedPet.mainPhoto }}
@@ -767,28 +853,29 @@ export default function MapScreen() {
                   contentFit="cover"
                 />
               ) : (
-                <View style={[styles.petCardImagePlaceholder, { backgroundColor: selectedPet.gender === 'female' ? COLORS.female : COLORS.male }]}>
-                  <Text style={styles.petCardImageEmoji}>🐱</Text>
+                <View style={styles.petCardImagePlaceholder}>
+                  <Text style={styles.petCardImageEmoji}>🐾</Text>
                 </View>
               )}
-              <View style={[styles.petGenderBadge, { backgroundColor: selectedPet.gender === 'female' ? COLORS.female : COLORS.male }]}>
+              <View style={styles.petGenderBadge}>
                 <Text style={styles.petGenderText}>{selectedPet.gender === 'female' ? '♀' : '♂'}</Text>
               </View>
-            </View>
+            </LinearGradient>
 
             <View style={styles.petCardInfo}>
               <View style={styles.petCardHeader}>
-                <Text style={styles.petCardName}>{selectedPet.name}</Text>
+                <View>
+                  <Text style={styles.petCardName}>{selectedPet.name}</Text>
+                  <Text style={styles.petCardBreed}>
+                    {selectedPet.breed} • {selectedPet.type}
+                  </Text>
+                </View>
                 <TouchableOpacity onPress={handleUserPress} style={styles.ownerBadge}>
                   <Text style={styles.ownerBadgeText}>@{selectedUser?.pseudo ?? ''}</Text>
-                  {selectedUser?.isPremium && <Text style={styles.premiumIcon}>⭐</Text>}
+                  {selectedUser?.isPremium && <ShieldCheck size={14} color={COLORS.primary} />}
                 </TouchableOpacity>
               </View>
-              
-              <Text style={styles.petCardBreed}>
-                {selectedPet.breed} • {selectedPet.type}
-              </Text>
-              
+
               <View style={styles.petCardFooter}>
                 <Text style={styles.petCardLocation}>
                   📍 {selectedUser?.city ?? ''}{selectedUser?.zipCode ? `, ${selectedUser.zipCode}` : ''}
@@ -804,11 +891,35 @@ export default function MapScreen() {
         </View>
       )}
 
-      <View style={[styles.statsBar, SHADOWS.medium]}>
-        <Text style={styles.statsText}>
-          {filteredPets.length} {t('map.pets')} • {filteredUsers.length} utilisateurs
-        </Text>
-      </View>
+      {popup && (
+        <Animated.View
+          style={[
+            styles.popupContainer,
+            {
+              backgroundColor: popupColors[popup.type].bg,
+              borderColor: popupColors[popup.type].accent,
+              opacity: popupAnim,
+              transform: [
+                {
+                  translateY: popupAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-20, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+          testID="animated-popup"
+        >
+          <View style={styles.popupContent}>
+            <Text style={styles.popupTitle}>{popup.title}</Text>
+            <Text style={styles.popupMessage}>{popup.message}</Text>
+          </View>
+          <TouchableOpacity onPress={hidePopup} style={styles.popupClose} testID="popup-close">
+            <Text style={styles.popupCloseText}>OK</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -822,103 +933,42 @@ const styles = StyleSheet.create({
   },
   controlsContainer: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 40,
     right: 16,
     gap: 12,
+    alignItems: 'flex-end',
   },
   controlButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  controlButtonActive: {
-    backgroundColor: COLORS.primary,
-  },
-  filterBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#ef4444',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.white,
-  },
-  filterBadgeText: {
-    fontSize: 11,
-    fontWeight: '700' as const,
-    color: COLORS.white,
-  },
-  filterMenu: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 120 : 100,
-    right: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.98)',
-    borderRadius: 16,
-    paddingVertical: 12,
-    minWidth: 180,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
-  },
-  filterItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-    marginHorizontal: 8,
-    marginVertical: 2,
-    borderRadius: 12,
-  },
-  filterItemActive: {
-    backgroundColor: COLORS.primary,
-  },
-  filterIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  filterIconActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  filterText: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    color: '#1A1A1A',
-    flex: 1,
-  },
-  filterTextActive: {
-    color: COLORS.white,
   },
   selectedPetCardContainer: {
     position: 'absolute',
     bottom: 24,
     left: 16,
     right: 16,
+    gap: 12,
   },
   selectedPetCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 24,
+    borderRadius: 28,
     overflow: 'hidden',
     flexDirection: 'row',
+    backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
+    borderColor: 'rgba(15,23,42,0.08)',
   },
   adBannerTop: {
-    marginVertical: 0,
+    marginBottom: 10,
   },
   petCardImageContainer: {
-    width: 120,
-    height: 140,
+    width: 130,
+    height: 160,
+    borderTopLeftRadius: 28,
+    borderBottomLeftRadius: 28,
+    overflow: 'hidden',
     position: 'relative',
   },
   petCardImage: {
@@ -926,110 +976,146 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   petCardImagePlaceholder: {
-    width: '100%',
-    height: '100%',
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   petCardImageEmoji: {
-    fontSize: 48,
+    fontSize: 42,
   },
   petGenderBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 10,
+    right: 10,
     width: 32,
     height: 32,
     borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.85)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.white,
   },
   petGenderText: {
-    fontSize: 16,
-    color: COLORS.white,
-    fontWeight: '700' as const,
+    fontWeight: '700',
+    color: COLORS.black,
   },
   petCardInfo: {
     flex: 1,
-    padding: 16,
+    padding: 18,
     justifyContent: 'space-between',
   },
   petCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    gap: 12,
   },
   petCardName: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    color: '#1A1A1A',
-    flex: 1,
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  petCardBreed: {
+    fontSize: 14,
+    color: '#475569',
+    marginTop: 4,
   },
   ownerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
     gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: 'rgba(15,23,42,0.06)',
   },
   ownerBadgeText: {
     fontSize: 12,
-    fontWeight: '600' as const,
-    color: '#666',
-  },
-  premiumIcon: {
-    fontSize: 12,
-  },
-  petCardBreed: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
+    color: '#0f172a',
+    fontWeight: '600',
   },
   petCardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 18,
   },
   petCardLocation: {
     fontSize: 13,
-    color: '#888',
+    color: '#475569',
     flex: 1,
   },
   sitterBadge: {
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   sitterBadgeText: {
-    fontSize: 11,
-    fontWeight: '600' as const,
-    color: COLORS.white,
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   statsBar: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 40,
     left: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.96)',
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
+    borderColor: 'rgba(15,23,42,0.08)',
+  },
+  statsTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   statsText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: '#1A1A1A',
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginTop: 2,
+  },
+  filterRow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+  },
+  filterRowContent: {
+    gap: 12,
+    paddingRight: 16,
+  },
+  filterChip: {
+    borderRadius: 999,
+  },
+  filterChipInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
+    gap: 8,
+  },
+  filterChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  filterChipTextActive: {
+    color: '#fff',
+  },
+  topFade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
   },
   webOverlay: {
     ...StyleSheet.absoluteFillObject,
-    pointerEvents: 'box-none' as const,
+    pointerEvents: 'box-none',
   },
   webPin: {
     position: 'absolute',
@@ -1079,12 +1165,48 @@ const styles = StyleSheet.create({
     width: 0,
     height: 0,
     backgroundColor: 'transparent',
-    borderStyle: 'solid' as const,
+    borderStyle: 'solid',
     borderLeftWidth: 10,
     borderRightWidth: 10,
     borderTopWidth: 14,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     marginTop: -2,
+  },
+  popupContainer: {
+    position: 'absolute',
+    top: 32,
+    alignSelf: 'center',
+    maxWidth: '90%',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  popupContent: {
+    flex: 1,
+  },
+  popupTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  popupMessage: {
+    fontSize: 13,
+    color: '#f8fafc',
+    marginTop: 2,
+  },
+  popupClose: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: 'rgba(15,23,42,0.18)',
+  },
+  popupCloseText: {
+    color: '#fff',
+    fontWeight: '700',
   },
 });
