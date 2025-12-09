@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useMemo } from "react";
+import type { NativeStackHeaderProps } from '@react-navigation/native-stack';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -23,6 +24,7 @@ import { SocialContext } from "@/hooks/social-store";
 import { trpc, trpcClient } from "@/lib/trpc";
 import AppBackground from "@/components/AppBackground";
 import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
+import AdaptiveHeader from "@/components/AdaptiveHeader";
 import { useNotifications } from "@/hooks/use-notifications";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -50,10 +52,11 @@ const screenOptions = {
   headerTintColor: '#0B0B0C',
   headerShadowVisible: false,
   gestureEnabled: true,
-  headerTransparent: true,
+  headerTransparent: false,
   headerStyle: {
     backgroundColor: 'transparent',
   },
+  header: (props: NativeStackHeaderProps) => <AdaptiveHeader {...props} />,
 };
 
 const RootLayoutNav = React.memo(() => {
