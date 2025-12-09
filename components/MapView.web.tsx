@@ -17,53 +17,53 @@ interface MapViewProps {
   [key: string]: unknown;
 }
 
-type MapTypeId = 'roadmap' | 'satellite' | 'hybrid' | 'terrain' | string;
+type WebMapTypeId = 'roadmap' | 'satellite' | 'hybrid' | 'terrain' | string;
 
-interface GoogleMapTypeStyle {
+interface WebMapTypeStyle {
   featureType?: string;
   elementType?: string;
   stylers?: Record<string, unknown>[];
 }
 
-interface GoogleMapOptions {
+interface WebMapOptions {
   center?: { lat: number; lng: number };
   zoom?: number;
-  mapTypeId?: MapTypeId;
-  styles?: GoogleMapTypeStyle[];
+  mapTypeId?: WebMapTypeId;
+  styles?: WebMapTypeStyle[];
   disableDefaultUI?: boolean;
   clickableIcons?: boolean;
 }
 
-interface GoogleLatLngBounds {
-  getNorthEast(): GoogleLatLng;
-  getSouthWest(): GoogleLatLng;
+interface WebLatLngBounds {
+  getNorthEast(): WebLatLng;
+  getSouthWest(): WebLatLng;
 }
 
-interface GoogleLatLng {
+interface WebLatLng {
   lat(): number;
   lng(): number;
 }
 
-interface GoogleMapInstance {
-  setCenter(latLng: GoogleLatLng): void;
+interface WebMapInstance {
+  setCenter(latLng: WebLatLng): void;
   addListener(eventName: string, handler: () => void): void;
-  getBounds(): GoogleLatLngBounds | undefined;
-  getCenter(): GoogleLatLng;
+  getBounds(): WebLatLngBounds | undefined;
+  getCenter(): WebLatLng;
 }
 
-interface GoogleMapsNamespace {
-  Map: new (el: HTMLElement, opts?: GoogleMapOptions) => GoogleMapInstance;
-  MapTypeId: Record<string, MapTypeId>;
-  LatLng: new (lat: number, lng: number) => GoogleLatLng;
+interface WebGoogleMapsNamespace {
+  Map: new (el: HTMLElement, opts?: WebMapOptions) => WebMapInstance;
+  MapTypeId: Record<string, WebMapTypeId>;
+  LatLng: new (lat: number, lng: number) => WebLatLng;
 }
 
-interface GoogleNamespace {
-  maps: GoogleMapsNamespace;
+interface WebGoogleNamespace {
+  maps: WebGoogleMapsNamespace;
 }
 
 declare global {
   interface Window {
-    google?: GoogleNamespace;
+    google?: WebGoogleNamespace;
   }
 }
 
@@ -81,7 +81,7 @@ const MapView: React.FC<MapViewProps> = ({
   ...props
 }) => {
   const mapRef = useRef<HTMLDivElement | null>(null);
-  const googleMapRef = useRef<GoogleMapInstance | null>(null);
+  const googleMapRef = useRef<WebMapInstance | null>(null);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -91,7 +91,7 @@ const MapView: React.FC<MapViewProps> = ({
     const centerLat = typeof region?.latitude === 'number' ? region.latitude : DEFAULT_LAT;
     const centerLng = typeof region?.longitude === 'number' ? region.longitude : DEFAULT_LNG;
 
-    const mapOptions: GoogleMapOptions = {
+    const mapOptions: WebMapOptions = {
       center: { lat: centerLat, lng: centerLng },
       zoom: 13,
       mapTypeId: window.google.maps.MapTypeId.ROADMAP,
