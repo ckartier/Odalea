@@ -186,6 +186,11 @@ export default function ProRegisterScreen() {
     [],
   );
 
+  useEffect(() => {
+    const categories = activityOptions.map(option => option.label).join(', ');
+    console.log('🗂️ Professional categories initialized:', categories);
+  }, [activityOptions]);
+
   const handleCommonInfoChange = useCallback((path: string, value: string) => {
     setCommonInfo(prev => {
       if (path.startsWith('address.')) {
