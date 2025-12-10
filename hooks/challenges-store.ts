@@ -2,7 +2,7 @@ import { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import databaseService from '@/services/database';
+import { databaseService } from '@/services/database';
 import { useAuth } from '@/hooks/user-store';
 
 export interface Challenge {
@@ -410,12 +410,12 @@ export const [ChallengesContext, useChallenges] = createContextHook(() => {
 
   const hasUserVoted = (participationId: string, userId: string) => {
     const participation = participationsQuery.data?.find(p => p.id === participationId);
-    return participation?.votes.some(v => v.voterId === userId) || false;
+    return participation?.votes?.some(v => v.voterId === userId) || false;
   };
 
   const getUserVote = (participationId: string, userId: string) => {
     const participation = participationsQuery.data?.find(p => p.id === participationId);
-    return participation?.votes.find(v => v.voterId === userId)?.vote;
+    return participation?.votes?.find(v => v.voterId === userId)?.vote;
   };
 
   return {
@@ -791,38 +791,6 @@ function getDefaultChallenges(): Challenge[] {
       icon: '✂️',
       color: '#F0E68C',
       duration: 7,
-    },
-  ];
-}
-
-function getDefaultLeaderboard(): ChallengeLeaderboard[] {
-  return [
-    {
-      userId: '1',
-      userName: 'Sarah Johnson',
-      userPhoto: 'https://images.unsplash.com/photo-1494790108755-2616b9e0e4b0?w=100&h=100&fit=crop&crop=face',
-      totalPoints: 2450,
-      completedChallenges: 12,
-      badges: ['comedian', 'walker', 'trainer', 'explorer'],
-      rank: 1,
-    },
-    {
-      userId: '2',
-      userName: 'Mike Chen',
-      userPhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
-      totalPoints: 2180,
-      completedChallenges: 9,
-      badges: ['walker', 'nature_lover', 'groomer'],
-      rank: 2,
-    },
-    {
-      userId: '3',
-      userName: 'Emma Wilson',
-      userPhoto: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
-      totalPoints: 1950,
-      completedChallenges: 8,
-      badges: ['comedian', 'explorer', 'fashionista'],
-      rank: 3,
     },
   ];
 }
