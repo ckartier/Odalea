@@ -124,7 +124,7 @@ export default function NotificationsSettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.screenBackground,
+    backgroundColor: 'transparent',
   },
   content: {
     flex: 1,
