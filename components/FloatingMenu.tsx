@@ -16,7 +16,6 @@ import { useI18n } from '@/hooks/i18n-store';
 import { useMessaging } from '@/hooks/messaging-store';
 import { useChallenges } from '@/hooks/challenges-store';
 import { useAuth } from '@/hooks/auth-store';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   Map,
   MessageCircle,
@@ -60,51 +59,7 @@ interface MenuItem {
 
 // Memoize menu items to prevent re-creation
 const getMenuItems = (isProfessional: boolean): MenuItem[] => {
-  if (isProfessional) {
-    // Professional users only see shop and dashboard
-    return [
-      {
-        id: 'dashboard',
-        titleKey: 'pro.dashboard',
-        iconName: 'BarChart',
-        route: '/(pro)/dashboard',
-      },
-      {
-        id: 'shop',
-        titleKey: 'navigation.shop',
-        iconName: 'ShoppingBag',
-        route: '/(pro)/shop',
-      },
-      {
-        id: 'profile',
-        titleKey: 'navigation.profile',
-        iconName: 'User',
-        route: '/(pro)/profile',
-      },
-      {
-        id: 'admin-tools',
-        titleKey: 'Admin Tools',
-        iconName: 'Wrench',
-        route: '/admin-tools',
-        isSpecial: true,
-      },
-      {
-        id: 'terms',
-        titleKey: 'auth.terms_and_conditions',
-        iconName: 'FileText',
-        route: '/legal/terms',
-      },
-      {
-        id: 'support',
-        titleKey: 'Support & infos',
-        iconName: 'HelpCircle',
-        route: '/settings/support',
-      },
-    ];
-  }
-
-  // Regular users see all features
-  return [
+  const standardItems: MenuItem[] = [
     {
       id: 'map',
       titleKey: 'navigation.map',
@@ -143,13 +98,6 @@ const getMenuItems = (isProfessional: boolean): MenuItem[] => {
       route: '/(tabs)/challenges',
     },
     {
-      id: 'admin-tools',
-      titleKey: 'Admin Tools',
-      iconName: 'Wrench',
-      route: '/admin-tools',
-      isSpecial: true,
-    },
-    {
       id: 'profile',
       titleKey: 'navigation.profile',
       iconName: 'User',
@@ -174,6 +122,36 @@ const getMenuItems = (isProfessional: boolean): MenuItem[] => {
       route: '/settings/help',
     },
   ];
+
+  if (isProfessional) {
+    const proItems: MenuItem[] = [
+      {
+        id: 'dashboard',
+        titleKey: 'pro.dashboard',
+        iconName: 'BarChart',
+        route: '/(pro)/dashboard',
+      },
+      {
+        id: 'pro-shop',
+        titleKey: 'Ma Boutique Pro',
+        iconName: 'ShoppingBag',
+        route: '/(pro)/shop',
+        isSpecial: true,
+      },
+      {
+        id: 'pro-profile',
+        titleKey: 'Mon Profil Pro',
+        iconName: 'User',
+        route: '/(pro)/profile',
+        isSpecial: true,
+      },
+    ];
+    
+    // Combine Pro items at the top, followed by standard items
+    return [...proItems, ...standardItems];
+  }
+
+  return standardItems;
 };
 
 interface FloatingMenuProps {
@@ -436,11 +414,11 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
               onPress={() => handleMenuItemPress(item.route)}
               activeOpacity={0.7}
             >
-              <LinearGradient
-                colors={isActiveRoute(item.route) ? ["#a3e5fa", "#f7b6d6"] : ["#f5f5f5", "#e8e8e8"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.menuItemButton}
+              <View
+                style={[
+                  styles.menuItemButton,
+                  isActiveRoute(item.route) ? styles.menuItemButtonActive : styles.menuItemButtonInactive
+                ]}
               >
                 <Text
                   style={[
@@ -473,7 +451,7 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
                     </Text>
                   </View>
                 )}
-              </LinearGradient>
+                </View>
             </TouchableOpacity>
           ))}
           </ScrollView>
@@ -587,6 +565,14 @@ const styles = StyleSheet.create({
     position: 'relative',
     minHeight: 56,
   },
+  menuItemButtonActive: {
+    backgroundColor: '#E0F7FA',
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  menuItemButtonInactive: {
+    backgroundColor: '#f5f5f5',
+  },
   menuItemText: {
     fontSize: DIMENSIONS.FONT_SIZES.lg,
     fontWeight: '600' as const,
@@ -594,7 +580,7 @@ const styles = StyleSheet.create({
     textAlign: 'center' as const,
   },
   menuItemTextActive: {
-    color: COLORS.white,
+    color: COLORS.primary,
     fontWeight: '700' as const,
   },
 
