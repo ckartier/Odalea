@@ -185,7 +185,7 @@ export default function CommunityScreen() {
             style={styles.avatar} 
           />
           <View style={styles.authorInfo}>
-            <Text style={styles.authorName}>{post.authorName || 'Anonymous'}</Text>
+            <Text style={styles.authorName}>{post.authorName || 'Anonyme'}</Text>
             <View style={styles.postMeta}>
               <Text style={styles.timeAgo}>{formatTimeAgo(post.createdAt)}</Text>
               {post.location?.name && (
@@ -317,19 +317,19 @@ export default function CommunityScreen() {
         {isLoading && posts.length === 0 ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.loadingText}>Loading posts...</Text>
+            <Text style={styles.loadingText}>Chargement des publications...</Text>
           </View>
         ) : isError ? (
           <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>Failed to load posts</Text>
+            <Text style={styles.errorText}>Échec du chargement des publications</Text>
             <TouchableOpacity onPress={onRefresh} style={styles.retryButton}>
-              <Text style={styles.retryText}>Retry</Text>
+              <Text style={styles.retryText}>Réessayer</Text>
             </TouchableOpacity>
           </View>
         ) : filteredPosts.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No posts found</Text>
-            <Text style={styles.emptySubtext}>Try changing your filters</Text>
+            <Text style={styles.emptyText}>Aucune publication trouvée</Text>
+            <Text style={styles.emptySubtext}>Essayez de modifier vos filtres</Text>
           </View>
         ) : (
           filteredPosts.map(renderPost)
@@ -337,7 +337,7 @@ export default function CommunityScreen() {
         
         {filteredPosts.length > 0 && (
           <View style={styles.endOfFeed}>
-            <Text style={styles.endOfFeedText}>You&apos;re all caught up!</Text>
+            <Text style={styles.endOfFeedText}>Vous êtes à jour !</Text>
           </View>
         )}
       </ScrollView>
