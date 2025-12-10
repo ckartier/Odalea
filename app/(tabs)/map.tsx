@@ -100,6 +100,29 @@ const LATITUDE_DELTA = 0.02;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 const DEFAULT_LAT = 48.8867;
 const DEFAULT_LNG = 2.3431;
+const GOOGLE_PLACES_ENDPOINT = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
+
+const getGooglePlacesApiKey = (): string | null => {
+  const key = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ?? process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!key) return null;
+  const trimmed = key.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+const getGooglePlacesErrorMessage = (message?: string): string => {
+  if (!message) return 'Activez la facturation Google Cloud et l’API Places pour cette clé.';
+  const normalized = message.toLowerCase();
+  if (normalized.includes('api key') && normalized.includes('invalid')) {
+    return 'La clé Google Places fournie est invalide ou désactivée. Remplacez EXPO_PUBLIC_GOOGLE_PLACES_API_KEY par une clé autorisée.';
+  }
+  if (normalized.includes('billing')) {
+    return 'Activez la facturation Google Cloud pour utiliser l’API Places.';
+  }
+  if (normalized.includes('not authorized')) {
+    return 'Autorisez l’API Places Web Service pour cette clé Google Cloud.';
+  }
+  return message;
+};
 
 export default function MapScreen() {
   const router = useRouter();
@@ -355,20 +378,25 @@ export default function MapScreen() {
   const fetchNearbyVets = async () => {
     try {
       const loc = userLocation ?? { latitude: DEFAULT_LAT, longitude: DEFAULT_LNG };
-      const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || process.env.EXPO_PUBLIC_APP_ID;
+      const apiKey = getGooglePlacesApiKey();
 
       if (!apiKey) {
-        console.error('❌ Google Maps API key not found in environment');
+        console.error('❌ Google Places API key not found in environment');
         showPopup({
           type: 'error',
           title: 'Configuration manquante',
-          message: 'Ajoutez EXPO_PUBLIC_GOOGLE_MAPS_API_KEY pour activer les vétérinaires.',
+          message: 'Ajoutez EXPO_PUBLIC_GOOGLE_PLACES_API_KEY (ou EXPO_PUBLIC_GOOGLE_MAPS_API_KEY) pour activer les vétérinaires.',
         });
         return;
       }
 
-      console.log('🔑 Using Google Maps API key');
-      const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${loc.latitude},${loc.longitude}&radius=5000&type=veterinary_care&key=${apiKey}`;
+      const params = new URLSearchParams({
+        location: `${loc.latitude},${loc.longitude}`,
+        radius: '5000',
+        type: 'veterinary_care',
+        key: apiKey,
+      });
+      const url = `${GOOGLE_PLACES_ENDPOINT}?${params.toString()}`;
       console.log('📍 Fetching vets near:', loc);
 
       const response = await fetch(url);
@@ -385,12 +413,12 @@ export default function MapScreen() {
       const data = await response.json();
       console.log('📊 Vets API response status:', data.status);
 
-      if (data.status === 'REQUEST_DENIED') {
+      if (data.status === 'REQUEST_DENIED' || data.status === 'INVALID_REQUEST') {
         console.error('❌ Google Places API error:', data.error_message);
         showPopup({
           type: 'error',
           title: 'Google Places',
-          message: data.error_message || 'Activez la facturation et les API Places dans GCP.',
+          message: getGooglePlacesErrorMessage(data.error_message),
         });
         return;
       }
