@@ -28,6 +28,7 @@ import {
   HelpCircle,
   Wrench,
   UserSearch,
+  ChevronRight,
 } from 'lucide-react-native';
 
 interface MenuItem {
@@ -219,6 +220,30 @@ export default function MenuScreen() {
     }
   };
 
+  const getBadgeValue = (itemId: string) => {
+    if (itemId === 'messages') {
+      return totalUnreadMessages;
+    }
+    if (itemId === 'challenges') {
+      return pendingChallengesCount;
+    }
+    if (itemId === 'community') {
+      return newCommunityActivity;
+    }
+    return 0;
+  };
+
+  const renderBadge = (value: number) => {
+    if (value <= 0) {
+      return null;
+    }
+    return (
+      <View style={styles.notificationBadge} testID="menu-item-badge">
+        <Text style={styles.notificationText}>{value > 99 ? '99+' : value}</Text>
+      </View>
+    );
+  };
+
   const handleMenuItemPress = (route: string) => {
     router.push(route as any);
   };
@@ -272,34 +297,35 @@ export default function MenuScreen() {
                 style={styles.quickAccessItem}
                 onPress={() => handleMenuItemPress(item.route)}
                 activeOpacity={0.7}
+                testID={`quick-access-${item.id}`}
               >
                 <View style={styles.quickAccessIcon}>
                   {renderIcon(item.iconName)}
-                  {item.id === 'messages' && totalUnreadMessages > 0 && (
-                    <View style={styles.notificationBadge}>
-                      <Text style={styles.notificationText}>
-                        {totalUnreadMessages > 99 ? '99+' : totalUnreadMessages}
-                      </Text>
-                    </View>
-                  )}
-                  {item.id === 'challenges' && pendingChallengesCount > 0 && (
-                    <View style={styles.notificationBadge}>
-                      <Text style={styles.notificationText}>
-                        {pendingChallengesCount > 99 ? '99+' : pendingChallengesCount}
-                      </Text>
-                    </View>
-                  )}
-                  {item.id === 'community' && newCommunityActivity > 0 && (
-                    <View style={styles.notificationBadge}>
-                      <Text style={styles.notificationText}>
-                        {newCommunityActivity > 99 ? '99+' : newCommunityActivity}
-                      </Text>
-                    </View>
-                  )}
+                  {renderBadge(getBadgeValue(item.id))}
                 </View>
                 <Text style={styles.quickAccessText} numberOfLines={2}>
                   {t(item.titleKey)}
                 </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.sectionTitle}>{t('navigation.all_sections')}</Text>
+          <View style={styles.menuList}>
+            {menuItems.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.menuListItem}
+                onPress={() => handleMenuItemPress(item.route)}
+                activeOpacity={0.8}
+                testID={`menu-item-${item.id}`}
+              >
+                <View style={styles.menuListIcon}>{renderIcon(item.iconName)}</View>
+                <View style={styles.menuListContent}>
+                  <Text style={styles.menuListTitle}>{t(item.titleKey)}</Text>
+                </View>
+                <View style={styles.menuListMeta}>{renderBadge(getBadgeValue(item.id))}</View>
+                <ChevronRight color={COLORS.darkGray} size={20} />
               </TouchableOpacity>
             ))}
           </View>
@@ -372,6 +398,13 @@ const styles = StyleSheet.create({
     color: COLORS.black,
     marginBottom: DIMENSIONS.SPACING.md,
   },
+  sectionTitle: {
+    fontSize: DIMENSIONS.FONT_SIZES.lg,
+    fontWeight: '600' as const,
+    color: COLORS.black,
+    marginBottom: DIMENSIONS.SPACING.md,
+    marginTop: DIMENSIONS.SPACING.lg,
+  },
   quickAccessGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -427,6 +460,44 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700' as const,
     textAlign: 'center',
+  },
+  menuList: {
+    backgroundColor: COLORS.white,
+    borderRadius: DIMENSIONS.SPACING.lg,
+    paddingHorizontal: DIMENSIONS.SPACING.md,
+    paddingVertical: DIMENSIONS.SPACING.xs,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  menuListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: DIMENSIONS.SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.06)',
+  },
+  menuListIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(125, 212, 238, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: DIMENSIONS.SPACING.md,
+  },
+  menuListContent: {
+    flex: 1,
+  },
+  menuListTitle: {
+    fontSize: DIMENSIONS.FONT_SIZES.md,
+    fontWeight: '600' as const,
+    color: COLORS.black,
+  },
+  menuListMeta: {
+    marginRight: DIMENSIONS.SPACING.sm,
   },
   footer: {
     paddingHorizontal: DIMENSIONS.SPACING.lg,
