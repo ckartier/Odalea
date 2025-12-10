@@ -950,9 +950,9 @@ export default function MapScreen() {
           testID="animated-popup"
         >
           <View style={styles.popupContent}>
-            <Text style={styles.popupTitle}>{popup.title}</Text>
-            <Text style={styles.popupMessage}>{popup.message}</Text>
-            {popup.phone && (
+            <Text style={styles.popupTitle}>{popup.title || ''}</Text>
+            <Text style={styles.popupMessage}>{popup.message || ''}</Text>
+            {popup.phone ? (
               <TouchableOpacity
                 style={styles.phoneButton}
                 onPress={() => {
@@ -965,7 +965,7 @@ export default function MapScreen() {
               >
                 <Text style={styles.phoneButtonText}>📞 {popup.phone}</Text>
               </TouchableOpacity>
-            )}
+            ) : null}
           </View>
           <TouchableOpacity onPress={hidePopup} style={styles.popupClose} testID="popup-close">
             <Text style={styles.popupCloseText}>OK</Text>
