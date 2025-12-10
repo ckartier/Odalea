@@ -39,14 +39,43 @@ interface MenuItem {
 }
 
 const getMenuItems = (opts: { isProfessional: boolean; isSuperAdmin: boolean; email?: string | null }): MenuItem[] => {
-  const showAdmin = opts.isSuperAdmin;
   if (opts.isProfessional) {
-    const proItems: MenuItem[] = [
+    return [
       {
         id: 'dashboard',
         titleKey: 'pro.dashboard',
         iconName: 'BarChart',
         route: '/(pro)/dashboard',
+      },
+      {
+        id: 'map',
+        titleKey: 'navigation.map',
+        iconName: 'Map',
+        route: '/(tabs)/map',
+      },
+      {
+        id: 'community',
+        titleKey: 'navigation.community',
+        iconName: 'Users',
+        route: '/(tabs)/community',
+      },
+      {
+        id: 'challenges',
+        titleKey: 'navigation.challenges',
+        iconName: 'Trophy',
+        route: '/(tabs)/challenges',
+      },
+      {
+        id: 'cat-sitter',
+        titleKey: 'sitters.cat_sitters',
+        iconName: 'Search',
+        route: '/cat-sitter',
+      },
+      {
+        id: 'lost-found',
+        titleKey: 'navigation.lostFound',
+        iconName: 'Search',
+        route: '/(tabs)/lost-found',
       },
       {
         id: 'shop',
@@ -68,19 +97,14 @@ const getMenuItems = (opts: { isProfessional: boolean; isSuperAdmin: boolean; em
       },
       {
         id: 'support',
-        titleKey: 'Support & infos',
+        titleKey: 'settings.support_infos',
         iconName: 'HelpCircle',
         route: '/settings/support',
       },
     ];
-    return showAdmin ? [
-      ...proItems,
-      { id: 'admin-tools', titleKey: 'Admin Tools', iconName: 'Wrench', route: '/admin-tools' },
-      { id: 'admin-search', titleKey: 'Recherche Utilisateurs', iconName: 'UserSearch', route: '/admin-search-users' },
-    ] : proItems;
   }
 
-  const base: MenuItem[] = [
+  return [
     {
       id: 'map',
       titleKey: 'navigation.map',
@@ -95,7 +119,7 @@ const getMenuItems = (opts: { isProfessional: boolean; isSuperAdmin: boolean; em
     },
     {
       id: 'cat-sitter',
-      titleKey: 'Cat Sitters',
+      titleKey: 'sitters.cat_sitters',
       iconName: 'Search',
       route: '/cat-sitter',
     },
@@ -131,16 +155,11 @@ const getMenuItems = (opts: { isProfessional: boolean; isSuperAdmin: boolean; em
     },
     {
       id: 'support',
-      titleKey: 'Support & infos',
+      titleKey: 'settings.support_infos',
       iconName: 'HelpCircle',
       route: '/settings/support',
     },
   ];
-  return showAdmin ? [
-    ...base,
-    { id: 'admin-tools', titleKey: 'Admin Tools', iconName: 'Wrench', route: '/admin-tools' },
-    { id: 'admin-search', titleKey: 'Recherche Utilisateurs', iconName: 'UserSearch', route: '/admin-search-users' },
-  ] : base;
 };
 
 export default function MenuScreen() {
@@ -157,9 +176,7 @@ export default function MenuScreen() {
   
   const menuOptions = menuItems.map(item => ({
     value: item.route,
-    label: item.titleKey.startsWith('Cat Sitters') || item.titleKey.startsWith('Support & infos') || item.titleKey.startsWith('Admin')
-      ? item.titleKey 
-      : t(item.titleKey)
+    label: t(item.titleKey)
   }));
 
   const totalUnreadMessages = conversations.reduce((total, conv) => total + conv.unreadCount, 0);
@@ -281,10 +298,7 @@ export default function MenuScreen() {
                   )}
                 </View>
                 <Text style={styles.quickAccessText} numberOfLines={2}>
-                  {item.titleKey.startsWith('Cat Sitters') || item.titleKey.startsWith('Support & infos') || item.titleKey.startsWith('Admin')
-                    ? item.titleKey 
-                    : t(item.titleKey)
-                  }
+                  {t(item.titleKey)}
                 </Text>
               </TouchableOpacity>
             ))}
