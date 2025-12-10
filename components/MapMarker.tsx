@@ -22,31 +22,32 @@ const MapMarker: React.FC<MapMarkerProps> = ({ pet, onPress, isVet = false }) =>
   const markerColor = pet.gender === 'male' ? COLORS.male : COLORS.female;
 
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.8}
-      style={styles.container}
-      testID={`map-marker-${pet.id}`}
-    >
-      <View style={[
-        styles.markerContainer,
-        { backgroundColor: markerColor },
-        SHADOWS.medium,
-      ]}>
-        {pet.mainPhoto ? (
-          <Image
-            source={{ uri: pet.mainPhoto }}
-            style={styles.image}
-            contentFit="cover"
-          />
-        ) : (
-          <View style={styles.placeholder}>
-            <Text style={styles.placeholderText}>🐱</Text>
-          </View>
-        )}
-      </View>
-      <View style={[styles.triangle, { borderTopColor: markerColor }]} />
-    </TouchableOpacity>
+    <View style={styles.container}>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.8}
+        testID={`map-marker-${pet.id}`}
+      >
+        <View style={[
+          styles.markerContainer,
+          { backgroundColor: markerColor },
+          SHADOWS.medium,
+        ]}>
+          {pet.mainPhoto ? (
+            <Image
+              source={{ uri: pet.mainPhoto }}
+              style={styles.image}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={styles.placeholder}>
+              <Text style={styles.placeholderText}>🐱</Text>
+            </View>
+          )}
+        </View>
+        <View style={[styles.triangle, { borderTopColor: markerColor }]} />
+      </TouchableOpacity>
+    </View>
   );
 };
 

@@ -62,8 +62,8 @@ export default function NewMessageScreen() {
         <View style={styles.userInfo}>
           <Text style={styles.userName}>@{item.pseudo}</Text>
           <Text style={styles.userDetails}>
-            {item.pets.length} pet{item.pets.length !== 1 ? 's' : ''}
-            {item.isCatSitter ? ' • Cat Sitter' : ''}
+            {item.pets.length} animal{item.pets.length !== 1 ? 'aux' : ''}
+            {item.isCatSitter ? ' • Gardien' : ''}
           </Text>
         </View>
         
@@ -86,13 +86,13 @@ export default function NewMessageScreen() {
     <View style={styles.container}>
       <StatusBar style="dark" />
       
-      <Stack.Screen options={{ title: 'New Message' }} />
+      <Stack.Screen options={{ title: 'Nouveau message' }} />
       
       <View style={styles.searchContainer}>
         <Search size={20} color={COLORS.darkGray} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search users..."
+          placeholder="Rechercher des utilisateurs..."
           value={searchQuery}
           onChangeText={setSearchQuery}
           autoCapitalize="none"
@@ -114,8 +114,8 @@ export default function NewMessageScreen() {
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>
                 {searchQuery
-                  ? 'No users found matching your search'
-                  : 'Start typing to search for users'}
+                  ? 'Aucun utilisateur trouvé'
+                  : 'Commencez à taper pour rechercher des utilisateurs'}
               </Text>
             </View>
           }

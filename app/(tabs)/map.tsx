@@ -90,7 +90,7 @@ const FILTERS: {
 }[] = [
   { key: 'all', label: 'Tout', Icon: Layers, gradient: ['#c084fc', '#a855f7'] },
   { key: 'pets', label: 'Animaux', Icon: Heart, gradient: ['#fb7185', '#f472b6'] },
-  { key: 'sitters', label: 'Cat Sitters', Icon: Users, gradient: ['#38bdf8', '#6366f1'] },
+  { key: 'sitters', label: 'Gardiens', Icon: Users, gradient: ['#38bdf8', '#6366f1'] },
   { key: 'friends', label: 'Amis', Icon: Filter, gradient: ['#f97316', '#facc15'] },
   { key: 'lost', label: 'Perdus', Icon: Search, gradient: ['#f43f5e', '#f97316'] },
   { key: 'vets', label: 'Vétérinaires', Icon: Search, gradient: ['#34d399', '#059669'] },
@@ -969,7 +969,7 @@ export default function MapScreen() {
                 </Text>
                 {(selectedUser?.isCatSitter || selectedUser?.isProfessional) && (
                   <View style={styles.sitterBadge}>
-                    <Text style={styles.sitterBadgeText}>Cat Sitter</Text>
+                    <Text style={styles.sitterBadgeText}>Gardien</Text>
                   </View>
                 )}
               </View>
