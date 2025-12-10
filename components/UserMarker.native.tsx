@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 import { Image } from 'expo-image';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import { User } from '@/types';
 import { Marker } from 'react-native-maps';
 import { getBlurredUserLocation } from '@/services/location-privacy';
+import { Stethoscope } from 'lucide-react-native';
 
 interface UserMarkerProps {
   user: User;
@@ -19,7 +20,9 @@ const UserMarker: React.FC<UserMarkerProps> = ({ user, onPress }) => {
 
   if (!user.location || !blurredLocation) return null;
 
-  const markerColor = COLORS.primary;
+  const primaryPet = user.pets?.find((p) => p.isPrimary) || user.pets?.[0];
+  const markerColor = primaryPet?.gender === 'male' ? COLORS.male : primaryPet?.gender === 'female' ? COLORS.female : COLORS.primary;
+  const isVetProfessional = user.isProfessional && user.professionalData?.activityType === 'vet';
 
   return (
     <Marker
@@ -30,13 +33,28 @@ const UserMarker: React.FC<UserMarkerProps> = ({ user, onPress }) => {
       onPress={onPress}
     >
       <View style={[styles.markerContainer, { backgroundColor: markerColor }, SHADOWS.medium]}>
-        <Image
-          source={{ uri: user.photo || 'https://images.unsplash.com/photo-1549501493-84a1420bb0f2?w=100&h=100&fit=crop&crop=faces' }}
-          style={styles.image}
-          contentFit="cover"
-        />
+        {primaryPet?.mainPhoto ? (
+          <Image
+            source={{ uri: primaryPet.mainPhoto }}
+            style={styles.image}
+            contentFit="cover"
+          />
+        ) : user.animalPhoto ? (
+          <Image
+            source={{ uri: user.animalPhoto }}
+            style={styles.image}
+            contentFit="cover"
+          />
+        ) : (
+          <Text style={styles.petEmoji}>🐾</Text>
+        )}
       </View>
       <View style={[styles.triangle, { borderTopColor: markerColor }]} />
+      {isVetProfessional && (
+        <View style={styles.vetBadge}>
+          <Stethoscope size={12} color="#fff" />
+        </View>
+      )}
     </Marker>
   );
 };
@@ -56,6 +74,9 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
   },
+  petEmoji: {
+    fontSize: 20,
+  },
   triangle: {
     width: 0,
     height: 0,
@@ -68,6 +89,19 @@ const styles = StyleSheet.create({
     borderRightColor: 'transparent',
     alignSelf: 'center',
     marginTop: -2,
+  },
+  vetBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#10b981',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.white,
   },
 });
 

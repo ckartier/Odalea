@@ -8,9 +8,10 @@ import { getBlurredPetLocation } from '@/services/location-privacy';
 interface MapMarkerProps {
   pet: Pet & { owner?: any };
   onPress?: () => void;
+  isVet?: boolean;
 }
 
-const MapMarker: React.FC<MapMarkerProps> = ({ pet, onPress }) => {
+const MapMarker: React.FC<MapMarkerProps> = ({ pet, onPress, isVet = false }) => {
   const blurredLocation = useMemo(() => {
     if (!pet.location) return null;
     return getBlurredPetLocation(pet.id, pet.location);

@@ -12,7 +12,7 @@ import {
   Dimensions,
   TouchableOpacity,
   Platform,
-  ScrollView,
+  Modal,
   Animated,
   Easing,
 } from 'react-native';
@@ -42,6 +42,8 @@ import {
   Stethoscope,
   ShieldCheck,
   RefreshCcw,
+  ChevronDown,
+  X,
 } from 'lucide-react-native';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { petService, userService } from '@/services/database';
@@ -146,6 +148,7 @@ export default function MapScreen() {
   const [activeFilters, setActiveFilters] = useState<Set<MapFilter>>(new Set(['all', 'pets', 'sitters', 'friends', 'lost', 'vets']));
   const [vets, setVets] = useState<VetPlace[]>([]);
   const [popup, setPopup] = useState<PopupConfig | null>(null);
+  const [showFilterMenu, setShowFilterMenu] = useState<boolean>(false);
   const popupAnim = useRef(new Animated.Value(0)).current;
 
   const overlayTop = insets.top + 18;
@@ -677,7 +680,11 @@ export default function MapScreen() {
         testID="map-view"
       >
         {Platform.OS !== 'web' && filteredPets.map((pet, index) => (
-          <MapMarker key={`${pet.id}-${index}`} pet={pet} onPress={() => handleMarkerPress(pet)} />
+          <MapMarker 
+            key={`${pet.id}-${index}`} 
+            pet={pet} 
+            onPress={() => handleMarkerPress(pet)} 
+          />
         ))}
         {Platform.OS !== 'web' && filteredUsers.map((u) => (
           <UserMarker key={`user-${u.id}`} user={u} onPress={() => setSelectedUser(u)} />
@@ -685,6 +692,7 @@ export default function MapScreen() {
         {Platform.OS !== 'web' && activeFilters.has('vets') && vets.map((vet) => (
           <MapMarker
             key={`vet-${vet.id}`}
+            isVet={true}
             pet={{
               id: vet.id,
               name: vet.name,
@@ -715,6 +723,7 @@ export default function MapScreen() {
             const left = Math.max(24, Math.min(width - 24, pos.left));
             const top = Math.max(24, Math.min(height - 24, pos.top));
             const markerColor = pet.gender === 'male' ? COLORS.male : COLORS.female;
+            const isVetProfessional = pet.owner?.isProfessional && pet.owner?.professionalData?.activityType === 'vet';
             return (
               <TouchableOpacity
                 key={`overlay-pet-${pet.id}-${idx}`}
@@ -740,6 +749,11 @@ export default function MapScreen() {
                   )}
                 </View>
                 <View style={[styles.webPetTriangle, { borderTopColor: markerColor }]} />
+                {isVetProfessional && (
+                  <View style={styles.webVetBadge}>
+                    <Stethoscope size={12} color="#fff" />
+                  </View>
+                )}
               </TouchableOpacity>
             );
           })}
@@ -747,20 +761,52 @@ export default function MapScreen() {
             const originalLoc = { latitude: u.location?.latitude ?? DEFAULT_LAT, longitude: u.location?.longitude ?? DEFAULT_LNG };
             const blurred = getBlurredUserLocation(u.id, originalLoc);
             const pos = projectPoint(blurred.latitude, blurred.longitude);
-            const left = Math.max(8, Math.min(width - 8, pos.left));
-            const top = Math.max(8, Math.min(height - 8, pos.top));
+            const left = Math.max(24, Math.min(width - 24, pos.left));
+            const top = Math.max(24, Math.min(height - 24, pos.top));
+            const primaryPet = u.pets?.find((p) => p.isPrimary) || u.pets?.[0];
+            const markerColor = primaryPet?.gender === 'male' ? COLORS.male : primaryPet?.gender === 'female' ? COLORS.female : COLORS.primary;
+            const isVetProfessional = u.isProfessional && u.professionalData?.activityType === 'vet';
             return (
               <TouchableOpacity
                 key={`overlay-user-${u.id}-${idx}`}
                 onPress={() => setSelectedUser(u)}
-                activeOpacity={0.9}
-                style={[styles.webPin, { left, top }]}
+                activeOpacity={0.8}
+                style={[styles.webPetMarker, { left, top }]}
                 testID={`user-pin-${u.id}`}
               >
-                <View style={styles.webPinDot} />
-                <Text style={styles.webPinLabel} numberOfLines={1}>
-                  @{u.pseudo ?? 'user'}
-                </Text>
+                <View style={[styles.webPetMarkerCircle, { backgroundColor: markerColor, borderColor: COLORS.white }]}>
+                  {primaryPet?.mainPhoto ? (
+                    <img
+                      src={primaryPet.mainPhoto}
+                      alt={primaryPet.name}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ) : u.animalPhoto ? (
+                    <img
+                      src={u.animalPhoto}
+                      alt={u.animalName || 'pet'}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ) : (
+                    <Text style={styles.webPetEmoji}>🐾</Text>
+                  )}
+                </View>
+                <View style={[styles.webPetTriangle, { borderTopColor: markerColor }]} />
+                {isVetProfessional && (
+                  <View style={styles.webVetBadge}>
+                    <Stethoscope size={12} color="#fff" />
+                  </View>
+                )}
               </TouchableOpacity>
             );
           })}
@@ -808,36 +854,80 @@ export default function MapScreen() {
         </Text>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRowContent}
-        style={[styles.filterRow, { top: filtersTop }]}
-        testID="filter-row"
+      <TouchableOpacity
+        style={[styles.filterButton, SHADOWS.medium, { top: filtersTop }]}
+        onPress={() => setShowFilterMenu(true)}
+        activeOpacity={0.85}
+        testID="filter-button"
       >
-        {FILTERS.map(({ key, label, Icon, gradient }) => {
-          const isActive = activeFilters.has(key);
-          return (
-            <TouchableOpacity
-              key={key}
-              onPress={() => handleFilterPress(key)}
-              style={styles.filterChip}
-              testID={`chip-${key}`}
-              activeOpacity={0.85}
-            >
-              <LinearGradient
-                colors={isActive ? gradient : ['rgba(255,255,255,0.8)', 'rgba(255,255,255,0.7)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[styles.filterChipInner, isActive && SHADOWS.small]}
-              >
-                <Icon size={16} color={isActive ? '#fff' : COLORS.primary} />
-                <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>{label}</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+        <LinearGradient
+          colors={['#6366f1', '#8b5cf6']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.filterButtonInner}
+        >
+          <Filter size={18} color="#fff" />
+          <Text style={styles.filterButtonText}>Filtres ({activeFilters.size})</Text>
+          <ChevronDown size={18} color="#fff" />
+        </LinearGradient>
+      </TouchableOpacity>
+
+      <Modal
+        visible={showFilterMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowFilterMenu(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowFilterMenu(false)}
+        >
+          <View style={[styles.filterMenu, SHADOWS.large]}>
+            <View style={styles.filterMenuHeader}>
+              <Text style={styles.filterMenuTitle}>Filtrer la carte</Text>
+              <TouchableOpacity onPress={() => setShowFilterMenu(false)} style={styles.filterMenuClose}>
+                <X size={24} color="#0f172a" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.filterMenuContent}>
+              {FILTERS.map(({ key, label, Icon, gradient }) => {
+                const isActive = activeFilters.has(key);
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    onPress={() => handleFilterPress(key)}
+                    style={styles.filterMenuItem}
+                    testID={`filter-item-${key}`}
+                    activeOpacity={0.7}
+                  >
+                    <LinearGradient
+                      colors={isActive ? gradient : ['#f8fafc', '#f1f5f9']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={[styles.filterMenuItemInner, isActive && SHADOWS.small]}
+                    >
+                      <View style={styles.filterMenuItemLeft}>
+                        <View style={[styles.filterMenuItemIcon, isActive && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
+                          <Icon size={20} color={isActive ? '#fff' : COLORS.primary} />
+                        </View>
+                        <Text style={[styles.filterMenuItemText, isActive && styles.filterMenuItemTextActive]}>
+                          {label}
+                        </Text>
+                      </View>
+                      {isActive && (
+                        <View style={styles.filterMenuItemCheck}>
+                          <Text style={styles.filterMenuItemCheckText}>✓</Text>
+                        </View>
+                      )}
+                    </LinearGradient>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       <View style={[styles.controlsContainer, { top: filtersTop + 60 }]}
         pointerEvents="box-none"
@@ -1111,34 +1201,108 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     marginTop: 2,
   },
-  filterRow: {
+  filterButton: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
+    left: 16,
+    borderRadius: 24,
+    overflow: 'hidden',
   },
-  filterRowContent: {
-    gap: 12,
-    paddingRight: 16,
-  },
-  filterChip: {
-    borderRadius: 999,
-  },
-  filterChipInner: {
+  filterButtonInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 999,
-    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 10,
   },
-  filterChipText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  filterChipTextActive: {
+  filterButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
     color: '#fff',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  filterMenu: {
+    backgroundColor: COLORS.white,
+    borderRadius: 28,
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '80%',
+  },
+  filterMenuHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(15,23,42,0.08)',
+  },
+  filterMenuTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  filterMenuClose: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(15,23,42,0.06)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterMenuContent: {
+    padding: 16,
+    gap: 12,
+  },
+  filterMenuItem: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  filterMenuItemInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  filterMenuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  filterMenuItemIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(15,23,42,0.06)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterMenuItemText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0f172a',
+  },
+  filterMenuItemTextActive: {
+    color: '#fff',
+  },
+  filterMenuItemCheck: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterMenuItemCheckText: {
+    fontSize: 18,
+    color: '#fff',
+    fontWeight: '700',
   },
   topFade: {
     position: 'absolute',
@@ -1150,29 +1314,18 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     pointerEvents: 'box-none',
   },
-  webPin: {
+  webVetBadge: {
     position: 'absolute',
-    transform: [{ translateX: -12 }, { translateY: -12 }],
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
-    flexDirection: 'row',
+    top: -4,
+    right: -4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#10b981',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 6,
-  },
-  webPinDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.primary,
-  },
-  webPinLabel: {
-    fontSize: 12,
-    color: '#1A1A1A',
-    maxWidth: 140,
+    borderWidth: 2,
+    borderColor: COLORS.white,
   },
   webPetMarker: {
     position: 'absolute',
