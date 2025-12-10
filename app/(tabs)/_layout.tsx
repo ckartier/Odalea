@@ -7,6 +7,7 @@ import TopBar, { useTopBarHeight } from "@/components/TopBar";
 import FloatingMenu from "@/components/FloatingMenu";
 
 export default function TabLayout() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
 

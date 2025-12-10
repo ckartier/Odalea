@@ -32,7 +32,7 @@ const KNOWN_COLLECTIONS: readonly string[] = [
 ];
 
 export default function FirestoreCollectionsScreen() {
-  const collQuery = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['firestore-collections', 'counts'],
     queryFn: async () => {
       const entries: FirestoreCollectionInfo[] = [];
@@ -49,20 +49,20 @@ export default function FirestoreCollectionsScreen() {
   });
 
   const content = useMemo(() => {
-    if (collQuery.isLoading) return <ActivityIndicator testID="loading-collections" />;
-    if (collQuery.error) {
+    if (isLoading) return <ActivityIndicator testID="loading-collections" />;
+    if (error) {
       return (
         <View style={styles.errorBox} testID="error-collections">
           <Text style={styles.errorTitle}>Erreur</Text>
-          <Text style={styles.errorText}>{(collQuery.error as any)?.message ?? 'Chargement échoué'}</Text>
-          <TouchableOpacity onPress={() => collQuery.refetch()} style={styles.retryBtn} testID="retry-collections">
+          <Text style={styles.errorText}>{(error as any)?.message ?? 'Chargement échoué'}</Text>
+          <TouchableOpacity onPress={() => refetch()} style={styles.retryBtn} testID="retry-collections">
             <RefreshCw size={16} color={COLORS.white} />
             <Text style={styles.retryText}>Réessayer</Text>
           </TouchableOpacity>
         </View>
       );
     }
-    const list = collQuery.data ?? [];
+    const list = data ?? [];
     return (
       <View>
         {list.map(item => (
@@ -76,7 +76,7 @@ export default function FirestoreCollectionsScreen() {
         ))}
       </View>
     );
-  }, [collQuery]);
+  }, [data, isLoading, error, refetch]);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} testID="collections-screen">

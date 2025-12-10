@@ -88,10 +88,8 @@ const RootLayoutNav = React.memo(() => {
       <Stack.Screen name="cat-sitter-settings" options={{ headerShown: true }} />
       <Stack.Screen name="legal/terms" options={{ headerShown: true }} />
       <Stack.Screen name="legal/privacy" options={{ headerShown: true }} />
-// removed firebase-test registration
-
-// removed admin-tools registration
-
+      {/* removed firebase-test registration */}
+      {/* removed admin-tools registration */}
     </Stack>
   );
 });
