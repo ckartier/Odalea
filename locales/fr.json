@@ -223,7 +223,8 @@
     "lost_found": "Perdu & Trouvé",
     "select_section": "Sélectionner une section",
     "choose_section": "Choisir une section",
-    "quick_access": "Accès rapide"
+    "quick_access": "Accès rapide",
+    "all_sections": "Toutes les sections"
   },
   "pro": {
     "dashboard": "Tableau de bord",

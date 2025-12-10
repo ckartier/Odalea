@@ -217,7 +217,19 @@
     "notifications": "Notifications",
     "settings": "Settings",
     "emergency": "Emergency",
-    "lostFound": "Lost & Found"
+    "lostFound": "Lost & Found",
+    "lost_found": "Lost & Found",
+    "select_section": "Select a section",
+    "choose_section": "Choose a section",
+    "quick_access": "Quick access",
+    "all_sections": "All sections"
+  },
+  "pro": {
+    "dashboard": "Dashboard",
+    "products": "Products",
+    "orders": "Orders",
+    "analytics": "Analytics",
+    "settings": "Settings"
   },
   "home": {
     "good_morning": "Good morning",
