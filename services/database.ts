@@ -1666,12 +1666,12 @@ export const challengeService = {
     const { participationId, voterId, vote } = params;
     try {
       const partRef = doc(db, COLLECTIONS.CHALLENGE_PARTICIPATIONS, participationId);
-      await (await import('firebase/firestore')).runTransaction(db as any, async (tx: any) => {
+      await runTransaction(db as any, async (tx: any) => {
         const snap = await tx.get(partRef);
         if (!snap.exists()) throw new Error('Participation not found');
         const data = snap.data() as any;
         const votes: any[] = Array.isArray(data.votes) ? data.votes : [];
-        const idx = votes.findIndex(v => v.voterId === voterId);
+        const idx = votes.findIndex((v: any) => v.voterId === voterId);
         let yesVotes = Number(data.yesVotes ?? 0);
         let noVotes = Number(data.noVotes ?? 0);
         let totalVotes = Number(data.totalVotes ?? 0);
@@ -1692,7 +1692,8 @@ export const challengeService = {
         }
         tx.update(partRef, { votes, yesVotes, noVotes, totalVotes, status, updatedAt: serverTimestamp() });
         if (status === 'approved' && data.status !== 'approved') {
-          const ucQuery = query(collection(db, COLLECTIONS.USER_CHALLENGES), where('userId', '==', data.userId), where('challengeId', '==', data.challengeId));
+          const userChallengesRef = collection(db, COLLECTIONS.USER_CHALLENGES);
+          const ucQuery = query(userChallengesRef, where('userId', '==', data.userId), where('challengeId', '==', data.challengeId));
           const ucSnap = await getDocs(ucQuery);
           if (!ucSnap.empty) {
             const ucRef = doc(db, COLLECTIONS.USER_CHALLENGES, ucSnap.docs[0].id);
@@ -1700,6 +1701,7 @@ export const challengeService = {
           }
         }
       });
+      console.log('✅ Vote recorded successfully');
     } catch (e) {
       console.error('❌ Error voting participation:', e);
       throw e;
