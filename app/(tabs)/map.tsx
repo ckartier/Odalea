@@ -33,7 +33,6 @@ import { useI18n } from '@/hooks/i18n-store';
 import { useTheme } from '@/hooks/theme-store';
 import { Pet, User } from '@/types';
 import {
-  Compass,
   Layers,
   Filter,
   Users,
@@ -42,7 +41,6 @@ import {
   Stethoscope,
   ShieldCheck,
   RefreshCcw,
-  ChevronDown,
   X,
 } from 'lucide-react-native';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -471,55 +469,7 @@ export default function MapScreen() {
     }
   };
 
-  const handleMyLocation = async () => {
-    console.log('🎯 Recenter request');
-    if (!locationPermission && Platform.OS !== 'web') {
-      showPopup({
-        type: 'info',
-        title: 'Localisation requise',
-        message: 'Activez les services de localisation dans vos réglages pour un centrage précis.',
-      });
-      return;
-    }
 
-    try {
-      if (Platform.OS === 'web') {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition((pos) => {
-            const userCoords = {
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude,
-            };
-            setUserLocation(userCoords);
-            setRegion({
-              latitude: userCoords.latitude,
-              longitude: userCoords.longitude,
-              latitudeDelta: LATITUDE_DELTA,
-              longitudeDelta: LONGITUDE_DELTA,
-            });
-          });
-        }
-      } else {
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.High,
-        });
-        const userCoords = {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        };
-        setUserLocation(userCoords);
-        setRegion({
-          latitude: userCoords.latitude,
-          longitude: userCoords.longitude,
-          latitudeDelta: LATITUDE_DELTA,
-          longitudeDelta: LONGITUDE_DELTA,
-        });
-      }
-    } catch (error) {
-      console.error('Error getting location:', error);
-      showPopup({ type: 'error', title: t('common.error'), message: "Impossible d'obtenir votre position actuelle" });
-    }
-  };
 
   const nearbyPetsQuery = useQuery({
     queryKey: ['map', 'nearbyPets', userLat, userLng],
@@ -854,23 +804,7 @@ export default function MapScreen() {
         </Text>
       </View>
 
-      <TouchableOpacity
-        style={[styles.filterButton, SHADOWS.medium, { top: filtersTop }]}
-        onPress={() => setShowFilterMenu(true)}
-        activeOpacity={0.85}
-        testID="filter-button"
-      >
-        <LinearGradient
-          colors={['#6366f1', '#8b5cf6']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.filterButtonInner}
-        >
-          <Filter size={18} color="#fff" />
-          <Text style={styles.filterButtonText}>Filtres ({activeFilters.size})</Text>
-          <ChevronDown size={18} color="#fff" />
-        </LinearGradient>
-      </TouchableOpacity>
+
 
       <Modal
         visible={showFilterMenu}
@@ -929,11 +863,16 @@ export default function MapScreen() {
         </TouchableOpacity>
       </Modal>
 
-      <View style={[styles.controlsContainer, { top: filtersTop + 60 }]}
+      <View style={[styles.controlsContainer, { top: filtersTop }]}
         pointerEvents="box-none"
       >
-        <TouchableOpacity style={[styles.controlButton, SHADOWS.medium]} onPress={handleMyLocation} testID="btn-my-location">
-          <Compass size={22} color={COLORS.black} />
+        <TouchableOpacity
+          style={[styles.controlButton, SHADOWS.medium]}
+          onPress={() => setShowFilterMenu(true)}
+          activeOpacity={0.85}
+          testID="btn-filter"
+        >
+          <Filter size={22} color={COLORS.black} />
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.controlButton, SHADOWS.medium]}
@@ -1201,24 +1140,7 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     marginTop: 2,
   },
-  filterButton: {
-    position: 'absolute',
-    left: 16,
-    borderRadius: 24,
-    overflow: 'hidden',
-  },
-  filterButtonInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    gap: 10,
-  },
-  filterButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
-  },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
