@@ -153,6 +153,11 @@ export default function MapScreen() {
   const overlayTop = insets.top + 18;
   const filtersTop = overlayTop + 68;
 
+  const primaryPet = user?.pets?.find((p) => p.isPrimary) || user?.pets?.[0];
+  const appGradient = primaryPet?.gender === 'female' 
+    ? ['#E8B4D4', '#C8A2C8', '#A8B4D8'] as const
+    : ['#A8D5E8', '#B8C5D8', '#C8B5D8'] as const;
+
   const userLat = userLocation?.latitude ?? DEFAULT_LAT;
   const userLng = userLocation?.longitude ?? DEFAULT_LNG;
 
@@ -802,12 +807,19 @@ export default function MapScreen() {
           onPress={() => setShowFilterMenu(false)}
         >
           <View style={[styles.filterMenu, SHADOWS.large]}>
-            <View style={styles.filterMenuHeader}>
-              <Text style={styles.filterMenuTitle}>Filtrer la carte</Text>
-              <TouchableOpacity onPress={() => setShowFilterMenu(false)} style={styles.filterMenuClose}>
-                <X size={24} color="#0f172a" />
-              </TouchableOpacity>
-            </View>
+            <LinearGradient
+              colors={appGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.filterMenuGradient}
+            >
+              <View style={styles.filterMenuHeader}>
+                <Text style={styles.filterMenuTitle}>Filtrer la carte</Text>
+                <TouchableOpacity onPress={() => setShowFilterMenu(false)} style={styles.filterMenuClose}>
+                  <X size={24} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
             <View style={styles.filterMenuContent}>
               {FILTERS.map(({ key, label, Icon, gradient }) => {
                 const isActive = activeFilters.has(key);
@@ -1139,11 +1151,14 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   filterMenu: {
-    backgroundColor: COLORS.white,
     borderRadius: 28,
     width: '100%',
     maxWidth: 400,
     maxHeight: '80%',
+    overflow: 'hidden',
+  },
+  filterMenuGradient: {
+    flex: 1,
   },
   filterMenuHeader: {
     flexDirection: 'row',
@@ -1152,24 +1167,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(15,23,42,0.08)',
+    borderBottomColor: 'rgba(255,255,255,0.3)',
   },
   filterMenuTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#0f172a',
+    color: '#fff',
   },
   filterMenuClose: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(15,23,42,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.25)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   filterMenuContent: {
     padding: 16,
     gap: 12,
+    backgroundColor: 'rgba(255,255,255,0.92)',
   },
   filterMenuItem: {
     borderRadius: 16,

@@ -59,21 +59,21 @@ const MapMarker: React.FC<MapMarkerProps> = ({ pet, onPress, isVet = false }) =>
 
 const styles = StyleSheet.create({
   markerContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: COLORS.white,
   },
   image: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   vetEmoji: {
-    fontSize: 20,
+    fontSize: 24,
   },
   triangle: {
     width: 0,
