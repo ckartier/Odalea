@@ -50,7 +50,7 @@ export default function ShopScreen() {
       <StatusBar style="dark" />
       
       <View style={styles.header}>
-        <Text style={styles.title}>{t('navigation.shop')}</Text>
+        <Text style={styles.title}>Boutique</Text>
         
         <TouchableOpacity
           style={styles.cartButton}
@@ -103,7 +103,7 @@ export default function ShopScreen() {
         {/* Featured Section */}
         {!selectedCategory && (
           <>
-            <Text style={styles.sectionTitle}>{t('shop.featured_products')}</Text>
+            <Text style={styles.sectionTitle}>Produits en vedette</Text>
             
             <View style={styles.featuredContainer}>
               {products.slice(0, 2).map(product => (
@@ -122,7 +122,7 @@ export default function ShopScreen() {
         
         {/* Products Grid */}
         <Text style={styles.sectionTitle}>
-          {selectedCategory || t('shop.all_products')}
+          {selectedCategory || 'Tous les produits'}
         </Text>
         
         <View style={styles.productsGrid}>
@@ -139,9 +139,9 @@ export default function ShopScreen() {
         {filteredProducts.length === 0 && (
           <View style={styles.emptyContainer}>
             <ShoppingBag size={48} color={COLORS.darkGray} />
-            <Text style={styles.emptyTitle}>{t('shop.no_products_found')}</Text>
+            <Text style={styles.emptyTitle}>Aucun produit trouvé</Text>
             <Text style={styles.emptyText}>
-              {t('shop.no_products_in_category')}
+              Aucun produit dans cette catégorie
             </Text>
           </View>
         )}

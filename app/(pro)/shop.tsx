@@ -89,7 +89,7 @@ export default function ProShopScreen() {
             <Search size={20} color={COLORS.darkGray} />
             <TextInput
               style={styles.searchInput}
-              placeholder={t('shop.search_products')}
+              placeholder="Rechercher des produits"
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholderTextColor={COLORS.darkGray}
@@ -121,7 +121,7 @@ export default function ProShopScreen() {
                   selectedCategory === category && styles.categoryTextActive,
                 ]}
               >
-                {category === 'all' ? t('shop.all') : category}
+                {category === 'all' ? 'Tout' : category}
               </Text>
             </TouchableOpacity>
           ))}
@@ -129,9 +129,9 @@ export default function ProShopScreen() {
 
         {/* Professional Vendors Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('shop.professional_vendors')}</Text>
+          <Text style={styles.sectionTitle}>Vendeurs professionnels</Text>
           <Text style={styles.sectionSubtitle}>
-            {t('shop.discover_verified_partners')}
+            Découvrez nos partenaires vérifiés
           </Text>
         </View>
 
@@ -181,11 +181,11 @@ export default function ProShopScreen() {
         {filteredProducts.length === 0 && !loading && (
           <View style={styles.emptyState}>
             <ShoppingCart size={48} color={COLORS.darkGray} />
-            <Text style={styles.emptyTitle}>{t('shop.no_products_found')}</Text>
+            <Text style={styles.emptyTitle}>Aucun produit trouvé</Text>
             <Text style={styles.emptyText}>
               {searchQuery
-                ? t('shop.modify_search')
-                : t('shop.no_professional_products')}
+                ? 'Essayez de modifier votre recherche'
+                : 'Aucun produit professionnel disponible pour le moment'}
             </Text>
           </View>
         )}
