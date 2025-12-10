@@ -8,6 +8,7 @@ import {
   Image,
   Alert,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/colors';
@@ -233,8 +234,8 @@ export default function MenuScreen() {
       <View style={[styles.menuIconContainer, item.color ? { backgroundColor: `${item.color}15` } : {}]}>
         {item.icon}
       </View>
-      <Text style={[styles.menuItemText, item.id === 'logout' && { color: COLORS.error }]}>{item.title}</Text>
-      <ChevronRight size={20} color={COLORS.darkGray} />
+      <Text style={[styles.menuItemText, item.id === 'logout' && { color: '#FF6B6B' }]}>{item.title}</Text>
+      <ChevronRight size={20} color="rgba(255, 255, 255, 0.8)" />
     </TouchableOpacity>
   );
 
@@ -254,9 +255,15 @@ export default function MenuScreen() {
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#E8B4D4', '#C8A2C8', '#A8B4D8']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top }]}>
         <View style={styles.userInfo}>
           <Image source={{ uri: petPhoto }} style={styles.userPhoto} />
           <View style={styles.userDetails}>
@@ -269,7 +276,7 @@ export default function MenuScreen() {
           </View>
         </View>
         <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-          <X size={24} color={COLORS.darkGray} />
+          <X size={24} color={COLORS.white} />
         </TouchableOpacity>
       </View>
 
@@ -324,7 +331,6 @@ export default function MenuScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC', // Explicit color fallback
   },
   header: {
     flexDirection: 'row',
@@ -332,9 +338,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: COLORS.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: 'rgba(255, 255, 255, 0.3)',
   },
   userInfo: {
     flexDirection: 'row',
@@ -355,19 +361,19 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     fontSize: 12,
-    color: COLORS.darkGray,
+    color: 'rgba(255, 255, 255, 0.9)',
     marginBottom: 2,
   },
   appName: {
     fontSize: 18,
     fontWeight: '700',
-    color: COLORS.primary,
+    color: COLORS.white,
   },
   closeButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -381,7 +387,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.black,
+    color: COLORS.white,
     marginBottom: 12,
     marginTop: 8,
   },
@@ -394,22 +400,19 @@ const styles = StyleSheet.create({
   quickAccessItem: {
     width: '31%',
     marginHorizontal: '1.16%',
-    backgroundColor: COLORS.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     borderRadius: 16,
     padding: 12,
     marginBottom: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   quickAccessIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(6, 182, 212, 0.12)', // Explicit color fallback
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -417,20 +420,17 @@ const styles = StyleSheet.create({
   quickAccessText: {
     fontSize: 11,
     fontWeight: '600',
-    color: COLORS.black,
+    color: COLORS.white,
     textAlign: 'center',
     lineHeight: 14,
   },
   menuSection: {
-    backgroundColor: COLORS.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     borderRadius: 16,
     marginBottom: 24,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   menuItem: {
     flexDirection: 'row',
@@ -438,13 +438,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: 'rgba(255, 255, 255, 0.2)',
   },
   menuIconContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '500',
-    color: COLORS.black,
+    color: COLORS.white,
   },
   footer: {
     alignItems: 'center',
@@ -462,6 +462,6 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 12,
-    color: COLORS.gray,
+    color: 'rgba(255, 255, 255, 0.7)',
   },
 });
