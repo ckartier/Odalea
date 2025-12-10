@@ -103,7 +103,7 @@ const DEFAULT_LNG = 2.3431;
 const GOOGLE_PLACES_ENDPOINT = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
 
 const getGooglePlacesApiKey = (): string | null => {
-  const key = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ?? process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const key = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ?? process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "AIzaSyDMh-ZNFwOqVvnviQg1-FV7tAZPDy1xxPk";
   if (!key) return null;
   const trimmed = key.trim();
   return trimmed.length > 0 ? trimmed : null;
