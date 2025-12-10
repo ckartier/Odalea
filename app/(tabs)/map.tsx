@@ -697,7 +697,6 @@ export default function MapScreen() {
                   )}
                 </View>
                 <View style={[styles.webPetTriangle, { borderTopColor: markerColor }]} />
-
               </TouchableOpacity>
             );
           })}
@@ -745,7 +744,6 @@ export default function MapScreen() {
                   )}
                 </View>
                 <View style={[styles.webPetTriangle, { borderTopColor: markerColor }]} />
-
               </TouchableOpacity>
             );
           })}
