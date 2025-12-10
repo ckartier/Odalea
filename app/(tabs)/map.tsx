@@ -15,6 +15,7 @@ import {
   Modal,
   Animated,
   Easing,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -72,6 +73,7 @@ interface PopupConfig {
   type: 'error' | 'info' | 'success';
   title: string;
   message: string;
+  phone?: string;
 }
 
 const popupColors: Record<PopupConfig['type'], { bg: string; accent: string }> = {
@@ -656,7 +658,8 @@ export default function MapScreen() {
               showPopup({
                 type: 'info',
                 title: vet.name,
-                message: `${vet.address}${vet.rating ? `\n⭐ ${vet.rating}/5` : ''}${phoneInfo ? `\n📞 ${phoneInfo}` : ''}`,
+                message: `${vet.address}${vet.rating ? `\n⭐ ${vet.rating}/5` : ''}`,
+                phone: phoneInfo,
               });
             }}
           />
@@ -759,7 +762,8 @@ export default function MapScreen() {
                   showPopup({
                     type: 'info',
                     title: vet.name,
-                    message: `${vet.address}${vet.rating ? `\n⭐ ${vet.rating}/5` : ''}${phoneInfo ? `\n📞 ${phoneInfo}` : ''}`,
+                    message: `${vet.address}${vet.rating ? `\n⭐ ${vet.rating}/5` : ''}`,
+                    phone: phoneInfo,
                   });
                 }}
                 activeOpacity={0.8}
@@ -948,6 +952,20 @@ export default function MapScreen() {
           <View style={styles.popupContent}>
             <Text style={styles.popupTitle}>{popup.title}</Text>
             <Text style={styles.popupMessage}>{popup.message}</Text>
+            {popup.phone && (
+              <TouchableOpacity
+                style={styles.phoneButton}
+                onPress={() => {
+                  const phoneNumber = popup.phone?.replace(/[^0-9+]/g, '');
+                  if (phoneNumber) {
+                    Linking.openURL(`tel:${phoneNumber}`);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.phoneButtonText}>📞 {popup.phone}</Text>
+              </TouchableOpacity>
+            )}
           </View>
           <TouchableOpacity onPress={hidePopup} style={styles.popupClose} testID="popup-close">
             <Text style={styles.popupCloseText}>OK</Text>
@@ -1266,6 +1284,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#f8fafc',
     marginTop: 2,
+  },
+  phoneButton: {
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignSelf: 'flex-start',
+  },
+  phoneButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
   },
   popupClose: {
     paddingHorizontal: 12,
