@@ -363,7 +363,7 @@ export default function CommunityScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.screenBackground,
+    backgroundColor: 'transparent',
   },
   createButton: {
     padding: DIMENSIONS.SPACING.sm,

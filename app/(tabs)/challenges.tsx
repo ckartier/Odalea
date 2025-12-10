@@ -696,7 +696,7 @@ export default function ChallengesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.screenBackground,
+    backgroundColor: 'transparent',
   },
   tabContainer: {
     flexDirection: 'row',

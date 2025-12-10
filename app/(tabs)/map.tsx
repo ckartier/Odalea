@@ -611,7 +611,7 @@ export default function MapScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: getThemedColor('background') }]}> 
+    <View style={styles.container}> 
       <StatusBar style="dark" />
 
       <MapView
