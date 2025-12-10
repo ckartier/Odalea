@@ -8,7 +8,6 @@ import {
   TextInput,
   Image,
   Alert,
-  Platform,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { COLORS, SHADOWS } from '@/constants/colors';
@@ -16,7 +15,6 @@ import { useI18n } from '@/hooks/i18n-store';
 import { useSocial } from '@/hooks/social-store';
 import { X, Camera, MapPin, Users, Hash } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
-import Button from '@/components/Button';
 
 
 type PostType = 'story' | 'photo' | 'event' | 'playdate' | 'advice';
@@ -119,7 +117,7 @@ export default function CreatePostScreen() {
       if (!result.canceled) {
         setPhotos(prev => [...prev, result.assets[0].uri]);
       }
-    } catch (error) {
+    } catch (_error) {
       Alert.alert('Error', 'Failed to pick image. Please try again.');
     }
   };
@@ -135,14 +133,18 @@ export default function CreatePostScreen() {
             </TouchableOpacity>
           ),
           headerRight: () => (
-            <Button
-              title="Post"
+            <TouchableOpacity 
               onPress={handlePost}
               disabled={!content.trim() || isCreatingPost}
-              loading={isCreatingPost}
-              style={styles.postButton}
-              textStyle={styles.postButtonText}
-            />
+              style={[
+                styles.headerPostButton, 
+                (!content.trim() || isCreatingPost) && styles.headerPostButtonDisabled
+              ]}
+            >
+              <Text style={styles.headerPostButtonText}>
+                {isCreatingPost ? '...' : t('common.post') || 'Post'}
+              </Text>
+            </TouchableOpacity>
           ),
         }}
       />
@@ -271,14 +273,22 @@ const styles = StyleSheet.create({
   headerButton: {
     padding: 8,
   },
-  postButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+  headerPostButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
     minWidth: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  postButtonText: {
-    fontSize: 16,
+  headerPostButtonDisabled: {
+    backgroundColor: COLORS.lightGray,
+  },
+  headerPostButtonText: {
+    fontSize: 14,
     fontWeight: '600',
+    color: COLORS.white,
   },
   content: {
     flex: 1,
@@ -288,7 +298,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: COLORS.black,
     marginBottom: 12,
@@ -296,20 +306,20 @@ const styles = StyleSheet.create({
   typeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    marginRight: 12,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 8,
+    borderRadius: 16,
     backgroundColor: COLORS.lightGray,
   },
   selectedTypeButton: {
     backgroundColor: COLORS.primary,
   },
   typeText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     color: COLORS.darkGray,
-    marginLeft: 8,
+    marginLeft: 6,
   },
   selectedTypeText: {
     color: COLORS.white,
@@ -317,8 +327,8 @@ const styles = StyleSheet.create({
   contentInput: {
     backgroundColor: COLORS.white,
     borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
+    padding: 12,
+    fontSize: 14,
     color: COLORS.black,
     minHeight: 120,
     ...SHADOWS.small,
@@ -372,13 +382,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.white,
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     ...SHADOWS.small,
   },
   locationText: {
-    fontSize: 16,
+    fontSize: 14,
     color: COLORS.primary,
-    marginLeft: 12,
+    marginLeft: 8,
   },
   previewCard: {
     backgroundColor: COLORS.white,
@@ -399,7 +409,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   previewName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: COLORS.black,
   },
@@ -408,8 +418,8 @@ const styles = StyleSheet.create({
     color: COLORS.darkGray,
   },
   previewContent: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 20,
     color: COLORS.black,
     marginBottom: 12,
   },

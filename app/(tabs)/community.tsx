@@ -470,8 +470,8 @@ const styles = StyleSheet.create({
     marginLeft: DIMENSIONS.SPACING.xs,
   },
   postContent: {
-    fontSize: Math.max(16, DIMENSIONS.FONT_SIZES.md),
-    lineHeight: Math.max(16, DIMENSIONS.FONT_SIZES.md) * 1.4,
+    fontSize: Math.max(14, DIMENSIONS.FONT_SIZES.md),
+    lineHeight: Math.max(14, DIMENSIONS.FONT_SIZES.md) * 1.4,
     color: COLORS.black,
     marginBottom: DIMENSIONS.SPACING.sm,
   },
@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
     marginBottom: DIMENSIONS.SPACING.sm,
   },
   commentsTitle: {
-    fontSize: DIMENSIONS.FONT_SIZES.md,
+    fontSize: DIMENSIONS.FONT_SIZES.lg,
     fontWeight: '700' as const,
     color: COLORS.black,
   },
