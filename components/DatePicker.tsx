@@ -166,10 +166,11 @@ const styles = StyleSheet.create({
   pickerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     borderRadius: 16,
     paddingHorizontal: moderateScale(16),
     minHeight: 50,
+    backgroundColor: COLORS.white,
   },
   pickerError: {
     borderColor: COLORS.error,
@@ -178,6 +179,7 @@ const styles = StyleSheet.create({
   pickerText: {
     fontSize: DIMENSIONS.FONT_SIZES.md,
     color: COLORS.black,
+    marginRight: moderateScale(8),
   },
   placeholderText: {
     color: COLORS.darkGray,
@@ -198,6 +200,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingTop: moderateScale(16),
     paddingBottom: moderateScale(30),
+    backgroundColor: COLORS.white,
   },
   modalHeader: {
     flexDirection: 'row',
