@@ -784,14 +784,7 @@ export default function MapScreen() {
         pointerEvents="none"
       />
 
-      <View style={[styles.statsBar, SHADOWS.medium, { top: overlayTop }]}
-        testID="stats-chip"
-      >
-        <Text style={styles.statsTitle}>{t('map.pets')}</Text>
-        <Text style={styles.statsText}>
-          {filteredPets.length} animaux • {filteredUsers.length} utilisateurs
-        </Text>
-      </View>
+
 
 
 
