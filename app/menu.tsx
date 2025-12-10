@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   StyleSheet,
   View,
@@ -10,211 +10,215 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { COLORS, DIMENSIONS } from '@/constants/colors';
-import { useI18n } from '@/hooks/i18n-store';
-import { useMessaging } from '@/hooks/messaging-store';
-import { useChallenges } from '@/hooks/challenges-store';
 import { useAuth } from '@/hooks/auth-store';
 import { usePets } from '@/hooks/pets-store';
-import DropdownSelector from '@/components/DropdownSelector';
 import {
+  Home,
   Map,
   MessageCircle,
   ShoppingBag,
   Trophy,
   User,
-  Search,
   Users,
+  Search,
   BarChart,
   HelpCircle,
-  Wrench,
-  UserSearch,
-  ChevronRight,
   FileText,
+  Heart,
+  Settings,
+  Award,
+  ChevronRight,
+  Cat,
+  AlertTriangle,
+  Crown,
+  Shield,
+  X,
 } from 'lucide-react-native';
 
 interface MenuItem {
   id: string;
-  titleKey: string;
-  iconName: string;
+  title: string;
+  icon: React.ReactNode;
   route: string;
-  isSpecial?: boolean;
+  badge?: number;
+  color?: string;
 }
-
-const getMenuItems = (opts: { isProfessional: boolean; isSuperAdmin: boolean; email?: string | null }): MenuItem[] => {
-  const { isProfessional } = opts;
-  const profileRoute = isProfessional ? '/(pro)/profile' : '/(tabs)/profile';
-  const shopRoute = isProfessional ? '/(pro)/shop' : '/(tabs)/shop';
-
-  const baseMenu: MenuItem[] = [
-    {
-      id: 'map',
-      titleKey: 'navigation.map',
-      iconName: 'Map',
-      route: '/(tabs)/map',
-    },
-    {
-      id: 'community',
-      titleKey: 'navigation.community',
-      iconName: 'Users',
-      route: '/(tabs)/community',
-    },
-    {
-      id: 'cat-sitter',
-      titleKey: 'sitters.cat_sitters',
-      iconName: 'Search',
-      route: '/cat-sitter',
-    },
-    {
-      id: 'challenges',
-      titleKey: 'navigation.challenges',
-      iconName: 'Trophy',
-      route: '/(tabs)/challenges',
-    },
-    {
-      id: 'shop',
-      titleKey: 'navigation.shop',
-      iconName: 'ShoppingBag',
-      route: shopRoute,
-    },
-    {
-      id: 'lost-found',
-      titleKey: 'navigation.lostFound',
-      iconName: 'Search',
-      route: '/(tabs)/lost-found',
-    },
-    {
-      id: 'messages',
-      titleKey: 'navigation.messages',
-      iconName: 'MessageCircle',
-      route: '/(tabs)/messages',
-    },
-    {
-      id: 'profile',
-      titleKey: 'navigation.profile',
-      iconName: 'User',
-      route: profileRoute,
-    },
-    {
-      id: 'terms',
-      titleKey: 'auth.terms_and_conditions',
-      iconName: 'FileText',
-      route: '/legal/terms',
-    },
-    {
-      id: 'support',
-      titleKey: 'settings.support_infos',
-      iconName: 'HelpCircle',
-      route: '/settings/support',
-    },
-  ];
-
-  if (isProfessional) {
-    baseMenu.unshift({
-      id: 'dashboard',
-      titleKey: 'pro.dashboard',
-      iconName: 'BarChart',
-      route: '/(pro)/dashboard',
-    });
-  }
-
-  return baseMenu;
-};
 
 export default function MenuScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { t } = useI18n();
-  const { conversations } = useMessaging();
-  const { getUserPendingChallenges, communityFeed } = useChallenges();
   const { user } = useAuth();
   const { userPets } = usePets();
-  const [selectedMenuItem, setSelectedMenuItem] = useState('');
 
-  const menuItems = getMenuItems({ isProfessional: Boolean(user?.isProfessional), isSuperAdmin: Boolean((user as any)?.isSuperAdmin), email: user?.email ?? null });
-  
-  const menuOptions = menuItems.map(item => ({
-    value: item.route,
-    label: t(item.titleKey)
-  }));
+  const isProfessional = Boolean(user?.isProfessional);
 
-  const totalUnreadMessages = conversations.reduce((total, conv) => total + conv.unreadCount, 0);
-  const pendingChallenges = user ? getUserPendingChallenges(user.id) : [];
-  const pendingChallengesCount = pendingChallenges.length;
-  
-  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const newCommunityActivity = communityFeed.filter(item => 
-    new Date(item.timestamp) > oneDayAgo
-  ).length;
+  const mainMenuItems: MenuItem[] = [
+    {
+      id: 'home',
+      title: 'Accueil',
+      icon: <Home size={24} color={COLORS.primary} />,
+      route: '/(tabs)/home',
+    },
+    {
+      id: 'map',
+      title: 'Carte',
+      icon: <Map size={24} color={COLORS.primary} />,
+      route: '/(tabs)/map',
+    },
+    {
+      id: 'community',
+      title: 'Communauté',
+      icon: <Users size={24} color={COLORS.primary} />,
+      route: '/(tabs)/community',
+    },
+    {
+      id: 'cat-sitter',
+      title: 'Cat Sitters',
+      icon: <Cat size={24} color={COLORS.primary} />,
+      route: '/cat-sitter',
+    },
+    {
+      id: 'challenges',
+      title: 'Défis',
+      icon: <Trophy size={24} color={COLORS.primary} />,
+      route: '/(tabs)/challenges',
+    },
+    {
+      id: 'shop',
+      title: 'Boutique',
+      icon: <ShoppingBag size={24} color={COLORS.primary} />,
+      route: isProfessional ? '/(pro)/shop' : '/(tabs)/shop',
+    },
+    {
+      id: 'lost-found',
+      title: 'Perdu & Trouvé',
+      icon: <AlertTriangle size={24} color="#FF6B6B" />,
+      route: '/(tabs)/lost-found',
+      color: '#FF6B6B',
+    },
+    {
+      id: 'messages',
+      title: 'Messages',
+      icon: <MessageCircle size={24} color={COLORS.primary} />,
+      route: '/(tabs)/messages',
+    },
+  ];
 
-  const renderIcon = (iconName: string) => {
-    const iconProps = { size: 28, color: COLORS.primary };
+  const profileMenuItems: MenuItem[] = [
+    {
+      id: 'profile',
+      title: 'Mon Profil',
+      icon: <User size={24} color={COLORS.primary} />,
+      route: isProfessional ? '/(pro)/profile' : '/(tabs)/profile',
+    },
+    {
+      id: 'badges',
+      title: 'Mes Badges',
+      icon: <Award size={24} color="#FFD700" />,
+      route: '/badges',
+      color: '#FFD700',
+    },
+    {
+      id: 'friends',
+      title: 'Mes Amis',
+      icon: <Heart size={24} color="#FF69B4" />,
+      route: '/friends',
+      color: '#FF69B4',
+    },
+    {
+      id: 'premium',
+      title: 'Premium',
+      icon: <Crown size={24} color="#9B59B6" />,
+      route: '/premium',
+      color: '#9B59B6',
+    },
+  ];
 
-    switch (iconName) {
-      case 'Map':
-        return <Map {...iconProps} />;
-      case 'Users':
-        return <Users {...iconProps} />;
-      case 'MessageCircle':
-        return <MessageCircle {...iconProps} />;
-      case 'ShoppingBag':
-        return <ShoppingBag {...iconProps} />;
-      case 'Trophy':
-        return <Trophy {...iconProps} />;
-      case 'User':
-        return <User {...iconProps} />;
-      case 'Search':
-        return <Search {...iconProps} />;
-      case 'BarChart':
-        return <BarChart {...iconProps} />;
-      case 'HelpCircle':
-        return <HelpCircle {...iconProps} />;
-      case 'Wrench':
-        return <Wrench {...iconProps} />;
-      case 'UserSearch':
-        return <UserSearch {...iconProps} />;
-      case 'FileText':
-        return <FileText {...iconProps} />;
-      default:
-        return <Search {...iconProps} />;
-    }
-  };
+  const proMenuItems: MenuItem[] = isProfessional ? [
+    {
+      id: 'dashboard',
+      title: 'Tableau de bord',
+      icon: <BarChart size={24} color="#2ECC71" />,
+      route: '/(pro)/dashboard',
+      color: '#2ECC71',
+    },
+    {
+      id: 'products',
+      title: 'Mes Produits',
+      icon: <ShoppingBag size={24} color="#2ECC71" />,
+      route: '/pro/products',
+      color: '#2ECC71',
+    },
+  ] : [];
 
-  const getBadgeValue = (itemId: string) => {
-    if (itemId === 'messages') {
-      return totalUnreadMessages;
-    }
-    if (itemId === 'challenges') {
-      return pendingChallengesCount;
-    }
-    if (itemId === 'community') {
-      return newCommunityActivity;
-    }
-    return 0;
-  };
-
-  const renderBadge = (value: number) => {
-    if (value <= 0) {
-      return null;
-    }
-    return (
-      <View style={styles.notificationBadge} testID="menu-item-badge">
-        <Text style={styles.notificationText}>{value > 99 ? '99+' : value}</Text>
-      </View>
-    );
-  };
+  const settingsMenuItems: MenuItem[] = [
+    {
+      id: 'settings',
+      title: 'Paramètres',
+      icon: <Settings size={24} color={COLORS.darkGray} />,
+      route: '/settings',
+    },
+    {
+      id: 'terms',
+      title: 'Conditions d\'utilisation',
+      icon: <FileText size={24} color={COLORS.darkGray} />,
+      route: '/legal/terms',
+    },
+    {
+      id: 'privacy',
+      title: 'Politique de confidentialité',
+      icon: <Shield size={24} color={COLORS.darkGray} />,
+      route: '/legal/privacy',
+    },
+    {
+      id: 'support',
+      title: 'Support & Aide',
+      icon: <HelpCircle size={24} color={COLORS.darkGray} />,
+      route: '/settings/support',
+    },
+  ];
 
   const handleMenuItemPress = (route: string) => {
+    console.log('Navigating to:', route);
     router.push(route as any);
   };
-  
-  const handleDropdownChange = (route: string) => {
-    setSelectedMenuItem(route);
-    if (route) {
-      handleMenuItemPress(route);
-    }
+
+  const handleClose = () => {
+    router.back();
   };
 
   const petPhoto = userPets?.[0]?.mainPhoto || user?.photo || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=100&h=100&fit=crop&crop=face';
+
+  const renderMenuItem = (item: MenuItem) => (
+    <TouchableOpacity
+      key={item.id}
+      style={styles.menuItem}
+      onPress={() => handleMenuItemPress(item.route)}
+      activeOpacity={0.7}
+      testID={`menu-item-${item.id}`}
+    >
+      <View style={[styles.menuIconContainer, item.color && { backgroundColor: `${item.color}15` }]}>
+        {item.icon}
+      </View>
+      <Text style={styles.menuItemText}>{item.title}</Text>
+      <ChevronRight size={20} color={COLORS.darkGray} />
+    </TouchableOpacity>
+  );
+
+  const renderQuickAccessItem = (item: MenuItem) => (
+    <TouchableOpacity
+      key={item.id}
+      style={styles.quickAccessItem}
+      onPress={() => handleMenuItemPress(item.route)}
+      activeOpacity={0.7}
+      testID={`quick-${item.id}`}
+    >
+      <View style={[styles.quickAccessIcon, item.color && { backgroundColor: `${item.color}15` }]}>
+        {item.icon}
+      </View>
+      <Text style={styles.quickAccessText} numberOfLines={2}>{item.title}</Text>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -224,78 +228,59 @@ export default function MenuScreen() {
           <Image source={{ uri: petPhoto }} style={styles.userPhoto} />
           <View style={styles.userDetails}>
             <Text style={styles.welcomeText}>
-              {t('common.welcome')}, {user?.firstName || 'Utilisateur'}
+              Bienvenue, {user?.firstName || 'Utilisateur'}
             </Text>
             <Text style={styles.appName}>Coppet</Text>
           </View>
         </View>
+        <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+          <X size={24} color={COLORS.darkGray} />
+        </TouchableOpacity>
       </View>
 
-      {/* Menu Dropdown */}
-      <View style={styles.menuContainer}>
-        <DropdownSelector
-          label={t('navigation.select_section')}
-          placeholder={t('navigation.choose_section')}
-          value={selectedMenuItem}
-          options={menuOptions}
-          onChange={handleDropdownChange}
-          style={styles.menuDropdown}
-        />
-        
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Quick Access Grid */}
-        <ScrollView 
-          style={styles.quickAccessContainer}
-          contentContainerStyle={styles.quickAccessContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={styles.quickAccessTitle}>{t('navigation.quick_access')}</Text>
-          <View style={styles.quickAccessGrid}>
-            {menuItems.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.quickAccessItem}
-                onPress={() => handleMenuItemPress(item.route)}
-                activeOpacity={0.7}
-                testID={`quick-access-${item.id}`}
-              >
-                <View style={styles.quickAccessIcon}>
-                  {renderIcon(item.iconName)}
-                  {renderBadge(getBadgeValue(item.id))}
-                </View>
-                <Text style={styles.quickAccessText} numberOfLines={2}>
-                  {t(item.titleKey)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+        <Text style={styles.sectionTitle}>Accès rapide</Text>
+        <View style={styles.quickAccessGrid}>
+          {mainMenuItems.slice(0, 6).map(renderQuickAccessItem)}
+        </View>
 
-          <Text style={styles.sectionTitle}>{t('navigation.all_sections')}</Text>
-          <View style={styles.menuList}>
-            {menuItems.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.menuListItem}
-                onPress={() => handleMenuItemPress(item.route)}
-                activeOpacity={0.8}
-                testID={`menu-item-${item.id}`}
-              >
-                <View style={styles.menuListIcon}>{renderIcon(item.iconName)}</View>
-                <View style={styles.menuListContent}>
-                  <Text style={styles.menuListTitle}>{t(item.titleKey)}</Text>
-                </View>
-                <View style={styles.menuListMeta}>{renderBadge(getBadgeValue(item.id))}</View>
-                <ChevronRight color={COLORS.darkGray} size={20} />
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
-      </View>
+        {/* Main Navigation */}
+        <Text style={styles.sectionTitle}>Navigation principale</Text>
+        <View style={styles.menuSection}>
+          {mainMenuItems.map(renderMenuItem)}
+        </View>
+
+        {/* Pro Section */}
+        {proMenuItems.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>Espace Pro</Text>
+            <View style={styles.menuSection}>
+              {proMenuItems.map(renderMenuItem)}
+            </View>
+          </>
+        )}
+
+        {/* Profile & Account */}
+        <Text style={styles.sectionTitle}>Profil & Compte</Text>
+        <View style={styles.menuSection}>
+          {profileMenuItems.map(renderMenuItem)}
+        </View>
+
+        {/* Settings & Info */}
+        <Text style={styles.sectionTitle}>Paramètres & Informations</Text>
+        <View style={styles.menuSection}>
+          {settingsMenuItems.map(renderMenuItem)}
+        </View>
+      </ScrollView>
 
       {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          {t('common.version')} 1.0.0
-        </Text>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 10 }]}>
+        <Text style={styles.footerText}>Version 1.0.0</Text>
       </View>
     </View>
   );
@@ -307,167 +292,143 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.screenBackground,
   },
   header: {
-    paddingHorizontal: DIMENSIONS.SPACING.lg,
-    paddingVertical: DIMENSIONS.SPACING.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
   },
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
   },
   userPhoto: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: DIMENSIONS.SPACING.md,
-    borderWidth: 3,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 12,
+    borderWidth: 2,
     borderColor: COLORS.primary,
   },
   userDetails: {
     flex: 1,
   },
   welcomeText: {
-    fontSize: DIMENSIONS.FONT_SIZES.md,
+    fontSize: 14,
     color: COLORS.darkGray,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   appName: {
-    fontSize: DIMENSIONS.FONT_SIZES.xl,
+    fontSize: 20,
     fontWeight: '700' as const,
     color: COLORS.primary,
   },
-  menuContainer: {
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scrollView: {
     flex: 1,
-    padding: DIMENSIONS.SPACING.lg,
   },
-  menuDropdown: {
-    marginBottom: DIMENSIONS.SPACING.xl,
-  },
-  quickAccessContainer: {
-    flex: 1,
-  },
-  quickAccessContent: {
-    paddingBottom: DIMENSIONS.SPACING.xl,
-  },
-  quickAccessTitle: {
-    fontSize: DIMENSIONS.FONT_SIZES.lg,
-    fontWeight: '600' as const,
-    color: COLORS.black,
-    marginBottom: DIMENSIONS.SPACING.md,
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 30,
   },
   sectionTitle: {
-    fontSize: DIMENSIONS.FONT_SIZES.lg,
+    fontSize: 16,
     fontWeight: '600' as const,
     color: COLORS.black,
-    marginBottom: DIMENSIONS.SPACING.md,
-    marginTop: DIMENSIONS.SPACING.lg,
+    marginBottom: 12,
+    marginTop: 8,
   },
   quickAccessGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    marginHorizontal: -6,
+    marginBottom: 16,
   },
   quickAccessItem: {
-    width: '48%',
+    width: '31%',
+    marginHorizontal: '1.16%',
     backgroundColor: COLORS.white,
-    borderRadius: DIMENSIONS.SPACING.lg,
-    padding: DIMENSIONS.SPACING.md,
-    marginBottom: DIMENSIONS.SPACING.md,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 12,
     alignItems: 'center',
-    minHeight: 100,
-    justifyContent: 'center',
-    shadowColor: COLORS.shadow,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   quickAccessIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(125, 212, 238, 0.1)',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(125, 212, 238, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: DIMENSIONS.SPACING.sm,
-    position: 'relative',
+    marginBottom: 8,
   },
   quickAccessText: {
-    fontSize: DIMENSIONS.FONT_SIZES.xs,
+    fontSize: 11,
     fontWeight: '600' as const,
     color: COLORS.black,
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 14,
   },
-  notificationBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: COLORS.error,
-    borderRadius: 12,
-    minWidth: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.white,
-  },
-  notificationText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: '700' as const,
-    textAlign: 'center',
-  },
-  menuList: {
+  menuSection: {
     backgroundColor: COLORS.white,
-    borderRadius: DIMENSIONS.SPACING.lg,
-    paddingHorizontal: DIMENSIONS.SPACING.md,
-    paddingVertical: DIMENSIONS.SPACING.xs,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 4,
+    borderRadius: 16,
+    marginBottom: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  menuListItem: {
+  menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: DIMENSIONS.SPACING.md,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.06)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
   },
-  menuListIcon: {
+  menuIconContainer: {
     width: 42,
     height: 42,
     borderRadius: 21,
     backgroundColor: 'rgba(125, 212, 238, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: DIMENSIONS.SPACING.md,
+    marginRight: 14,
   },
-  menuListContent: {
+  menuItemText: {
     flex: 1,
-  },
-  menuListTitle: {
-    fontSize: DIMENSIONS.FONT_SIZES.md,
-    fontWeight: '600' as const,
+    fontSize: 15,
+    fontWeight: '500' as const,
     color: COLORS.black,
   },
-  menuListMeta: {
-    marginRight: DIMENSIONS.SPACING.sm,
-  },
   footer: {
-    paddingHorizontal: DIMENSIONS.SPACING.lg,
-    paddingVertical: DIMENSIONS.SPACING.md,
+    paddingHorizontal: 20,
+    paddingTop: 12,
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.1)',
+    borderTopColor: 'rgba(0, 0, 0, 0.08)',
     alignItems: 'center',
   },
   footerText: {
-    fontSize: DIMENSIONS.FONT_SIZES.xs,
+    fontSize: 12,
     color: COLORS.darkGray,
   },
 });
