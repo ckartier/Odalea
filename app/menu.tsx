@@ -267,9 +267,7 @@ export default function MenuScreen() {
         <View style={styles.userInfo}>
           <Image source={{ uri: petPhoto }} style={styles.userPhoto} />
           <View style={styles.userDetails}>
-            <Text style={styles.welcomeText}>
-              Bienvenue,
-            </Text>
+            <Text style={styles.welcomeText}>Bienvenue,</Text>
             <Text style={styles.appName} numberOfLines={1}>
               {user?.firstName || 'Utilisateur'}
             </Text>
