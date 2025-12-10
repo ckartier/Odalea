@@ -18,7 +18,7 @@ import { COLORS, SHADOWS, DIMENSIONS } from '@/constants/colors';
 import { useI18n } from '@/hooks/i18n-store';
 import { useSocial } from '@/hooks/social-store';
 import SurfaceCard from '@/components/SurfaceCard';
-import { Plus, Heart, MessageCircle, Share, MapPin, AlertTriangle, X } from 'lucide-react-native';
+import { Plus, Heart, MessageCircle, Share, MapPin, AlertTriangle, X, Send } from 'lucide-react-native';
 
 import ResponsiveModal from '@/components/ResponsiveModal';
 import { realtimeService } from '@/services/database';
@@ -72,22 +72,29 @@ export default function CommunityScreen() {
 
 
 
-  const [commentPostId, setCommentPostId] = useState<string | null>(null);
+  const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
   const [comments, setComments] = useState<LocalComment[]>([]);
   const [newComment, setNewComment] = useState<string>('');
   const [isCommentsLoading, setIsCommentsLoading] = useState<boolean>(false);
 
-  const handleOpenComments = async (postId: string) => {
-    setCommentPostId(postId);
+  const handleToggleComments = (postId: string) => {
+    if (expandedPostId === postId) {
+      setExpandedPostId(null);
+    } else {
+      setExpandedPostId(postId);
+    }
   };
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     const load = async () => {
-      if (!commentPostId) return;
+      if (!expandedPostId) {
+        setComments([]);
+        return;
+      }
       setIsCommentsLoading(true);
       try {
-        unsubscribe = realtimeService.listenToComments(commentPostId, (items) => {
+        unsubscribe = realtimeService.listenToComments(expandedPostId, (items) => {
           const mapped: LocalComment[] = items.map((c: any) => ({
             id: String(c.id),
             authorName: String(c.authorName ?? 'Anonyme'),
@@ -108,22 +115,14 @@ export default function CommunityScreen() {
     return () => {
       try { unsubscribe?.(); } catch {}
     };
-  }, [commentPostId]);
+  }, [expandedPostId]);
 
-  const handleSubmitComment = async () => {
-    if (!commentPostId || !newComment.trim()) return;
+  const handleSubmitComment = async (postId: string) => {
+    if (!postId || !newComment.trim()) return;
     try {
-      await addComment(commentPostId, newComment.trim());
+      await addComment(postId, newComment.trim());
       setNewComment('');
-      const list = await getComments(commentPostId);
-      const mapped: LocalComment[] = list.map((c: any) => ({
-        id: String(c.id),
-        authorName: String(c.authorName ?? 'Anonyme'),
-        authorPhoto: c.authorPhoto,
-        content: String(c.content ?? ''),
-        createdAt: (c.createdAt as any)?.toDate?.() || new Date(),
-      }));
-      setComments(mapped);
+      // No need to manually refresh as listener updates it
     } catch (e) {
       console.log('Add comment error', e);
     }
@@ -224,7 +223,7 @@ export default function CommunityScreen() {
 
           <TouchableOpacity 
             style={styles.actionButton}
-            onPress={() => handleOpenComments(post.id)}
+            onPress={() => handleToggleComments(post.id)}
           >
             <MessageCircle size={24} color={COLORS.darkGray} />
             <Text style={styles.actionText}>{post.commentsCount || 0}</Text>
@@ -237,6 +236,48 @@ export default function CommunityScreen() {
             <Share size={24} color={COLORS.darkGray} />
           </TouchableOpacity>
         </View>
+
+        {expandedPostId === post.id && (
+          <View style={styles.inlineCommentsContainer}>
+            <View style={styles.inlineCommentsList}>
+              {isCommentsLoading ? (
+                <ActivityIndicator size="small" color={COLORS.primary} />
+              ) : comments.length === 0 ? (
+                <Text style={styles.emptyCommentsText}>Aucun commentaire</Text>
+              ) : (
+                comments.map((c) => (
+                  <View key={c.id} style={styles.commentItem}>
+                    <View style={styles.commentBubble}>
+                      <Text style={styles.commentAuthor}>{c.authorName}</Text>
+                      <Text style={styles.commentText}>{c.content}</Text>
+                    </View>
+                  </View>
+                ))
+              )}
+            </View>
+            <View style={styles.commentInputRow}>
+              <TextInput
+                placeholder="Écrire un commentaire..."
+                value={newComment}
+                onChangeText={setNewComment}
+                style={styles.commentInput}
+                editable={!isAddingComment}
+                placeholderTextColor={COLORS.darkGray}
+              />
+              <TouchableOpacity 
+                onPress={() => handleSubmitComment(post.id)} 
+                style={styles.commentSendBtn} 
+                disabled={isAddingComment || !newComment.trim()}
+              >
+                {isAddingComment ? (
+                  <ActivityIndicator color={COLORS.white} size="small" />
+                ) : (
+                  <Send size={20} color={COLORS.white} />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </SurfaceCard>
     );
   };
@@ -314,53 +355,6 @@ export default function CommunityScreen() {
       >
         <Plus size={28} color={COLORS.white} />
       </TouchableOpacity>
-
-      <ResponsiveModal
-        isVisible={!!commentPostId}
-        onClose={() => setCommentPostId(null)}
-        size="large"
-        closeOnBackdrop
-      >
-        <View style={styles.commentsHeader}>
-          <Text style={styles.commentsTitle}>Commentaires</Text>
-          <TouchableOpacity onPress={() => setCommentPostId(null)} style={styles.closeCommentsBtn}>
-            <X size={20} color={COLORS.darkGray} />
-          </TouchableOpacity>
-        </View>
-        <ScrollView style={styles.commentsList}>
-          {isCommentsLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color={COLORS.primary} />
-            </View>
-          ) : comments.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Aucun commentaire</Text>
-            </View>
-          ) : (
-            comments.map((c) => (
-              <View key={c.id} style={styles.commentItem}>
-                <View style={styles.commentBubble}>
-                  <Text style={styles.commentAuthor}>{c.authorName}</Text>
-                  <Text style={styles.commentText}>{c.content}</Text>
-                </View>
-              </View>
-            ))
-          )}
-        </ScrollView>
-        <View style={styles.commentInputRow}>
-          <TextInput
-            placeholder="Écrire un commentaire..."
-            value={newComment}
-            onChangeText={setNewComment}
-            style={styles.commentInput}
-            editable={!isAddingComment}
-            testID="comment-input"
-          />
-          <TouchableOpacity onPress={handleSubmitComment} style={styles.commentSendBtn} disabled={isAddingComment || !newComment.trim()} testID="comment-send">
-            {isAddingComment ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.commentSendText}>Envoyer</Text>}
-          </TouchableOpacity>
-        </View>
-      </ResponsiveModal>
 
     </View>
   );
@@ -514,41 +508,40 @@ const styles = StyleSheet.create({
     fontSize: DIMENSIONS.FONT_SIZES.sm,
     color: COLORS.darkGray,
   },
-  commentsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  inlineCommentsContainer: {
+    marginTop: DIMENSIONS.SPACING.sm,
+    paddingTop: DIMENSIONS.SPACING.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.lightGray,
+  },
+  inlineCommentsList: {
     marginBottom: DIMENSIONS.SPACING.sm,
   },
-  commentsTitle: {
-    fontSize: DIMENSIONS.FONT_SIZES.lg,
-    fontWeight: '700' as const,
-    color: COLORS.black,
-  },
-  closeCommentsBtn: {
-    padding: 6,
-    borderRadius: 8,
-    backgroundColor: COLORS.lightGray,
-  },
-  commentsList: {
-    maxHeight: 300,
-    marginBottom: DIMENSIONS.SPACING.sm,
+  emptyCommentsText: {
+    color: COLORS.darkGray,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginVertical: DIMENSIONS.SPACING.sm,
   },
   commentItem: {
-    marginBottom: DIMENSIONS.SPACING.sm,
+    marginBottom: DIMENSIONS.SPACING.xs,
   },
   commentBubble: {
-    backgroundColor: '#f6f7f9',
+    backgroundColor: COLORS.lightGray,
     borderRadius: 12,
-    padding: 10,
+    padding: 8,
+    alignSelf: 'flex-start',
+    maxWidth: '90%',
   },
   commentAuthor: {
     fontWeight: '600' as const,
-    marginBottom: 4,
+    fontSize: 12,
+    marginBottom: 2,
     color: COLORS.black,
   },
   commentText: {
     color: COLORS.darkGray,
+    fontSize: 14,
   },
   commentInputRow: {
     flexDirection: 'row',
@@ -556,23 +549,21 @@ const styles = StyleSheet.create({
   },
   commentInput: {
     flex: 1,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.lightGray,
-    borderRadius: 12,
+    backgroundColor: COLORS.lightGray,
+    borderRadius: 20,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 8,
     marginRight: 8,
-    backgroundColor: COLORS.white,
+    color: COLORS.black,
+    fontSize: 14,
   },
   commentSendBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: COLORS.primary,
-    borderRadius: 10,
-  },
-  commentSendText: {
-    color: COLORS.white,
-    fontWeight: '700' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   fab: {
     position: 'absolute',

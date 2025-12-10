@@ -29,6 +29,7 @@ import {
   BarChart,
   HelpCircle,
   Wrench,
+  FileText,
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -85,6 +86,12 @@ const getMenuItems = (isProfessional: boolean): MenuItem[] => {
         iconName: 'Wrench',
         route: '/admin-tools',
         isSpecial: true,
+      },
+      {
+        id: 'terms',
+        titleKey: 'auth.terms_and_conditions',
+        iconName: 'FileText',
+        route: '/legal/terms',
       },
       {
         id: 'support',
@@ -152,6 +159,12 @@ const getMenuItems = (isProfessional: boolean): MenuItem[] => {
       titleKey: 'navigation.lostFound',
       iconName: 'Search',
       route: '/(tabs)/lost-found',
+    },
+    {
+      id: 'terms',
+      titleKey: 'auth.terms_and_conditions',
+      iconName: 'FileText',
+      route: '/legal/terms',
     },
     {
       id: 'help',
@@ -313,6 +326,8 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
         return <HelpCircle {...iconProps} />;
       case 'Wrench':
         return <Wrench {...iconProps} />;
+      case 'FileText':
+        return <FileText {...iconProps} />;
       default:
         return <Menu {...iconProps} />;
     }
@@ -374,19 +389,25 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
         />
       </Animated.View>
 
-      {/* Menu */}
-      <Animated.View
-        style={[
-          styles.menu,
-          {
-            bottom: 0,
-            transform: [
-              { translateY: slideAnim },
-            ],
-          },
-        ]}
-      >
-        <View style={styles.menuHeader}>
+      {/* Menu Wrapper for Centering */}
+      <View style={styles.menuWrapper} pointerEvents="box-none">
+        <Animated.View
+          style={[
+            styles.menu,
+            {
+              opacity: fadeAnim,
+              transform: [
+                {
+                  scale: fadeAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.9, 1],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <View style={styles.menuHeader}>
           <Text style={styles.menuTitle}>Coppet</Text>
           <TouchableOpacity 
             onPress={closeMenu} 
@@ -457,6 +478,7 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
           </Text>
         </View>
       </Animated.View>
+      </View>
     </>
   );
 });
@@ -479,15 +501,22 @@ const styles = StyleSheet.create({
   overlayTouchable: {
     flex: 1,
   },
-  menu: {
+  menuWrapper: {
     position: 'absolute',
+    top: 0,
     left: 0,
     right: 0,
-    maxHeight: '70%',
-    backgroundColor: COLORS.white,
-    borderTopLeftRadius: DIMENSIONS.SPACING.xl,
-    borderTopRightRadius: DIMENSIONS.SPACING.xl,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
     zIndex: 1001,
+  },
+  menu: {
+    width: '90%',
+    maxWidth: 400,
+    maxHeight: '80%',
+    backgroundColor: COLORS.white,
+    borderRadius: DIMENSIONS.SPACING.xl,
     paddingBottom: DIMENSIONS.SPACING.xl,
     ...Platform.select({
       ios: {
