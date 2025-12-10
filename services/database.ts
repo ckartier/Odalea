@@ -424,17 +424,18 @@ export const postService = {
       const postsRef = collection(db, COLLECTIONS.POSTS);
       const q = query(
         postsRef,
-        where('authorId', '==', userId),
-        orderBy('createdAt', 'desc')
+        where('authorId', '==', userId)
       );
       
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
+      const items = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate?.() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate?.() || new Date()
       })) as Post[];
+      
+      return items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     } catch (error) {
       console.error('❌ Error getting user posts:', error);
       throw error;
@@ -754,11 +755,18 @@ export const realtimeService = {
       const conversationsRef = collection(db, COLLECTIONS.CONVERSATIONS);
       const qy = query(
         conversationsRef,
-        where('participants', 'array-contains', userId),
-        orderBy('updatedAt', 'desc' as any)
+        where('participants', 'array-contains', userId)
       );
       return onSnapshot(qy, (qs) => {
         const items = qs.docs.map(d => ({ id: d.id, ...d.data() })) as Conversation[];
+        const toMillis = (val: any): number => {
+           if (!val) return 0;
+           if (typeof val === 'number') return val;
+           if (typeof val?.toMillis === 'function') return val.toMillis();
+           if (typeof val?.toDate === 'function') return val.toDate().getTime();
+           return 0;
+        };
+        items.sort((a: any, b: any) => toMillis(b.updatedAt) - toMillis(a.updatedAt));
         callback(items);
       });
     } else {
@@ -783,11 +791,18 @@ export const realtimeService = {
       const messagesRef = collection(db, COLLECTIONS.MESSAGES);
       const qy = query(
         messagesRef,
-        where('conversationId', '==', conversationId),
-        orderBy('timestamp', 'asc' as any)
+        where('conversationId', '==', conversationId)
       );
       return onSnapshot(qy, (qs) => {
         const items = qs.docs.map(d => ({ id: d.id, ...d.data() })) as Message[];
+        const toMillis = (val: any): number => {
+           if (!val) return 0;
+           if (typeof val === 'number') return val;
+           if (typeof val?.toMillis === 'function') return val.toMillis();
+           if (typeof val?.toDate === 'function') return val.toDate().getTime();
+           return 0;
+        };
+        items.sort((a: any, b: any) => toMillis(a.timestamp) - toMillis(b.timestamp));
         callback(items);
       });
     } else {
@@ -1044,15 +1059,21 @@ export const professionalProductService = {
       const productsRef = collection(db, COLLECTIONS.PROFESSIONAL_PRODUCTS);
       const q = query(
         productsRef,
-        where('sellerId', '==', sellerId),
-        orderBy('createdAt', 'desc')
+        where('sellerId', '==', sellerId)
       );
       
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
+      const items = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as ProfessionalProduct[];
+      
+      // Sort by createdAt descending
+      return items.sort((a: any, b: any) => {
+        const tA = a.createdAt?.toMillis?.() || a.createdAt?.getTime?.() || 0;
+        const tB = b.createdAt?.toMillis?.() || b.createdAt?.getTime?.() || 0;
+        return tB - tA;
+      });
     } catch (error) {
       console.error('❌ Error getting seller products:', error);
       throw error;
@@ -1065,15 +1086,21 @@ export const professionalProductService = {
       const productsRef = collection(db, COLLECTIONS.PROFESSIONAL_PRODUCTS);
       const q = query(
         productsRef,
-        where('status', '==', 'pending'),
-        orderBy('createdAt', 'asc')
+        where('status', '==', 'pending')
       );
       
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
+      const items = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as ProfessionalProduct[];
+      
+      // Sort by createdAt ascending
+      return items.sort((a: any, b: any) => {
+        const tA = a.createdAt?.toMillis?.() || a.createdAt?.getTime?.() || 0;
+        const tB = b.createdAt?.toMillis?.() || b.createdAt?.getTime?.() || 0;
+        return tA - tB;
+      });
     } catch (error) {
       console.error('❌ Error getting pending products:', error);
       throw error;
@@ -1171,9 +1198,14 @@ export const petSitterService = {
   async listBookingsForSitter(sitterUserId: string): Promise<any[]> {
     try {
       const bookingsRef = collection(db, COLLECTIONS.BOOKINGS);
-      const qy = query(bookingsRef, where('catSitterId', '==', sitterUserId), orderBy('createdAt', 'desc'));
+      const qy = query(bookingsRef, where('catSitterId', '==', sitterUserId));
       const qs = await getDocs(qy);
-      return qs.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
+      const items = qs.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
+      return items.sort((a: any, b: any) => {
+         const tA = a.createdAt?.toMillis?.() || 0;
+         const tB = b.createdAt?.toMillis?.() || 0;
+         return tB - tA;
+      });
     } catch (error) {
       console.error('❌ Error listing bookings:', error);
       return [];
@@ -1216,15 +1248,20 @@ export const orderService = {
       const ordersRef = collection(db, COLLECTIONS.ORDERS);
       const q = query(
         ordersRef,
-        where('customerId', '==', customerId),
-        orderBy('createdAt', 'desc')
+        where('customerId', '==', customerId)
       );
       
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
+      const items = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Order[];
+      
+      return items.sort((a: any, b: any) => {
+        const tA = a.createdAt?.toMillis?.() || 0;
+        const tB = b.createdAt?.toMillis?.() || 0;
+        return tB - tA;
+      });
     } catch (error) {
       console.error('❌ Error getting customer orders:', error);
       if (isPermissionDenied(error)) {
@@ -1754,11 +1791,11 @@ export const challengeService = {
       const submissionsRef = collection(db, COLLECTIONS.CHALLENGE_SUBMISSIONS);
       const qy = query(
         submissionsRef,
-        where('challengeId', '==', challengeId),
-        orderBy('votes', 'desc')
+        where('challengeId', '==', challengeId)
       );
       const qs = await getDocs(qy);
-      return qs.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
+      const items = qs.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
+      return items.sort((a: any, b: any) => (b.votes || 0) - (a.votes || 0));
     } catch (error) {
       console.error('❌ Error getting challenge submissions:', error);
       if (isPermissionDenied(error)) {
@@ -1796,15 +1833,20 @@ export const notificationService = {
       const q = query(
         notificationsRef,
         where('userId', '==', userId),
-        orderBy('createdAt', 'desc'),
         limit(limitCount)
       );
       
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
+      const items = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Notification[];
+      
+      return items.sort((a: any, b: any) => {
+        const tA = a.createdAt?.toMillis?.() || 0;
+        const tB = b.createdAt?.toMillis?.() || 0;
+        return tB - tA;
+      });
     } catch (error) {
       console.error('❌ Error getting user notifications:', error);
       if (isPermissionDenied(error)) {
@@ -1929,15 +1971,20 @@ export const bookingService = {
       const bookingsRef = collection(db, COLLECTIONS.BOOKINGS);
       const q = query(
         bookingsRef,
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', userId)
       );
       
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
+      const items = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as any[];
+      
+      return items.sort((a: any, b: any) => {
+        const tA = a.createdAt?.toMillis?.() || 0;
+        const tB = b.createdAt?.toMillis?.() || 0;
+        return tB - tA;
+      });
     } catch (error) {
       console.error('❌ Error getting user bookings:', error);
       if (isPermissionDenied(error)) {
@@ -2006,15 +2053,20 @@ export const healthService = {
       const recordsRef = collection(db, COLLECTIONS.HEALTH_RECORDS);
       const q = query(
         recordsRef,
-        where('petId', '==', petId),
-        orderBy('createdAt', 'desc')
+        where('petId', '==', petId)
       );
       
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
+      const items = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as any[];
+      
+      return items.sort((a: any, b: any) => {
+        const tA = a.createdAt?.toMillis?.() || 0;
+        const tB = b.createdAt?.toMillis?.() || 0;
+        return tB - tA;
+      });
     } catch (error) {
       console.error('❌ Error getting health records:', error);
       if (isPermissionDenied(error)) {
@@ -2049,15 +2101,20 @@ export const healthService = {
       const vaccinationsRef = collection(db, COLLECTIONS.VACCINATIONS);
       const q = query(
         vaccinationsRef,
-        where('petId', '==', petId),
-        orderBy('date', 'desc')
+        where('petId', '==', petId)
       );
       
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
+      const items = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as any[];
+      
+      return items.sort((a: any, b: any) => {
+        const tA = a.date ? new Date(a.date).getTime() : 0;
+        const tB = b.date ? new Date(b.date).getTime() : 0;
+        return tB - tA;
+      });
     } catch (error) {
       console.error('❌ Error getting vaccinations:', error);
       if (isPermissionDenied(error)) {

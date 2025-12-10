@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -6,10 +6,11 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { COLORS, DIMENSIONS } from '@/constants/colors';
+import { COLORS } from '@/constants/colors';
 import { useAuth } from '@/hooks/auth-store';
 import { usePets } from '@/hooks/pets-store';
 import {
@@ -20,11 +21,6 @@ import {
   Trophy,
   User,
   Users,
-  Search,
-  BarChart,
-  HelpCircle,
-  FileText,
-  Heart,
   Settings,
   Award,
   ChevronRight,
@@ -33,6 +29,11 @@ import {
   Crown,
   Shield,
   X,
+  FileText,
+  HelpCircle,
+  BarChart,
+  Heart,
+  LogOut
 } from 'lucide-react-native';
 
 interface MenuItem {
@@ -42,15 +43,30 @@ interface MenuItem {
   route: string;
   badge?: number;
   color?: string;
+  action?: () => void;
 }
 
 export default function MenuScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { userPets } = usePets();
 
   const isProfessional = Boolean(user?.isProfessional);
+
+  useEffect(() => {
+    console.log('MenuScreen mounted');
+  }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.replace('/auth/signin');
+    } catch (error) {
+      console.error('Sign out error:', error);
+      Alert.alert('Erreur', 'Impossible de se déconnecter');
+    }
+  };
 
   const mainMenuItems: MenuItem[] = [
     {
@@ -176,11 +192,25 @@ export default function MenuScreen() {
       icon: <HelpCircle size={24} color={COLORS.darkGray} />,
       route: '/settings/support',
     },
+    {
+      id: 'logout',
+      title: 'Se déconnecter',
+      icon: <LogOut size={24} color={COLORS.error} />,
+      route: '',
+      action: handleSignOut,
+      color: COLORS.error,
+    }
   ];
 
-  const handleMenuItemPress = (route: string) => {
-    console.log('Navigating to:', route);
-    router.push(route as any);
+  const handleMenuItemPress = (item: MenuItem) => {
+    if (item.action) {
+      item.action();
+      return;
+    }
+    console.log('Navigating to:', item.route);
+    if (item.route) {
+      router.push(item.route as any);
+    }
   };
 
   const handleClose = () => {
@@ -189,18 +219,21 @@ export default function MenuScreen() {
 
   const petPhoto = userPets?.[0]?.mainPhoto || user?.photo || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=100&h=100&fit=crop&crop=face';
 
-  const renderMenuItem = (item: MenuItem) => (
+  const renderMenuItem = (item: MenuItem, index: number) => (
     <TouchableOpacity
       key={item.id}
-      style={styles.menuItem}
-      onPress={() => handleMenuItemPress(item.route)}
+      style={[
+        styles.menuItem,
+        index === 0 && { borderTopWidth: 0 } // Remove border for first item
+      ]}
+      onPress={() => handleMenuItemPress(item)}
       activeOpacity={0.7}
       testID={`menu-item-${item.id}`}
     >
-      <View style={[styles.menuIconContainer, item.color && { backgroundColor: `${item.color}15` }]}>
+      <View style={[styles.menuIconContainer, item.color ? { backgroundColor: `${item.color}15` } : {}]}>
         {item.icon}
       </View>
-      <Text style={styles.menuItemText}>{item.title}</Text>
+      <Text style={[styles.menuItemText, item.id === 'logout' && { color: COLORS.error }]}>{item.title}</Text>
       <ChevronRight size={20} color={COLORS.darkGray} />
     </TouchableOpacity>
   );
@@ -209,11 +242,11 @@ export default function MenuScreen() {
     <TouchableOpacity
       key={item.id}
       style={styles.quickAccessItem}
-      onPress={() => handleMenuItemPress(item.route)}
+      onPress={() => handleMenuItemPress(item)}
       activeOpacity={0.7}
       testID={`quick-${item.id}`}
     >
-      <View style={[styles.quickAccessIcon, item.color && { backgroundColor: `${item.color}15` }]}>
+      <View style={[styles.quickAccessIcon, item.color ? { backgroundColor: `${item.color}15` } : {}]}>
         {item.icon}
       </View>
       <Text style={styles.quickAccessText} numberOfLines={2}>{item.title}</Text>
@@ -228,9 +261,11 @@ export default function MenuScreen() {
           <Image source={{ uri: petPhoto }} style={styles.userPhoto} />
           <View style={styles.userDetails}>
             <Text style={styles.welcomeText}>
-              Bienvenue, {user?.firstName || 'Utilisateur'}
+              Bienvenue,
             </Text>
-            <Text style={styles.appName}>Coppet</Text>
+            <Text style={styles.appName} numberOfLines={1}>
+              {user?.firstName || 'Utilisateur'}
+            </Text>
           </View>
         </View>
         <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
@@ -243,7 +278,7 @@ export default function MenuScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Quick Access Grid */}
+        {/* Quick Access Grid - First 6 items */}
         <Text style={styles.sectionTitle}>Accès rapide</Text>
         <View style={styles.quickAccessGrid}>
           {mainMenuItems.slice(0, 6).map(renderQuickAccessItem)}
@@ -252,7 +287,7 @@ export default function MenuScreen() {
         {/* Main Navigation */}
         <Text style={styles.sectionTitle}>Navigation principale</Text>
         <View style={styles.menuSection}>
-          {mainMenuItems.map(renderMenuItem)}
+          {mainMenuItems.map((item, index) => renderMenuItem(item, index))}
         </View>
 
         {/* Pro Section */}
@@ -260,7 +295,7 @@ export default function MenuScreen() {
           <>
             <Text style={styles.sectionTitle}>Espace Pro</Text>
             <View style={styles.menuSection}>
-              {proMenuItems.map(renderMenuItem)}
+              {proMenuItems.map((item, index) => renderMenuItem(item, index))}
             </View>
           </>
         )}
@@ -268,20 +303,20 @@ export default function MenuScreen() {
         {/* Profile & Account */}
         <Text style={styles.sectionTitle}>Profil & Compte</Text>
         <View style={styles.menuSection}>
-          {profileMenuItems.map(renderMenuItem)}
+          {profileMenuItems.map((item, index) => renderMenuItem(item, index))}
         </View>
 
         {/* Settings & Info */}
         <Text style={styles.sectionTitle}>Paramètres & Informations</Text>
         <View style={styles.menuSection}>
-          {settingsMenuItems.map(renderMenuItem)}
+          {settingsMenuItems.map((item, index) => renderMenuItem(item, index))}
+        </View>
+
+        {/* Version Info */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Version 1.0.0</Text>
         </View>
       </ScrollView>
-
-      {/* Footer */}
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 10 }]}>
-        <Text style={styles.footerText}>Version 1.0.0</Text>
-      </View>
     </View>
   );
 }
@@ -289,7 +324,7 @@ export default function MenuScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.screenBackground,
+    backgroundColor: '#F8FAFC', // Explicit color fallback
   },
   header: {
     flexDirection: 'row',
@@ -299,7 +334,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+    borderBottomColor: '#F1F5F9',
   },
   userInfo: {
     flexDirection: 'row',
@@ -313,25 +348,26 @@ const styles = StyleSheet.create({
     marginRight: 12,
     borderWidth: 2,
     borderColor: COLORS.primary,
+    backgroundColor: '#E2E8F0',
   },
   userDetails: {
     flex: 1,
   },
   welcomeText: {
-    fontSize: 14,
+    fontSize: 12,
     color: COLORS.darkGray,
     marginBottom: 2,
   },
   appName: {
-    fontSize: 20,
-    fontWeight: '700' as const,
+    fontSize: 18,
+    fontWeight: '700',
     color: COLORS.primary,
   },
   closeButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -340,11 +376,11 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 30,
+    paddingBottom: 40,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600' as const,
+    fontWeight: '600',
     color: COLORS.black,
     marginBottom: 12,
     marginTop: 8,
@@ -365,7 +401,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
@@ -373,14 +409,14 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(125, 212, 238, 0.12)',
+    backgroundColor: 'rgba(6, 182, 212, 0.12)', // Explicit color fallback
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
   },
   quickAccessText: {
     fontSize: 11,
-    fontWeight: '600' as const,
+    fontWeight: '600',
     color: COLORS.black,
     textAlign: 'center',
     lineHeight: 14,
@@ -388,12 +424,12 @@ const styles = StyleSheet.create({
   menuSection: {
     backgroundColor: COLORS.white,
     borderRadius: 16,
-    marginBottom: 16,
+    marginBottom: 24,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
     elevation: 2,
   },
   menuItem: {
@@ -401,14 +437,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
   },
   menuIconContainer: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(125, 212, 238, 0.12)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(6, 182, 212, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
@@ -416,19 +452,16 @@ const styles = StyleSheet.create({
   menuItemText: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '500' as const,
+    fontWeight: '500',
     color: COLORS.black,
   },
   footer: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    backgroundColor: COLORS.white,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.08)',
     alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 20,
   },
   footerText: {
     fontSize: 12,
-    color: COLORS.darkGray,
+    color: COLORS.gray,
   },
 });

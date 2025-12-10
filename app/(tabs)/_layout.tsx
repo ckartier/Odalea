@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from "react";
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 import { View, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IS_TABLET, RESPONSIVE_LAYOUT } from "@/constants/colors";
@@ -11,8 +11,8 @@ export default function TabLayout() {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
 
   const handleMenuToggle = useCallback(() => {
-    setIsMenuOpen((v) => !v);
-  }, []);
+    router.push('/menu');
+  }, [router]);
 
   const topBarHeight = useTopBarHeight();
 
@@ -28,7 +28,7 @@ export default function TabLayout() {
   return (
     <>
       <TopBar onMenuPress={handleMenuToggle} />
-      <FloatingMenu isOpen={isMenuOpen} onToggle={handleMenuToggle} />
+      {/* <FloatingMenu isOpen={isMenuOpen} onToggle={handleMenuToggle} /> */}
 
       <View style={containerStyle}>
         <Tabs
