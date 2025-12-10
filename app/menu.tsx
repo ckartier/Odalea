@@ -61,10 +61,18 @@ export default function MenuScreen() {
 
   const handleSignOut = async () => {
     try {
-      await signOut();
-      router.replace('/auth/signin');
+      console.log('🚪 Attempting to sign out...');
+      const result = await signOut();
+      console.log('🚪 Sign out result:', result);
+      if (result.success) {
+        console.log('✅ Sign out successful, navigating to signin');
+        router.replace('/auth/signin');
+      } else {
+        console.error('❌ Sign out failed:', result.error);
+        Alert.alert('Erreur', result.error || 'Impossible de se déconnecter');
+      }
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error('❌ Sign out error:', error);
       Alert.alert('Erreur', 'Impossible de se déconnecter');
     }
   };

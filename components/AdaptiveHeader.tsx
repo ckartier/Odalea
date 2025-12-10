@@ -1,8 +1,7 @@
 import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft } from 'lucide-react-native';
 import type { NativeStackHeaderProps } from '@react-navigation/native-stack';
 import { COLORS, DIMENSIONS } from '@/constants/colors';
 
@@ -14,9 +13,7 @@ type ExtendedHeaderProps = NativeStackHeaderProps & {
   };
 };
 
-const BACK_HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 } as const;
-
-const AdaptiveHeader: React.FC<ExtendedHeaderProps> = ({ navigation, options, back }) => {
+const AdaptiveHeader: React.FC<ExtendedHeaderProps> = ({ options }) => {
   const insets = useSafeAreaInsets();
   const {
     headerTitle,
@@ -25,10 +22,8 @@ const AdaptiveHeader: React.FC<ExtendedHeaderProps> = ({ navigation, options, ba
     headerLargeTitle,
     headerRight,
     headerTintColor,
-    headerBackVisible,
   } = options;
   const tintColor = headerTintColor ?? COLORS.black;
-  const canGoBack = Boolean(back);
 
   const titleContent = useMemo(() => {
     if (headerTitle) {
@@ -55,15 +50,6 @@ const AdaptiveHeader: React.FC<ExtendedHeaderProps> = ({ navigation, options, ba
 
   const RightComponent = headerRight?.({ tintColor });
 
-  const handleGoBack = () => {
-    if (headerBackVisible === false) {
-      return;
-    }
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-    }
-  };
-
   return (
     <View
       style={[
@@ -82,21 +68,7 @@ const AdaptiveHeader: React.FC<ExtendedHeaderProps> = ({ navigation, options, ba
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.content}>
-        {canGoBack ? (
-          <TouchableOpacity
-            onPress={handleGoBack}
-            hitSlop={BACK_HIT_SLOP}
-            style={styles.backButton}
-            accessibilityRole="button"
-            accessibilityLabel="Retour"
-            activeOpacity={0.85}
-            testID="adaptive-header-back"
-          >
-            <ArrowLeft size={22} color={tintColor} />
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.placeholder} />
-        )}
+        <View style={styles.placeholder} />
         <View style={styles.titleWrap}>
           {typeof titleContent === 'string' ? (
             <Text numberOfLines={1} style={styles.title} testID="adaptive-header-title">
@@ -139,14 +111,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: DIMENSIONS.SPACING.md,
     gap: 12,
   },
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(15,23,42,0.06)',
-  },
+
   placeholder: {
     width: 44,
     height: 44,

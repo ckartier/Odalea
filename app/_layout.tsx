@@ -56,6 +56,7 @@ const screenOptions = {
   headerStyle: {
     backgroundColor: 'transparent',
   },
+  headerBackVisible: false,
   header: (props: NativeStackHeaderProps) => <AdaptiveHeader {...props} />,
 };
 

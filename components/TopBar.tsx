@@ -3,7 +3,7 @@ import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, usePathname } from 'expo-router';
 import { COLORS, DIMENSIONS } from '@/constants/colors';
-import { Menu, ArrowLeft } from 'lucide-react-native';
+import { Menu } from 'lucide-react-native';
 import { usePets } from '@/hooks/pets-store';
 import { useAuth } from '@/hooks/auth-store';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -59,19 +59,8 @@ const TopBar = React.memo(({ rightAction, onMenuPress, onBackPress }: TopBarProp
     router.push('/(tabs)/profile' as any);
   }, [router]);
 
-  const handleBackPress = useCallback(() => {
-    if (onBackPress) {
-      onBackPress();
-      return;
-    }
-    if (router.canGoBack()) {
-      router.back();
-    }
-  }, [router, onBackPress]);
-
   const photoUri = primaryPet?.mainPhoto || user?.photo || user?.animalPhoto;
   const displayName = primaryPet?.name || user?.animalName || user?.pseudo || user?.name || '';
-  const canGoBack = router.canGoBack();
 
   const Avatar = (
     <TouchableOpacity
@@ -136,17 +125,6 @@ const TopBar = React.memo(({ rightAction, onMenuPress, onBackPress }: TopBarProp
       <View style={styles.headerWrap}>
         <View style={styles.content}>
           <View style={styles.leftSlot}>
-            {canGoBack && (
-              <TouchableOpacity
-                onPress={handleBackPress}
-                style={styles.backButton}
-                accessibilityLabel="Retour"
-                testID="topbar-back"
-                activeOpacity={0.85}
-              >
-                <ArrowLeft size={22} color={COLORS.black} />
-              </TouchableOpacity>
-            )}
             {Avatar}
           </View>
 
@@ -195,14 +173,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(15,23,42,0.06)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+
   avatarButton: {
     width: 64,
     height: 64,
