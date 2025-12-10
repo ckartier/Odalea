@@ -52,14 +52,15 @@ export const [UnifiedMessagingContext, useUnifiedMessaging] = createContextHook(
   const getAllConversations = (): UnifiedConversation[] => {
     const regularConversations: UnifiedConversation[] = conversations.map(conv => {
       const user = getConversationUser(conv.id);
+      const participants = conv.participants || [];
       return {
         id: conv.id,
-        userId: conv.participants.find(p => p !== user?.id) || '',
+        userId: participants.find(p => p !== user?.id) || '',
         userName: user?.name || 'Utilisateur inconnu',
         userAvatar: user?.photo,
         lastMessage: conv.lastMessage?.content || '',
         lastMessageTime: conv.lastMessage?.timestamp || 0,
-        unreadCount: conv.unreadCount,
+        unreadCount: conv.unreadCount || 0,
         type: 'regular' as const,
       };
     });
@@ -91,7 +92,7 @@ export const [UnifiedMessagingContext, useUnifiedMessaging] = createContextHook(
   };
 
   const getUnreadCount = (): number => {
-    const regularUnread = conversations.reduce((total, conv) => total + conv.unreadCount, 0);
+    const regularUnread = conversations.reduce((total, conv) => total + (conv.unreadCount || 0), 0);
     const catSitterUnread = catSitterMessages.filter(msg => !msg.isRead && msg.fromId !== 'me').length;
     return regularUnread + catSitterUnread;
   };

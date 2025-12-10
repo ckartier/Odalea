@@ -37,7 +37,8 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
     if (!user) return [] as string[];
     const ids = new Set<string>();
     for (const c of conversations) {
-      for (const pid of c.participants) {
+      const participants = c.participants || [];
+      for (const pid of participants) {
         if (pid !== user.id) ids.add(pid);
       }
     }
@@ -100,7 +101,8 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
       if (!user?.id) throw new Error('User not signed in');
       const conv = conversations.find(c => c.id === conversationId);
       if (!conv) throw new Error('Conversation not found');
-      const recipientId = conv.participants.find(pid => pid !== user.id);
+      const participants = conv.participants || [];
+      const recipientId = participants.find(pid => pid !== user.id);
       if (!recipientId) throw new Error('Recipient not found');
       const tempMessage: Message = {
         id: `temp-${Date.now()}`,
@@ -129,7 +131,7 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
   const createConversation = useMutation({
     mutationFn: async (participantId: string) => {
       if (!user?.id) throw new Error('User not signed in');
-      const existing = conversations.find(c => c.participants.includes(participantId));
+      const existing = conversations.find(c => (c.participants || []).includes(participantId));
       if (existing) return existing.id;
       const convId = await databaseService.messaging.createConversation([user.id, participantId]);
       await qc.invalidateQueries({ queryKey: ['conversations', user.id] });
@@ -153,7 +155,7 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
       let createdConversationId: string | undefined = undefined;
       if (accept && user?.id) {
         const otherId = user.id === senderId ? receiverId : senderId;
-        const existing = conversations.find(c => c.participants.includes(otherId));
+        const existing = conversations.find(c => (c.participants || []).includes(otherId));
         if (existing) {
           createdConversationId = existing.id;
         } else {
@@ -174,7 +176,8 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
   const getConversationUser = (conversationId: string): User | undefined => {
     const conversation = conversations.find(c => c.id === conversationId);
     if (!conversation || !user) return undefined;
-    const otherUserId = conversation.participants.find(id => id !== user.id);
+    const participants = conversation.participants || [];
+    const otherUserId = participants.find(id => id !== user.id);
     if (!otherUserId) return undefined;
     return usersMap.get(otherUserId);
   };
