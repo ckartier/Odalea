@@ -96,6 +96,6 @@ const styles = StyleSheet.create({
   },
   webGradientOverlay: {
     ...StyleSheet.absoluteFillObject,
-    background: 'linear-gradient(135deg, rgba(163, 213, 255, 0.2), rgba(255, 179, 217, 0.2))',
+    opacity: 0.8,
   },
 });
