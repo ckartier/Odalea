@@ -111,7 +111,12 @@ export const userService = {
       const userSnap = await getDoc(userRef);
       
       if (userSnap.exists()) {
-        return { id: userSnap.id, ...userSnap.data() } as User;
+        const data = userSnap.data();
+        return { 
+          id: userSnap.id, 
+          ...data,
+          pets: Array.isArray(data.pets) ? data.pets : []
+        } as User;
       }
       return null;
     } catch (error) {

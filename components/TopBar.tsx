@@ -29,8 +29,16 @@ const TopBar = React.memo(({ rightAction, onMenuPress, onBackPress }: TopBarProp
   const { userPets } = usePets();
   const { user } = useAuth();
   const authPets = useMemo(() => user?.pets ?? [], [user?.pets]);
-  const combinedPets = useMemo(() => ((userPets && userPets.length > 0) ? userPets : authPets), [userPets, authPets]);
-  const primaryPet = useMemo(() => combinedPets.find((p) => p.isPrimary) ?? combinedPets[0], [combinedPets]);
+  const combinedPets = useMemo(() => {
+    const safeUserPets = Array.isArray(userPets) ? userPets : [];
+    const safeAuthPets = Array.isArray(authPets) ? authPets : [];
+    return (safeUserPets.length > 0) ? safeUserPets : safeAuthPets;
+  }, [userPets, authPets]);
+
+  const primaryPet = useMemo(() => {
+    if (!Array.isArray(combinedPets)) return undefined;
+    return combinedPets.find((p) => p.isPrimary) ?? combinedPets[0];
+  }, [combinedPets]);
 
   const shouldShow = useMemo(() => !(
     pathname?.includes('/auth/') ||
