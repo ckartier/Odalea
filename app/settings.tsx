@@ -14,7 +14,8 @@ import { COLORS, SHADOWS } from '@/constants/colors';
 import { useI18n } from '@/hooks/i18n-store';
 import { useAuth } from '@/hooks/auth-store';
 import { useTheme } from '@/hooks/theme-store';
-import FirebaseTest from '@/components/FirebaseTest';
+// Removed FirebaseTest import
+
 import {
   Settings as SettingsIcon,
   Bell,
@@ -164,19 +165,7 @@ export default function SettingsScreen() {
       id: 'support',
       title: t('settings.contact_support'),
       icon: <MessageSquare size={24} color={currentTheme.text} />,
-      onPress: () => {
-        const subject = 'Support Coppet - Demande d\'aide';
-        const body = `Bonjour,\n\nJ'ai besoin d'aide concernant :\n\n[Décrivez votre problème ici]\n\nInformations du compte :\n- Email : ${user?.email}\n- Version de l'app : 1.0.0\n\nMerci pour votre aide.`;
-        
-        const mailtoUrl = `mailto:support@coppet.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        
-        Linking.openURL(mailtoUrl).catch(() => {
-          Alert.alert(
-            'Erreur',
-            'Impossible d\'ouvrir l\'application mail. Veuillez contacter support@coppet.com directement.'
-          );
-        });
-      },
+      onPress: () => router.push('/settings/support'),
     },
     {
       id: 'terms',
@@ -249,7 +238,8 @@ export default function SettingsScreen() {
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <FirebaseTest testId="firebase-connection-test" />
+// Removed FirebaseTest usage
+
         
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>Général</Text>
