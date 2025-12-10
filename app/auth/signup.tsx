@@ -206,8 +206,12 @@ export default function SignUpScreen() {
     
     if (!password.trim()) {
       newErrors.password = t('auth.password_required');
-    } else if (password.length < 6) {
-      newErrors.password = t('auth.password_min_length');
+    } else if (password.length < 8) {
+      newErrors.password = 'Le mot de passe doit contenir au moins 8 caractères';
+    } else if (!/[A-Z]/.test(password)) {
+      newErrors.password = 'Le mot de passe doit contenir au moins 1 majuscule';
+    } else if (!/[^A-Za-z0-9]/.test(password)) {
+      newErrors.password = 'Le mot de passe doit contenir au moins 1 caractère spécial';
     }
     
     setErrors(newErrors);
