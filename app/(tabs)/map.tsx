@@ -38,7 +38,6 @@ import {
   Users,
   Heart,
   Search,
-  Stethoscope,
   ShieldCheck,
   RefreshCcw,
   X,
@@ -92,7 +91,7 @@ const FILTERS: {
   { key: 'sitters', label: 'Cat Sitters', Icon: Users, gradient: ['#38bdf8', '#6366f1'] },
   { key: 'friends', label: 'Amis', Icon: Filter, gradient: ['#f97316', '#facc15'] },
   { key: 'lost', label: 'Perdus', Icon: Search, gradient: ['#f43f5e', '#f97316'] },
-  { key: 'vets', label: 'V��térinaires', Icon: Stethoscope, gradient: ['#34d399', '#059669'] },
+  { key: 'vets', label: 'Vétérinaires', Icon: Search, gradient: ['#34d399', '#059669'] },
 ];
 
 const { width, height } = Dimensions.get('window');
@@ -673,7 +672,6 @@ export default function MapScreen() {
             const left = Math.max(24, Math.min(width - 24, pos.left));
             const top = Math.max(24, Math.min(height - 24, pos.top));
             const markerColor = pet.gender === 'male' ? COLORS.male : COLORS.female;
-            const isVetProfessional = pet.owner?.isProfessional && pet.owner?.professionalData?.activityType === 'vet';
             return (
               <TouchableOpacity
                 key={`overlay-pet-${pet.id}-${idx}`}
@@ -699,11 +697,7 @@ export default function MapScreen() {
                   )}
                 </View>
                 <View style={[styles.webPetTriangle, { borderTopColor: markerColor }]} />
-                {isVetProfessional && (
-                  <View style={styles.webVetBadge}>
-                    <Stethoscope size={12} color="#fff" />
-                  </View>
-                )}
+
               </TouchableOpacity>
             );
           })}
@@ -715,7 +709,6 @@ export default function MapScreen() {
             const top = Math.max(24, Math.min(height - 24, pos.top));
             const primaryPet = u.pets?.find((p) => p.isPrimary) || u.pets?.[0];
             const markerColor = primaryPet?.gender === 'male' ? COLORS.male : primaryPet?.gender === 'female' ? COLORS.female : COLORS.primary;
-            const isVetProfessional = u.isProfessional && u.professionalData?.activityType === 'vet';
             return (
               <TouchableOpacity
                 key={`overlay-user-${u.id}-${idx}`}
@@ -752,11 +745,7 @@ export default function MapScreen() {
                   )}
                 </View>
                 <View style={[styles.webPetTriangle, { borderTopColor: markerColor }]} />
-                {isVetProfessional && (
-                  <View style={styles.webVetBadge}>
-                    <Stethoscope size={12} color="#fff" />
-                  </View>
-                )}
+
               </TouchableOpacity>
             );
           })}
@@ -885,15 +874,7 @@ export default function MapScreen() {
         >
           <RefreshCcw size={20} color={COLORS.black} />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.controlButton, SHADOWS.medium]}
-          onPress={() => {
-            handleFilterPress('vets');
-          }}
-          testID="btn-vets"
-        >
-          <Stethoscope size={20} color={COLORS.black} />
-        </TouchableOpacity>
+
       </View>
 
       {selectedPet && (
@@ -1236,19 +1217,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     pointerEvents: 'box-none',
   },
-  webVetBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#10b981',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.white,
-  },
+
   webPetMarker: {
     position: 'absolute',
     alignItems: 'center',
