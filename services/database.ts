@@ -177,6 +177,48 @@ export const userService = {
       }
       throw error;
     }
+  },
+
+  // Add friend
+  async addFriend(userId: string, friendId: string): Promise<void> {
+    try {
+      const userRef = doc(db, COLLECTIONS.USERS, userId);
+      const friendRef = doc(db, COLLECTIONS.USERS, friendId);
+      
+      await updateDoc(userRef, {
+        friends: arrayUnion(friendId)
+      });
+      
+      await updateDoc(friendRef, {
+        friends: arrayUnion(userId)
+      });
+      
+      console.log('✅ Friend added successfully');
+    } catch (error) {
+      console.error('❌ Error adding friend:', error);
+      throw error;
+    }
+  },
+
+  // Remove friend
+  async removeFriend(userId: string, friendId: string): Promise<void> {
+    try {
+      const userRef = doc(db, COLLECTIONS.USERS, userId);
+      const friendRef = doc(db, COLLECTIONS.USERS, friendId);
+      
+      await updateDoc(userRef, {
+        friends: arrayRemove(friendId)
+      });
+      
+      await updateDoc(friendRef, {
+        friends: arrayRemove(userId)
+      });
+      
+      console.log('✅ Friend removed successfully');
+    } catch (error) {
+      console.error('❌ Error removing friend:', error);
+      throw error;
+    }
   }
 };
 
@@ -1450,7 +1492,7 @@ export const friendRequestService = {
     }
   },
 
-  // Get friend requests for user
+  // Get friend requests for user (received)
   async getFriendRequests(userId: string): Promise<FriendRequest[]> {
     try {
       const friendRequestsRef = collection(db, COLLECTIONS.FRIEND_REQUESTS);
@@ -1477,6 +1519,49 @@ export const friendRequestService = {
       return items.sort((a: any, b: any) => toMillis(b.timestamp) - toMillis(a.timestamp));
     } catch (error) {
       console.error('❌ Error getting friend requests:', error);
+      throw error;
+    }
+  },
+
+  // Get sent friend requests
+  async getSentFriendRequests(userId: string): Promise<FriendRequest[]> {
+    try {
+      const friendRequestsRef = collection(db, COLLECTIONS.FRIEND_REQUESTS);
+      const q = query(
+        friendRequestsRef,
+        where('senderId', '==', userId),
+        where('status', '==', 'pending')
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const items = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as FriendRequest[];
+      
+      const toMillis = (val: any): number => {
+        if (!val) return 0;
+        if (typeof val === 'number') return val;
+        if (typeof val?.toMillis === 'function') return val.toMillis();
+        if (typeof val?.toDate === 'function') return val.toDate().getTime();
+        return 0;
+      };
+      
+      return items.sort((a: any, b: any) => toMillis(b.timestamp) - toMillis(a.timestamp));
+    } catch (error) {
+      console.error('❌ Error getting sent friend requests:', error);
+      throw error;
+    }
+  },
+
+  // Cancel friend request
+  async cancelFriendRequest(requestId: string): Promise<void> {
+    try {
+      const requestRef = doc(db, COLLECTIONS.FRIEND_REQUESTS, requestId);
+      await deleteDoc(requestRef);
+      console.log('✅ Friend request cancelled successfully');
+    } catch (error) {
+      console.error('❌ Error cancelling friend request:', error);
       throw error;
     }
   }

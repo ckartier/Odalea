@@ -37,6 +37,7 @@ export interface User {
   profileComplete: boolean;
   isAdmin?: boolean;
   isSuperAdmin?: boolean;
+  friends?: string[];
 }
 
 export type ProfessionalActivityType = 'vet' | 'shelter' | 'breeder' | 'boutique';

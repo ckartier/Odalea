@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
   View,
-  ScrollView,
   TouchableOpacity,
   FlatList,
   Alert,
@@ -17,77 +16,75 @@ import { useI18n } from '@/hooks/i18n-store';
 import { 
   Users, 
   Search, 
-  UserPlus, 
-  UserMinus, 
   MessageCircle,
   MoreVertical,
   UserX,
-  Heart,
+  Bell,
+  UserPlus,
+  Clock,
+  X,
 } from 'lucide-react-native';
+import { useFriends } from '@/hooks/friends-store';
+import { databaseService } from '@/services/database';
+import { User, FriendRequest } from '@/types';
+import FriendRequestsModal from '@/components/FriendRequestsModal';
 
-interface Friend {
-  id: string;
-  firstName: string;
-  lastName: string;
-  pseudo: string;
-  avatar?: string;
-  isOnline: boolean;
-  lastSeen?: number;
-  mutualFriends: number;
-  location: string;
-  pets: Array<{
-    name: string;
-    species: string;
-  }>;
+type TabType = 'friends' | 'received' | 'sent';
+
+interface SentRequestWithInfo extends FriendRequest {
+  receiverInfo?: User;
 }
-
-// Mock friends data
-const mockFriends: Friend[] = [
-  {
-    id: '1',
-    firstName: 'Sarah',
-    lastName: 'Johnson',
-    pseudo: 'SarahParis',
-    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b9e0e4b0?w=100&h=100&fit=crop&crop=face',
-    isOnline: true,
-    mutualFriends: 3,
-    location: 'Paris',
-    pets: [{ name: 'Luna', species: 'Chat' }],
-  },
-  {
-    id: '2',
-    firstName: 'Mike',
-    lastName: 'Chen',
-    pseudo: 'MikeLyon',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
-    isOnline: false,
-    lastSeen: Date.now() - 3600000, // 1 hour ago
-    mutualFriends: 1,
-    location: 'Lyon',
-    pets: [{ name: 'Max', species: 'Chien' }],
-  },
-  {
-    id: '3',
-    firstName: 'Emma',
-    lastName: 'Wilson',
-    pseudo: 'EmmaMarseille',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
-    isOnline: true,
-    mutualFriends: 5,
-    location: 'Marseille',
-    pets: [{ name: 'Bella', species: 'Chien' }, { name: 'Milo', species: 'Chat' }],
-  },
-];
 
 export default function FriendsScreen() {
   const router = useRouter();
   const { t } = useI18n();
-  const [friends, setFriends] = useState<Friend[]>(mockFriends);
+  const { 
+    friends, 
+    pendingRequests, 
+    sentRequests, 
+    removeFriend, 
+    cancelFriendRequest,
+    isLoading 
+  } = useFriends();
+  
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'friends' | 'suggestions'>('friends');
+  const [activeTab, setActiveTab] = useState<TabType>('friends');
+  const [showRequestsModal, setShowRequestsModal] = useState(false);
+  const [sentRequestsWithInfo, setSentRequestsWithInfo] = useState<SentRequestWithInfo[]>([]);
+
+  useEffect(() => {
+    const loadSentRequestsInfo = async () => {
+      if (!sentRequests || sentRequests.length === 0) {
+        setSentRequestsWithInfo([]);
+        return;
+      }
+
+      try {
+        const requestsData = await Promise.all(
+          sentRequests.map(async (request) => {
+            try {
+              const receiverInfo = await databaseService.user.getUser(request.receiverId);
+              return { ...request, receiverInfo: receiverInfo || undefined };
+            } catch (error) {
+              console.error('Error loading receiver info:', error);
+              return { ...request, receiverInfo: undefined };
+            }
+          })
+        );
+        setSentRequestsWithInfo(requestsData);
+      } catch (error) {
+        console.error('Error loading sent requests info:', error);
+      }
+    };
+
+    if (activeTab === 'sent') {
+      loadSentRequestsInfo();
+    }
+  }, [sentRequests, activeTab]);
 
   const filteredFriends = friends.filter(friend =>
-    friend.pseudo.toLowerCase().includes(searchQuery.toLowerCase())
+    friend.pseudo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    friend.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleRemoveFriend = (friendId: string, friendName: string) => {
@@ -99,9 +96,34 @@ export default function FriendsScreen() {
         {
           text: 'Supprimer',
           style: 'destructive',
-          onPress: () => {
-            setFriends(prev => prev.filter(friend => friend.id !== friendId));
-            Alert.alert('Ami supprimé', `@${friendName} a été supprimé de votre liste d'amis.`);
+          onPress: async () => {
+            try {
+              await removeFriend(friendId);
+              Alert.alert('Ami supprimé', `@${friendName} a été supprimé de votre liste d'amis.`);
+            } catch {
+              Alert.alert('Erreur', 'Impossible de supprimer cet ami');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleCancelRequest = (requestId: string, receiverName: string) => {
+    Alert.alert(
+      'Annuler la demande',
+      `Voulez-vous annuler la demande d'ami envoyée à @${receiverName} ?`,
+      [
+        { text: 'Non', style: 'cancel' },
+        {
+          text: 'Annuler',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await cancelFriendRequest(requestId);
+            } catch {
+              Alert.alert('Erreur', 'Impossible d\'annuler la demande');
+            }
           },
         },
       ]
@@ -117,8 +139,8 @@ export default function FriendsScreen() {
         {
           text: 'Bloquer',
           style: 'destructive',
-          onPress: () => {
-            setFriends(prev => prev.filter(friend => friend.id !== friendId));
+          onPress: async () => {
+            await removeFriend(friendId);
             Alert.alert('Utilisateur bloqué', `@${friendName} a été bloqué avec succès.`);
           },
         },
@@ -130,7 +152,7 @@ export default function FriendsScreen() {
     router.push(`/messages/${friendId}`);
   };
 
-  const showFriendOptions = (friend: Friend) => {
+  const showFriendOptions = (friend: User) => {
     Alert.alert(
       `@${friend.pseudo}`,
       'Que souhaitez-vous faire ?',
@@ -158,23 +180,7 @@ export default function FriendsScreen() {
     );
   };
 
-  const formatLastSeen = (timestamp: number) => {
-    const now = new Date();
-    const lastSeen = new Date(timestamp);
-    const diffMinutes = Math.floor((now.getTime() - lastSeen.getTime()) / (1000 * 60));
-    
-    if (diffMinutes < 60) {
-      return `Il y a ${diffMinutes} min`;
-    } else if (diffMinutes < 1440) {
-      const hours = Math.floor(diffMinutes / 60);
-      return `Il y a ${hours}h`;
-    } else {
-      const days = Math.floor(diffMinutes / 1440);
-      return `Il y a ${days}j`;
-    }
-  };
-
-  const renderFriend = ({ item }: { item: Friend }) => (
+  const renderFriend = ({ item }: { item: User }) => (
     <TouchableOpacity
       style={[styles.friendItem, SHADOWS.small]}
       onPress={() => router.push(`/profile/${item.id}`)}
@@ -182,34 +188,15 @@ export default function FriendsScreen() {
       <View style={styles.friendInfo}>
         <View style={styles.avatarContainer}>
           <Image
-            source={{ uri: item.avatar || 'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=100' }}
+            source={{ uri: item.photo || 'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=100' }}
             style={styles.avatar}
             contentFit="cover"
           />
-          {item.isOnline && <View style={styles.onlineIndicator} />}
         </View>
         
         <View style={styles.friendDetails}>
-          <Text style={styles.friendName}>@{item.pseudo}</Text>
-          <Text style={styles.friendLocation}>{item.location}</Text>
-          
-          <View style={styles.friendMeta}>
-            <Text style={styles.mutualFriends}>
-              {item.mutualFriends} ami{item.mutualFriends > 1 ? 's' : ''} en commun
-            </Text>
-            {!item.isOnline && item.lastSeen && (
-              <Text style={styles.lastSeen}> • {formatLastSeen(item.lastSeen)}</Text>
-            )}
-          </View>
-          
-          <View style={styles.petsContainer}>
-            {item.pets.map((pet, index) => (
-              <Text key={index} style={styles.petInfo}>
-                {pet.name} ({pet.species})
-                {index < item.pets.length - 1 && ', '}
-              </Text>
-            ))}
-          </View>
+          <Text style={styles.friendName}>@{item.pseudo || item.name}</Text>
+          {item.city && <Text style={styles.friendLocation}>{item.city}</Text>}
         </View>
       </View>
       
@@ -231,6 +218,116 @@ export default function FriendsScreen() {
     </TouchableOpacity>
   );
 
+  const renderSentRequest = ({ item }: { item: SentRequestWithInfo }) => {
+    const receiverName = item.receiverInfo?.pseudo || item.receiverInfo?.name || 'Utilisateur';
+    const receiverPhoto = item.receiverInfo?.photo;
+
+    return (
+      <View style={[styles.friendItem, SHADOWS.small]}>
+        <View style={styles.friendInfo}>
+          <Image
+            source={{ uri: receiverPhoto || 'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=100' }}
+            style={styles.avatar}
+            contentFit="cover"
+          />
+          
+          <View style={styles.friendDetails}>
+            <Text style={styles.friendName}>@{receiverName}</Text>
+            {item.receiverInfo?.city && (
+              <Text style={styles.friendLocation}>{item.receiverInfo.city}</Text>
+            )}
+            <View style={styles.statusBadge}>
+              <Clock size={12} color={COLORS.warning} />
+              <Text style={styles.statusText}>En attente</Text>
+            </View>
+          </View>
+        </View>
+        
+        <TouchableOpacity
+          style={[styles.actionButton, styles.cancelButton]}
+          onPress={() => handleCancelRequest(item.id, receiverName)}
+        >
+          <X size={20} color={COLORS.error} />
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  const getTabContent = () => {
+    switch (activeTab) {
+      case 'friends':
+        return filteredFriends.length > 0 ? (
+          <FlatList
+            data={filteredFriends}
+            renderItem={renderFriend}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+          />
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Users size={64} color={COLORS.darkGray} />
+            <Text style={styles.emptyTitle}>
+              {searchQuery ? 'Aucun ami trouvé' : 'Aucun ami pour le moment'}
+            </Text>
+            <Text style={styles.emptyDescription}>
+              {searchQuery 
+                ? 'Essayez de modifier votre recherche.'
+                : 'Commencez à vous connecter avec d\'autres propriétaires d\'animaux dans votre région.'}
+            </Text>
+          </View>
+        );
+      
+      case 'received':
+        return pendingRequests.length > 0 ? (
+          <View style={styles.listContent}>
+            <Text style={styles.sectionInfo}>
+              Vous avez {pendingRequests.length} demande{pendingRequests.length > 1 ? 's' : ''} d&apos;ami en attente
+            </Text>
+            <TouchableOpacity
+              style={[styles.viewRequestsButton, SHADOWS.small]}
+              onPress={() => setShowRequestsModal(true)}
+            >
+              <Bell size={20} color={COLORS.white} />
+              <Text style={styles.viewRequestsButtonText}>
+                Voir les demandes ({pendingRequests.length})
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Bell size={64} color={COLORS.darkGray} />
+            <Text style={styles.emptyTitle}>Aucune demande reçue</Text>
+            <Text style={styles.emptyDescription}>
+              Les demandes d&apos;ami que vous recevez apparaîtront ici.
+            </Text>
+          </View>
+        );
+      
+      case 'sent':
+        return sentRequestsWithInfo.length > 0 ? (
+          <FlatList
+            data={sentRequestsWithInfo}
+            renderItem={renderSentRequest}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+          />
+        ) : (
+          <View style={styles.emptyContainer}>
+            <UserPlus size={64} color={COLORS.darkGray} />
+            <Text style={styles.emptyTitle}>Aucune demande envoyée</Text>
+            <Text style={styles.emptyDescription}>
+              Les demandes d&apos;ami que vous envoyez apparaîtront ici.
+            </Text>
+          </View>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Stack.Screen
@@ -238,6 +335,7 @@ export default function FriendsScreen() {
           title: 'Mes amis',
           headerStyle: { backgroundColor: COLORS.white },
           headerTintColor: COLORS.black,
+          headerShadowVisible: false,
           headerRight: () => (
             <TouchableOpacity
               onPress={() => router.push('/settings/blocked-users')}
@@ -270,52 +368,48 @@ export default function FriendsScreen() {
         >
           <Users size={20} color={activeTab === 'friends' ? COLORS.primary : COLORS.darkGray} />
           <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]}>
-            Mes amis ({friends.length})
+            Amis ({friends.length})
           </Text>
         </TouchableOpacity>
         
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'suggestions' && styles.activeTab]}
-          onPress={() => setActiveTab('suggestions')}
+          style={[styles.tab, activeTab === 'received' && styles.activeTab]}
+          onPress={() => setActiveTab('received')}
         >
-          <UserPlus size={20} color={activeTab === 'suggestions' ? COLORS.primary : COLORS.darkGray} />
-          <Text style={[styles.tabText, activeTab === 'suggestions' && styles.activeTabText]}>
-            Suggestions
+          <Bell size={20} color={activeTab === 'received' ? COLORS.primary : COLORS.darkGray} />
+          <Text style={[styles.tabText, activeTab === 'received' && styles.activeTabText]}>
+            Reçues ({pendingRequests.length})
+          </Text>
+          {pendingRequests.length > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{pendingRequests.length}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'sent' && styles.activeTab]}
+          onPress={() => setActiveTab('sent')}
+        >
+          <UserPlus size={20} color={activeTab === 'sent' ? COLORS.primary : COLORS.darkGray} />
+          <Text style={[styles.tabText, activeTab === 'sent' && styles.activeTabText]}>
+            Envoyées ({sentRequests.length})
           </Text>
         </TouchableOpacity>
       </View>
 
-      {activeTab === 'friends' ? (
-        filteredFriends.length > 0 ? (
-          <FlatList
-            data={filteredFriends}
-            renderItem={renderFriend}
-            keyExtractor={item => item.id}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-          />
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Users size={64} color={COLORS.darkGray} />
-            <Text style={styles.emptyTitle}>
-              {searchQuery ? 'Aucun ami trouvé' : 'Aucun ami pour le moment'}
-            </Text>
-            <Text style={styles.emptyDescription}>
-              {searchQuery 
-                ? 'Essayez de modifier votre recherche.'
-                : 'Commencez à vous connecter avec d\'autres propriétaires d\'animaux dans votre région.'}
-            </Text>
-          </View>
-        )
-      ) : (
+      {isLoading ? (
         <View style={styles.emptyContainer}>
-          <Heart size={64} color={COLORS.darkGray} />
-          <Text style={styles.emptyTitle}>Suggestions d'amis</Text>
-          <Text style={styles.emptyDescription}>
-            Les suggestions d'amis basées sur vos intérêts et votre localisation apparaîtront bientôt ici.
-          </Text>
+          <Text style={styles.emptyDescription}>Chargement...</Text>
         </View>
+      ) : (
+        getTabContent()
       )}
+
+      <FriendRequestsModal
+        visible={showRequestsModal}
+        onClose={() => setShowRequestsModal(false)}
+      />
     </View>
   );
 }
@@ -361,13 +455,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 16,
     gap: 8,
+    position: 'relative',
   },
   activeTab: {
     borderBottomWidth: 2,
     borderBottomColor: COLORS.primary,
   },
   tabText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500' as const,
     color: COLORS.darkGray,
   },
@@ -375,8 +470,46 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '600' as const,
   },
+  badge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: COLORS.error,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  badgeText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '700' as const,
+  },
   listContent: {
     padding: 16,
+  },
+  sectionInfo: {
+    fontSize: 14,
+    color: COLORS.darkGray,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  viewRequestsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    gap: 12,
+  },
+  viewRequestsButtonText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '600' as const,
   },
   friendItem: {
     flexDirection: 'row',
@@ -401,17 +534,6 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
   },
-  onlineIndicator: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: COLORS.success,
-    borderWidth: 2,
-    borderColor: COLORS.white,
-  },
   friendDetails: {
     flex: 1,
   },
@@ -426,27 +548,16 @@ const styles = StyleSheet.create({
     color: COLORS.darkGray,
     marginBottom: 4,
   },
-  friendMeta: {
+  statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    gap: 4,
+    marginTop: 4,
   },
-  mutualFriends: {
+  statusText: {
     fontSize: 12,
-    color: COLORS.primary,
-  },
-  lastSeen: {
-    fontSize: 12,
-    color: COLORS.darkGray,
-  },
-  petsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  petInfo: {
-    fontSize: 12,
-    color: COLORS.darkGray,
-    fontStyle: 'italic',
+    color: COLORS.warning,
+    fontWeight: '500' as const,
   },
   friendActions: {
     flexDirection: 'row',
@@ -459,6 +570,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.lightGray,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  cancelButton: {
+    backgroundColor: COLORS.lightGray,
   },
   emptyContainer: {
     flex: 1,
