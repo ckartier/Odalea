@@ -64,6 +64,7 @@ interface VetPlace {
   address: string;
   rating?: number;
   phone?: string;
+  phoneFormatted?: string;
 }
 
 type AllPet = Pet & { owner?: User | undefined; isUserPet?: boolean };
@@ -444,6 +445,8 @@ export default function MapScreen() {
           },
           address: place.vicinity,
           rating: place.rating,
+          phone: place.phone,
+          phoneFormatted: place.formatted_phone_number || place.international_phone_number,
         }));
         setVets(vetPlaces);
         showPopup({
@@ -692,10 +695,11 @@ export default function MapScreen() {
               mainPhoto: '',
             } as any}
             onPress={() => {
+              const phoneInfo = vet.phoneFormatted || vet.phone;
               showPopup({
                 type: 'info',
                 title: vet.name,
-                message: `${vet.address}${vet.rating ? `\n⭐ ${vet.rating}/5` : ''}`,
+                message: `${vet.address}${vet.rating ? `\n⭐ ${vet.rating}/5` : ''}${phoneInfo ? `\n📞 ${phoneInfo}` : ''}`,
               });
             }}
           />
@@ -768,10 +772,11 @@ export default function MapScreen() {
               <TouchableOpacity
                 key={`overlay-vet-${vet.id}`}
                 onPress={() => {
+                  const phoneInfo = vet.phoneFormatted || vet.phone;
                   showPopup({
                     type: 'info',
                     title: vet.name,
-                    message: `${vet.address}${vet.rating ? `\n⭐ ${vet.rating}/5` : ''}`,
+                    message: `${vet.address}${vet.rating ? `\n⭐ ${vet.rating}/5` : ''}${phoneInfo ? `\n📞 ${phoneInfo}` : ''}`,
                   });
                 }}
                 activeOpacity={0.8}
