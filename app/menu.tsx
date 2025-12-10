@@ -29,6 +29,7 @@ import {
   Wrench,
   UserSearch,
   ChevronRight,
+  FileText,
 } from 'lucide-react-native';
 
 interface MenuItem {
@@ -40,72 +41,11 @@ interface MenuItem {
 }
 
 const getMenuItems = (opts: { isProfessional: boolean; isSuperAdmin: boolean; email?: string | null }): MenuItem[] => {
-  if (opts.isProfessional) {
-    return [
-      {
-        id: 'dashboard',
-        titleKey: 'pro.dashboard',
-        iconName: 'BarChart',
-        route: '/(pro)/dashboard',
-      },
-      {
-        id: 'map',
-        titleKey: 'navigation.map',
-        iconName: 'Map',
-        route: '/(tabs)/map',
-      },
-      {
-        id: 'community',
-        titleKey: 'navigation.community',
-        iconName: 'Users',
-        route: '/(tabs)/community',
-      },
-      {
-        id: 'challenges',
-        titleKey: 'navigation.challenges',
-        iconName: 'Trophy',
-        route: '/(tabs)/challenges',
-      },
-      {
-        id: 'cat-sitter',
-        titleKey: 'sitters.cat_sitters',
-        iconName: 'Search',
-        route: '/cat-sitter',
-      },
-      {
-        id: 'lost-found',
-        titleKey: 'navigation.lostFound',
-        iconName: 'Search',
-        route: '/(tabs)/lost-found',
-      },
-      {
-        id: 'shop',
-        titleKey: 'navigation.shop',
-        iconName: 'ShoppingBag',
-        route: '/(pro)/shop',
-      },
-      {
-        id: 'messages',
-        titleKey: 'navigation.messages',
-        iconName: 'MessageCircle',
-        route: '/(tabs)/messages',
-      },
-      {
-        id: 'profile',
-        titleKey: 'navigation.profile',
-        iconName: 'User',
-        route: '/(tabs)/profile',
-      },
-      {
-        id: 'support',
-        titleKey: 'settings.support_infos',
-        iconName: 'HelpCircle',
-        route: '/settings/support',
-      },
-    ];
-  }
+  const { isProfessional } = opts;
+  const profileRoute = isProfessional ? '/(pro)/profile' : '/(tabs)/profile';
+  const shopRoute = isProfessional ? '/(pro)/shop' : '/(tabs)/shop';
 
-  return [
+  const baseMenu: MenuItem[] = [
     {
       id: 'map',
       titleKey: 'navigation.map',
@@ -125,22 +65,16 @@ const getMenuItems = (opts: { isProfessional: boolean; isSuperAdmin: boolean; em
       route: '/cat-sitter',
     },
     {
-      id: 'shop',
-      titleKey: 'navigation.shop',
-      iconName: 'ShoppingBag',
-      route: '/(tabs)/shop',
-    },
-    {
       id: 'challenges',
       titleKey: 'navigation.challenges',
       iconName: 'Trophy',
       route: '/(tabs)/challenges',
     },
     {
-      id: 'profile',
-      titleKey: 'navigation.profile',
-      iconName: 'User',
-      route: '/(tabs)/profile',
+      id: 'shop',
+      titleKey: 'navigation.shop',
+      iconName: 'ShoppingBag',
+      route: shopRoute,
     },
     {
       id: 'lost-found',
@@ -155,12 +89,35 @@ const getMenuItems = (opts: { isProfessional: boolean; isSuperAdmin: boolean; em
       route: '/(tabs)/messages',
     },
     {
+      id: 'profile',
+      titleKey: 'navigation.profile',
+      iconName: 'User',
+      route: profileRoute,
+    },
+    {
+      id: 'terms',
+      titleKey: 'auth.terms_and_conditions',
+      iconName: 'FileText',
+      route: '/legal/terms',
+    },
+    {
       id: 'support',
       titleKey: 'settings.support_infos',
       iconName: 'HelpCircle',
       route: '/settings/support',
     },
   ];
+
+  if (isProfessional) {
+    baseMenu.unshift({
+      id: 'dashboard',
+      titleKey: 'pro.dashboard',
+      iconName: 'BarChart',
+      route: '/(pro)/dashboard',
+    });
+  }
+
+  return baseMenu;
 };
 
 export default function MenuScreen() {
@@ -215,6 +172,8 @@ export default function MenuScreen() {
         return <Wrench {...iconProps} />;
       case 'UserSearch':
         return <UserSearch {...iconProps} />;
+      case 'FileText':
+        return <FileText {...iconProps} />;
       default:
         return <Search {...iconProps} />;
     }
@@ -291,7 +250,7 @@ export default function MenuScreen() {
         >
           <Text style={styles.quickAccessTitle}>{t('navigation.quick_access')}</Text>
           <View style={styles.quickAccessGrid}>
-            {menuItems.slice(0, 6).map((item) => (
+            {menuItems.map((item) => (
               <TouchableOpacity
                 key={item.id}
                 style={styles.quickAccessItem}
