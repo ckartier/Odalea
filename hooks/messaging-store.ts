@@ -241,6 +241,7 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
   return {
     conversations,
     friendRequests,
+    messagesByConv,
     getMessages,
     sendMessage,
     sendFriendRequest,

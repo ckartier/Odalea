@@ -9,52 +9,58 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import { useAuth } from '@/hooks/auth-store';
-import { mockUsers } from '@/mocks/users';
+import { useUsersDirectory } from '@/hooks/firestore-users';
+import { useMessaging } from '@/hooks/messaging-store';
 import { Search, UserCheck, UserPlus } from 'lucide-react-native';
 
 export default function NewMessageScreen() {
-  const { userId } = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuth();
+  const { setSearch, usersQuery } = useUsersDirectory();
+  const { createConversation, areFriends, hasPendingRequest, sendFriendRequest } = useMessaging();
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(false);
   
-  // If userId is provided, navigate to chat with that user
   useEffect(() => {
-    if (userId) {
-      // In a real app, we would create or get an existing conversation
-      // For demo, we'll just navigate to a mock conversation
-      router.replace('/messages/conv1');
+    setSearch(searchQuery);
+  }, [searchQuery, setSearch]);
+  
+  const filteredUsers = (usersQuery.data ?? []).filter(u => u.id !== user?.id);
+  const loading = usersQuery.isLoading;
+  
+  const handleUserPress = async (selectedUserId: string) => {
+    try {
+      const conversationId = await createConversation.mutateAsync(selectedUserId);
+      router.replace(`/messages/${conversationId}`);
+    } catch (error) {
+      console.error('[NewMessage] Failed to create conversation', error);
     }
-  }, [userId]);
-  
-  // Filter users based on search query
-  const filteredUsers = mockUsers.filter(u => {
-    if (u.id === user?.id) return false;
-    
-    const pseudo = u.pseudo.toLowerCase();
-    return pseudo.includes(searchQuery.toLowerCase());
-  });
-  
-  const handleUserPress = (selectedUserId: string) => {
-    // In a real app, we would create or get an existing conversation
-    // For demo, we'll just navigate to a mock conversation
-    router.replace('/messages/conv1');
   };
   
-  const renderUserItem = ({ item }: { item: typeof mockUsers[0] }) => {
+  const renderUserItem = ({ item }: { item: typeof filteredUsers[0] }) => {
+    const isFriend = areFriends(item.id);
+    const isPending = hasPendingRequest(item.id);
+    
+    const handleAddFriend = async (e: any) => {
+      e.stopPropagation();
+      try {
+        await sendFriendRequest.mutateAsync(item.id);
+      } catch (error) {
+        console.error('[NewMessage] Failed to send friend request', error);
+      }
+    };
+    
     return (
       <TouchableOpacity
         style={[styles.userItem, SHADOWS.small]}
         onPress={() => handleUserPress(item.id)}
       >
         <Image
-          source={{ uri: item.pets[0]?.mainPhoto || 'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=500' }}
+          source={{ uri: item.animalPhoto || item.pets?.[0]?.mainPhoto || 'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=500' }}
           style={styles.avatar}
           contentFit="cover"
         />
@@ -62,20 +68,24 @@ export default function NewMessageScreen() {
         <View style={styles.userInfo}>
           <Text style={styles.userName}>@{item.pseudo}</Text>
           <Text style={styles.userDetails}>
-            {item.pets.length} animal{item.pets.length !== 1 ? 'aux' : ''}
+            {item.pets?.length || 0} animal{(item.pets?.length || 0) !== 1 ? 'aux' : ''}
             {item.isCatSitter ? ' • Gardien' : ''}
           </Text>
         </View>
         
         <View style={styles.actionContainer}>
-          {Math.random() > 0.5 ? (
+          {isFriend ? (
             <View style={styles.friendBadge}>
               <UserCheck size={16} color={COLORS.maleAccent} />
             </View>
-          ) : (
-            <View style={styles.notFriendBadge}>
-              <UserPlus size={16} color={COLORS.darkGray} />
+          ) : isPending ? (
+            <View style={styles.pendingBadge}>
+              <Text style={styles.pendingText}>En attente</Text>
             </View>
+          ) : (
+            <TouchableOpacity style={styles.notFriendBadge} onPress={handleAddFriend}>
+              <UserPlus size={16} color={COLORS.darkGray} />
+            </TouchableOpacity>
           )}
         </View>
       </TouchableOpacity>
@@ -197,6 +207,17 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.lightGray,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  pendingBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: COLORS.lightGray,
+  },
+  pendingText: {
+    fontSize: 11,
+    color: COLORS.darkGray,
+    fontWeight: '500' as const,
   },
   emptyContainer: {
     padding: 24,

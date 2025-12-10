@@ -27,10 +27,10 @@ export default function ChatScreen() {
     conversations,
     getMessages, 
     sendMessage, 
-    getConversationUser 
+    getConversationUser,
+    messagesByConv
   } = useMessaging();
   
-  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [quickReplies] = useState<string[]>([
@@ -57,14 +57,14 @@ export default function ChatScreen() {
     }
   }
   
-  // Load messages
+  const messages = messagesByConv[id as string] ?? [];
+  
   useEffect(() => {
     const loadMessages = async () => {
       try {
-        const conversationMessages = await getMessages(id as string);
-        setMessages(conversationMessages);
+        await getMessages(id as string);
       } catch (error) {
-        console.error('Failed to load messages', error);
+        console.error('[Chat] Failed to load messages', error);
       } finally {
         setLoading(false);
       }
@@ -73,7 +73,7 @@ export default function ChatScreen() {
     if (id) {
       loadMessages();
     }
-  }, [id]);
+  }, [id, getMessages]);
   
   // Scroll to bottom when messages change
   useEffect(() => {

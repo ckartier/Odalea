@@ -306,9 +306,9 @@ export default function MessagesScreen() {
         ) : (
           <View style={styles.emptyContainer}>
             <UserPlus size={48} color={COLORS.darkGray} />
-            <Text style={styles.emptyTitle}>Aucune demande d'ami</Text>
+            <Text style={styles.emptyTitle}>Aucune demande d&apos;ami</Text>
             <Text style={styles.emptyText}>
-              Quand quelqu'un vous envoie une demande d'ami, elle apparaîtra ici
+              Quand quelqu&apos;un vous envoie une demande d&apos;ami, elle apparaîtra ici
             </Text>
           </View>
         )
