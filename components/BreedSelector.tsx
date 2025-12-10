@@ -57,7 +57,7 @@ const BreedSelector: React.FC<BreedSelectorProps> = ({
     >
       <Text style={styles.breedName}>{item.name}</Text>
       <Text style={styles.breedType}>
-        {item.type === 'domestic' ? 'Domestic' : 'Exotic'}
+        {item.type === 'domestic' ? 'Domestique' : 'Exotique'}
       </Text>
     </TouchableOpacity>
   );
@@ -78,7 +78,7 @@ const BreedSelector: React.FC<BreedSelectorProps> = ({
           styles.selectorText,
           !value ? styles.placeholderText : null,
         ]}>
-          {value || 'Select a breed'}
+          {value || 'Sélectionner une race'}
         </Text>
         <ChevronDown size={20} color={COLORS.darkGray} />
       </TouchableOpacity>
@@ -94,7 +94,7 @@ const BreedSelector: React.FC<BreedSelectorProps> = ({
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContainer, SHADOWS.large]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Breed</Text>
+              <Text style={styles.modalTitle}>Sélectionner une race</Text>
               <TouchableOpacity
                 onPress={() => {
                   setModalVisible(false);
@@ -109,7 +109,7 @@ const BreedSelector: React.FC<BreedSelectorProps> = ({
               <Search size={20} color={COLORS.darkGray} />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search breeds..."
+                placeholder="Rechercher des races..."
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 autoCapitalize="none"
@@ -128,7 +128,7 @@ const BreedSelector: React.FC<BreedSelectorProps> = ({
               contentContainerStyle={styles.breedList}
               showsVerticalScrollIndicator={false}
               ListEmptyComponent={
-                <Text style={styles.emptyText}>No breeds found</Text>
+                <Text style={styles.emptyText}>Aucune race trouvée</Text>
               }
             />
           </View>

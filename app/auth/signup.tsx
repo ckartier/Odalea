@@ -21,6 +21,7 @@ import AnimalSelector from '@/components/AnimalSelector';
 import DropdownSelector from '@/components/DropdownSelector';
 import PhotoUploader from '@/components/PhotoUploader';
 import GenderSelector from '@/components/GenderSelector';
+import BreedSelector from '@/components/BreedSelector';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { useI18n } from '@/hooks/i18n-store';
 import { StorageService } from '@/services/storage';
@@ -92,6 +93,7 @@ export default function SignUpScreen() {
   // Animal data
   const [animalType, setAnimalType] = useState<string>('');
   const [animalName, setAnimalName] = useState<string>('');
+  const [animalBreed, setAnimalBreed] = useState<string>('');
   const [animalCharacter, setAnimalCharacter] = useState<string>('');
   const [animalColor, setAnimalColor] = useState<string>('');
   const [animalSpecialSign, setAnimalSpecialSign] = useState<string>('');
@@ -592,7 +594,7 @@ export default function SignUpScreen() {
             const petData = {
               name: animalName.trim() || 'Mon Animal',
               type: animalType || 'chat',
-              breed: 'N/A',
+              breed: animalBreed || 'Race non définie',
               gender: animalGender,
               dateOfBirth: new Date().toISOString().slice(0, 10),
               color: animalColor || 'autre',
@@ -994,6 +996,13 @@ export default function SignUpScreen() {
               value={animalName}
               onChangeText={setAnimalName}
               error={errors.animalName}
+            />
+            
+            <BreedSelector
+              label={t('pets.breed')}
+              value={animalBreed}
+              onChange={setAnimalBreed}
+              error={errors.animalBreed}
             />
             
             <DropdownSelector
