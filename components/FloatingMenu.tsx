@@ -7,6 +7,7 @@ import {
   Animated,
   Dimensions,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, usePathname } from 'expo-router';
@@ -420,6 +421,11 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
         </View>
 
         <View style={styles.menuItems}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.menuItemsScrollContent}
+            bounces={false}
+          >
           {menuItems.map((item, index) => (
             <TouchableOpacity
               key={item.id}
@@ -441,7 +447,7 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
                     styles.menuItemText,
                     isActiveRoute(item.route) && styles.menuItemTextActive,
                   ]}
-                  numberOfLines={1}
+                  numberOfLines={2}
                   ellipsizeMode="tail"
                 >
                   {item.isSpecial ? item.titleKey : t(item.titleKey)}
@@ -470,6 +476,7 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
               </LinearGradient>
             </TouchableOpacity>
           ))}
+          </ScrollView>
         </View>
 
         <View style={styles.menuFooter}>
@@ -560,6 +567,10 @@ const styles = StyleSheet.create({
   menuItems: {
     flex: 1,
     paddingVertical: DIMENSIONS.SPACING.sm,
+    overflow: 'hidden',
+  },
+  menuItemsScrollContent: {
+    paddingBottom: DIMENSIONS.SPACING.md,
   },
   menuItem: {
     paddingHorizontal: DIMENSIONS.SPACING.lg,
