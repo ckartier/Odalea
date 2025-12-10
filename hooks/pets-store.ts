@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Pet, User } from '@/types';
-import { collection, getDocs, limit, query } from 'firebase/firestore';
+import { collection, getDocs, limit, query, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/services/firebase';
 
 export const [PetsContext, usePets] = createContextHook(() => {
@@ -117,7 +117,34 @@ export const [PetsContext, usePets] = createContextHook(() => {
     return map;
   }, []);
 
-  const getPetOwner = (_petId: string): User | undefined => {
+  const getPetOwner = (petId: string): User | undefined => {
+    // Try to find in cached owners
+    const pet = getPet(petId);
+    if (!pet?.ownerId) return undefined;
+
+    // Check cache
+    if (ownersMap.has(pet.ownerId)) {
+      return ownersMap.get(pet.ownerId);
+    }
+
+    // Fetch owner from Firebase asynchronously
+    const fetchOwner = async () => {
+      try {
+        const userRef = doc(db, 'users', pet.ownerId);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const userData = { id: userSnap.id, ...userSnap.data() } as User;
+          ownersMap.set(pet.ownerId, userData);
+          return userData;
+        }
+      } catch (error) {
+        console.error('❌ Error fetching pet owner:', error);
+      }
+      return undefined;
+    };
+    
+    // Start async fetch but return undefined immediately
+    fetchOwner();
     return undefined;
   };
 

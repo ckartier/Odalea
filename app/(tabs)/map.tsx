@@ -324,10 +324,25 @@ export default function MapScreen() {
     }
   }, [user, userLocation]);
 
-  const handleMarkerPress = useCallback((pet: Pet & { owner?: User }) => {
+  const handleMarkerPress = useCallback(async (pet: Pet & { owner?: User }) => {
     console.log('📍 Marker pressed:', pet.id, pet.name);
     setSelectedPet(pet);
-    setSelectedUser(pet.owner || null);
+    
+    // Try to get owner if not already present
+    if (pet.owner) {
+      setSelectedUser(pet.owner);
+    } else if (pet.ownerId) {
+      try {
+        const owner = await userService.getUser(pet.ownerId);
+        setSelectedUser(owner);
+      } catch (error) {
+        console.error('❌ Error fetching owner:', error);
+        setSelectedUser(null);
+      }
+    } else {
+      setSelectedUser(null);
+    }
+    
     incrementActionCount();
   }, [incrementActionCount]);
 
@@ -487,7 +502,29 @@ export default function MapScreen() {
   });
 
   const firebasePets = (nearbyPetsQuery.data ?? []).filter((p: any) => !!p.location) as Pet[];
-  const firebasePetsWithOwner: AllPet[] = firebasePets.map((p) => ({ ...p, owner: undefined }));
+  
+  // Fetch owners for Firebase pets
+  const firebasePetsWithOwnerQuery = useQuery({
+    queryKey: ['map', 'petsWithOwners', firebasePets.map(p => p.id).join(',')],
+    enabled: firebasePets.length > 0,
+    queryFn: async () => {
+      const petsWithOwners = await Promise.all(
+        firebasePets.map(async (pet): Promise<AllPet> => {
+          if (!pet.ownerId) return { ...pet, owner: undefined };
+          try {
+            const owner = await userService.getUser(pet.ownerId);
+            return { ...pet, owner: owner ?? undefined };
+          } catch (error) {
+            console.error(`❌ Error fetching owner for pet ${pet.id}:`, error);
+            return { ...pet, owner: undefined };
+          }
+        })
+      );
+      return petsWithOwners;
+    },
+  });
+  
+  const firebasePetsWithOwner: AllPet[] = firebasePetsWithOwnerQuery.data ?? firebasePets.map((p) => ({ ...p, owner: undefined }));
 
   const usersQuery = useQuery({
     queryKey: ['map', 'users'],

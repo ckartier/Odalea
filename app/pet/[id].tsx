@@ -15,7 +15,7 @@ import { COLORS, SHADOWS } from '@/constants/colors';
 import Button from '@/components/Button';
 import { usePets } from '@/hooks/pets-store';
 import { useMessaging } from '@/hooks/messaging-store';
-import { useAuth } from '@/hooks/auth-store';
+import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { Pet, User } from '@/types';
 import { 
   Calendar, 
@@ -38,7 +38,7 @@ export default function PetProfileScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { getPet, getPetOwner } = usePets();
-  const { user } = useAuth();
+  const { user } = useFirebaseUser();
   const { 
     areFriends, 
     hasPendingRequest, 
@@ -56,21 +56,24 @@ export default function PetProfileScreen() {
       const petData = getPet(id as string);
       if (petData) {
         setPet(petData);
-        // Try to get demo user owner info
+        // Try to get owner info
         const owner = getPetOwner(id as string);
         if (owner) {
           setPetOwner(owner);
+        } else if (petData.ownerId && user && petData.ownerId === user.id) {
+          // If it's the user's pet
+          setPetOwner(user);
         }
       } else {
-        Alert.alert('Error', 'Pet not found');
+        Alert.alert('Erreur', 'Animal non trouvé');
         if (router.canGoBack()) {
           router.back();
         } else {
-          router.replace('/home');
+          router.replace('/(tabs)/home');
         }
       }
     }
-  }, [id, getPet, getPetOwner]);
+  }, [id, getPet, getPetOwner, user]);
   
   const handleSendMessage = () => {
     if (pet) {
@@ -106,7 +109,7 @@ export default function PetProfileScreen() {
   
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString('fr-FR', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -128,10 +131,10 @@ export default function PetProfileScreen() {
       // Calculate months for kittens
       const monthAge = today.getMonth() - birthDate.getMonth() + 
         (today.getFullYear() - birthDate.getFullYear()) * 12;
-      return `${monthAge} month${monthAge !== 1 ? 's' : ''}`;
+      return `${monthAge} mois`;
     }
     
-    return `${age} year${age !== 1 ? 's' : ''}`;
+    return `${age} an${age !== 1 ? 's' : ''}`;
   };
   
   const isOwner = pet && user && pet.ownerId === user.id;
@@ -147,7 +150,7 @@ export default function PetProfileScreen() {
   if (!pet) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Loading pet profile...</Text>
+        <Text>Chargement du profil...</Text>
       </View>
     );
   }
@@ -209,7 +212,7 @@ export default function PetProfileScreen() {
             ]}
           >
             <Text style={styles.genderText}>
-              {pet.gender === 'male' ? 'Male' : 'Female'}
+              {pet.gender === 'male' ? '♂' : '♀'}
             </Text>
           </View>
         </View>
@@ -253,7 +256,7 @@ export default function PetProfileScreen() {
           {/* Owner Info for Demo Pets */}
           {petOwner && (
             <View style={styles.ownerInfo}>
-              <Text style={styles.ownerLabel}>Owner:</Text>
+              <Text style={styles.ownerLabel}>Propriétaire:</Text>
               <Text style={styles.ownerName}>{getOwnerDisplayName()}</Text>
               {petOwner.city && (
                 <Text style={styles.ownerLocation}>
@@ -270,7 +273,7 @@ export default function PetProfileScreen() {
               onPress={handleEditPet}
             >
               <Edit size={20} color={COLORS.maleAccent} />
-              <Text style={styles.editButtonText}>Edit Pet</Text>
+              <Text style={styles.editButtonText}>Modifier</Text>
             </TouchableOpacity>
           ) : (
             <View style={styles.actionButtons}>
@@ -280,22 +283,25 @@ export default function PetProfileScreen() {
                   onPress={handleSendMessage}
                   icon={<MessageSquare size={16} color={COLORS.white} />}
                   style={styles.actionButton}
+                  testID="btn-message"
                 />
               ) : hasPendingRequest(pet.ownerId) ? (
                 <Button
-                  title="Request Pending"
+                  title="Demande envoyée"
                   onPress={() => {}}
                   disabled
                   icon={<UserCheck size={16} color={COLORS.white} />}
                   style={styles.actionButton}
+                  testID="btn-request-pending"
                 />
               ) : (
                 <Button
-                  title="Add Friend"
+                  title="Ajouter ami"
                   onPress={handleAddFriend}
                   loading={loading}
                   icon={<UserPlus size={16} color={COLORS.white} />}
                   style={styles.actionButton}
+                  testID="btn-add-friend"
                 />
               )}
             </View>
@@ -306,7 +312,7 @@ export default function PetProfileScreen() {
             <View style={styles.detailItem}>
               <Calendar size={20} color={COLORS.darkGray} />
               <View>
-                <Text style={styles.detailLabel}>Birth Date</Text>
+                <Text style={styles.detailLabel}>Date de naissance</Text>
                 <Text style={styles.detailValue}>{formatDate(pet.dateOfBirth)}</Text>
               </View>
             </View>
@@ -315,7 +321,7 @@ export default function PetProfileScreen() {
               <View style={styles.detailItem}>
                 <MapPin size={20} color={COLORS.darkGray} />
                 <View>
-                  <Text style={styles.detailLabel}>Microchip</Text>
+                  <Text style={styles.detailLabel}>Puce</Text>
                   <Text style={styles.detailValue}>{pet.microchipNumber}</Text>
                 </View>
               </View>
@@ -325,7 +331,7 @@ export default function PetProfileScreen() {
               <View style={styles.detailItem}>
                 <Clock size={20} color={COLORS.darkGray} />
                 <View>
-                  <Text style={styles.detailLabel}>Walk Times</Text>
+                  <Text style={styles.detailLabel}>Horaires de promenade</Text>
                   <Text style={styles.detailValue}>
                     {pet.walkTimes.join(', ')}
                   </Text>
@@ -337,7 +343,7 @@ export default function PetProfileScreen() {
           {/* Vet Information */}
           {pet.vet && (
             <>
-              <Text style={styles.sectionTitle}>Vet Information</Text>
+              <Text style={styles.sectionTitle}>Vétérinaire</Text>
               
               <View style={[styles.vetCard, SHADOWS.small]}>
                 <Text style={styles.vetName}>{pet.vet.name}</Text>
@@ -354,7 +360,7 @@ export default function PetProfileScreen() {
           {/* Vaccination Dates - Only visible to pet owner for privacy */}
           {isOwner && pet.vaccinationDates && pet.vaccinationDates.length > 0 && (
             <>
-              <Text style={styles.sectionTitle}>Vaccinations</Text>
+              <Text style={styles.sectionTitle}>Vaccins</Text>
               
               {pet.vaccinationDates.map(vaccination => (
                 <View 
@@ -372,7 +378,7 @@ export default function PetProfileScreen() {
                     </View>
                     
                     <View style={styles.vaccinationDate}>
-                      <Text style={styles.vaccinationDateLabel}>Reminder</Text>
+                      <Text style={styles.vaccinationDateLabel}>Rappel</Text>
                       <Text style={styles.vaccinationDateValue}>
                         {formatDate(vaccination.reminderDate)}
                       </Text>

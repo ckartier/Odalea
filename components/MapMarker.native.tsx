@@ -39,12 +39,14 @@ const MapMarker: React.FC<MapMarkerProps> = ({ pet, onPress, isVet = false }) =>
       ]}>
         {isVet ? (
           <Text style={styles.vetEmoji}>🏥</Text>
-        ) : (
+        ) : pet.mainPhoto ? (
           <Image
-            source={{ uri: pet.mainPhoto || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=100&h=100&fit=crop' }}
+            source={{ uri: pet.mainPhoto }}
             style={styles.image}
             contentFit="cover"
           />
+        ) : (
+          <Text style={styles.placeholderText}>🐱</Text>
         )}
       </View>
       <View style={[styles.triangle, { borderTopColor: markerColor }]} />
@@ -73,6 +75,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   vetEmoji: {
+    fontSize: 24,
+  },
+  placeholderText: {
     fontSize: 24,
   },
   triangle: {

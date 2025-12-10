@@ -1,21 +1,36 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, View, ScrollView, Text } from 'react-native';
-import { COLORS, DIMENSIONS } from '@/constants/colors';
+import { StyleSheet, View, ScrollView, Text, TouchableOpacity } from 'react-native';
+import { COLORS, DIMENSIONS, SHADOWS } from '@/constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useFirebaseUser } from '@/hooks/firebase-user-store';
 
 export function useFiltersBarHeight() {
-  return 44;
+  return 60;
 }
 
 interface FiltersBarProps {
   filters?: string[];
+  activeFilters?: Set<string>;
+  onFilterPress?: (filter: string) => void;
 }
 
 const DEFAULT_FILTERS = ['Tous', 'Abonnements', 'À proximité', 'Perdus & Trouvés'];
 
-const FiltersBar: React.FC<FiltersBarProps> = ({ filters = DEFAULT_FILTERS }) => {
+const FiltersBar: React.FC<FiltersBarProps> = ({ 
+  filters = DEFAULT_FILTERS, 
+  activeFilters = new Set(['Tous']),
+  onFilterPress 
+}) => {
   const insets = useSafeAreaInsets();
+  const { user } = useFirebaseUser();
   const items = useMemo(() => filters, [filters]);
+  
+  const primaryPet = user?.pets?.find((p) => p.isPrimary) || user?.pets?.[0];
+  const appGradient = primaryPet?.gender === 'female' 
+    ? ['#E8B4D4', '#C8A2C8'] as const
+    : ['#A8D5E8', '#B8C5D8'] as const;
+  
   return (
     <View
       style={[
@@ -31,11 +46,32 @@ const FiltersBar: React.FC<FiltersBarProps> = ({ filters = DEFAULT_FILTERS }) =>
         contentContainerStyle={styles.content}
         style={styles.scroller}
       >
-        {items.map((label) => (
-          <View key={label} style={styles.chip} testID={`filter-${label}`}>
-            <Text style={styles.chipText}>{label}</Text>
-          </View>
-        ))}
+        {items.map((label) => {
+          const isActive = activeFilters.has(label);
+          return (
+            <TouchableOpacity 
+              key={label} 
+              onPress={() => onFilterPress?.(label)}
+              activeOpacity={0.7}
+              testID={`filter-${label}`}
+            >
+              {isActive ? (
+                <LinearGradient
+                  colors={appGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[styles.chip, styles.chipActive, SHADOWS.small]}
+                >
+                  <Text style={[styles.chipText, styles.chipTextActive]}>{label}</Text>
+                </LinearGradient>
+              ) : (
+                <View style={styles.chip}>
+                  <Text style={styles.chipText}>{label}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
       <View style={styles.hairline} />
     </View>
@@ -61,17 +97,24 @@ const styles = StyleSheet.create({
     gap: DIMENSIONS.SPACING.xs,
   },
   chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: 'rgba(15,23,42,0.06)',
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 20,
+    borderWidth: 1,
     borderColor: 'rgba(15,23,42,0.12)',
   },
+  chipActive: {
+    borderColor: 'transparent',
+  },
   chipText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600' as const,
     color: COLORS.black,
+  },
+  chipTextActive: {
+    color: '#fff',
+    fontWeight: '700' as const,
   },
   hairline: {
     height: StyleSheet.hairlineWidth,
