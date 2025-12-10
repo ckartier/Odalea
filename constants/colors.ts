@@ -152,6 +152,8 @@ export const GRADIENTS = {
   liquidNeutral: ['#E0F2FE', '#BAE6FD'] as const,
   onboarding: ['#E8B4D4', '#C8A2C8', '#A8B4D8'] as const,
   appBackground: ['#E8B4D4', '#C8A2C8', '#A8B4D8'] as const,
+  maleBackground: ['#A8D5E8', '#B8C5D8', '#C8B5D8'] as const,
+  femaleBackground: ['#E8B4D4', '#C8A2C8', '#A8B4D8'] as const,
 };
 
 export const DIMENSIONS = {

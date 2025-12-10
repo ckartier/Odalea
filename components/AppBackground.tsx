@@ -1,27 +1,35 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useMemo } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, GRADIENTS } from '@/constants/colors';
+import { GRADIENTS } from '@/constants/colors';
 import { useTheme } from '@/hooks/theme-store';
+import { usePets } from '@/hooks/pets-store';
 
 interface AppBackgroundProps {
   children: ReactNode;
   variant?: 'default' | 'male' | 'female';
 }
 
-export default function AppBackground({ children, variant = 'default' }: AppBackgroundProps) {
+export default function AppBackground({ children, variant }: AppBackgroundProps) {
   const { currentTheme, isDark } = useTheme();
+  const { userPets } = usePets();
+  
+  const primaryPet = useMemo(() => {
+    return userPets.find(pet => pet.isPrimary) || userPets[0];
+  }, [userPets]);
   
   const getGradientColors = (): readonly [string, string, string] => {
     if (isDark) {
       return [currentTheme.background, currentTheme.card, currentTheme.background] as const;
     }
     
-    switch (variant) {
+    const effectiveVariant = variant || (primaryPet?.gender === 'male' ? 'male' : primaryPet?.gender === 'female' ? 'female' : 'default');
+    
+    switch (effectiveVariant) {
       case 'male':
-        return [COLORS.male, COLORS.maleAccent, COLORS.male] as const;
+        return GRADIENTS.maleBackground;
       case 'female':
-        return [COLORS.female, COLORS.femaleAccent, COLORS.female] as const;
+        return GRADIENTS.femaleBackground;
       default:
         return GRADIENTS.appBackground;
     }
