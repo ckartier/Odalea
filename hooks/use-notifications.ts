@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { useRouter } from 'expo-router';
 import {
   registerForPushNotificationsAsync,
   savePushTokenToFirestore,
@@ -16,6 +17,7 @@ export function useNotifications() {
   const responseListener = useRef<Notifications.Subscription | undefined>(undefined);
   const firebaseUserContext = useFirebaseUser();
   const user = firebaseUserContext?.user;
+  const router = useRouter();
 
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -41,6 +43,11 @@ export function useNotifications() {
 
     responseListener.current = addNotificationResponseReceivedListener(response => {
       console.log('👆 Notification tapped:', response);
+      const data = response.notification.request.content.data;
+      
+      if (data?.type === 'message' && data?.conversationId) {
+        router.push(`/messages/${data.conversationId}`);
+      }
     });
 
     return () => {
@@ -51,7 +58,7 @@ export function useNotifications() {
         responseListener.current.remove();
       }
     };
-  }, [user?.id]);
+  }, [user?.id, router]);
 
   return {
     expoPushToken,

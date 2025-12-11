@@ -1362,10 +1362,11 @@ export const messagingService = {
       const messagesRef = collection(db, COLLECTIONS.MESSAGES);
       const docRef = await addDoc(messagesRef, {
         ...message,
-        timestamp: serverTimestamp()
+        timestamp: serverTimestamp(),
+        read: false
       });
       
-      // Update conversation with last message
+      // Update conversation with last message and increment unread count for receiver
       const conversationRef = doc(db, COLLECTIONS.CONVERSATIONS, message.conversationId);
       await updateDoc(conversationRef, {
         lastMessage: {
@@ -1373,10 +1374,52 @@ export const messagingService = {
           id: docRef.id,
           timestamp: Date.now()
         },
+        [`unreadCount.${message.receiverId}`]: increment(1),
         updatedAt: serverTimestamp()
-      });
+      } as any);
       
       console.log('✅ Message sent successfully');
+      
+      // Send push notification to receiver
+      try {
+        const receiverRef = doc(db, COLLECTIONS.USERS, message.receiverId);
+        const receiverSnap = await getDoc(receiverRef);
+        if (receiverSnap.exists()) {
+          const receiverData = receiverSnap.data();
+          const pushToken = receiverData.pushToken;
+          
+          if (pushToken) {
+            const senderRef = doc(db, COLLECTIONS.USERS, message.senderId);
+            const senderSnap = await getDoc(senderRef);
+            const senderName = senderSnap.exists() ? (senderSnap.data().name || senderSnap.data().pseudo || 'Quelqu\'un') : 'Quelqu\'un';
+            
+            // Send notification
+            await fetch('https://exp.host/--/api/v2/push/send', {
+              method: 'POST',
+              headers: {
+                Accept: 'application/json',
+                'Accept-encoding': 'gzip, deflate',
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                to: pushToken,
+                sound: 'default',
+                title: `Nouveau message de ${senderName}`,
+                body: message.content.length > 100 ? message.content.substring(0, 100) + '...' : message.content,
+                data: {
+                  type: 'message',
+                  conversationId: message.conversationId,
+                  senderId: message.senderId
+                },
+              }),
+            });
+            console.log('✅ Push notification sent to receiver');
+          }
+        }
+      } catch (notifError) {
+        console.warn('⚠️ Failed to send push notification:', notifError);
+      }
+      
       return docRef.id;
     } catch (error) {
       console.error('❌ Error sending message:', error);
