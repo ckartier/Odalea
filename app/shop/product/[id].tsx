@@ -16,6 +16,7 @@ import GlassCard from '@/components/GlassCard';
 import AppBackground from '@/components/AppBackground';
 import { useShop } from '@/hooks/shop-store';
 import { useAuth } from '@/hooks/auth-store';
+import { useI18n } from '@/hooks/i18n-store';
 import { databaseService } from '@/services/database';
 import { Product } from '@/types';
 import { Minus, Plus, ShoppingBag, Star, MessageCircle } from 'lucide-react-native';
@@ -25,6 +26,7 @@ export default function ProductDetailScreen() {
   const router = useRouter();
   const { getProduct, addToCart } = useShop();
   const { user } = useAuth();
+  const { t } = useI18n();
   
   const [product, setProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -36,7 +38,7 @@ export default function ProductDetailScreen() {
       if (productData) {
         setProduct(productData);
       } else {
-        Alert.alert('Error', 'Product not found');
+        Alert.alert(t('common.error'), t('shop.product_not_found'));
         router.back();
       }
     }
@@ -56,12 +58,12 @@ export default function ProductDetailScreen() {
     if (product) {
       addToCart(product, quantity);
       Alert.alert(
-        'Added to Cart',
-        `${quantity} ${quantity === 1 ? 'item' : 'items'} added to your cart`,
+        t('shop.added_to_cart'),
+        `${quantity} ${quantity === 1 ? t('shop.item') : t('shop.items')} ${t('shop.added_to_your_cart')}`,
         [
-          { text: 'Continue Shopping', style: 'cancel' },
+          { text: t('shop.continue_shopping'), style: 'cancel' },
           { 
-            text: 'View Cart', 
+            text: t('shop.view_cart'), 
             onPress: () => router.push('/shop/cart'),
           },
         ]
@@ -72,7 +74,7 @@ export default function ProductDetailScreen() {
   if (!product) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Loading product...</Text>
+        <Text>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -112,14 +114,14 @@ export default function ProductDetailScreen() {
           <View style={styles.divider} />
           
           <View style={styles.stockContainer}>
-            <Text style={styles.stockLabel}>Availability:</Text>
+            <Text style={styles.stockLabel}>{t('shop.availability')}:</Text>
             <Text
               style={[
                 styles.stockValue,
                 { color: product.inStock ? COLORS.success : COLORS.error },
               ]}
             >
-              {product.inStock ? 'In Stock' : 'Out of Stock'}
+              {product.inStock ? t('shop.in_stock') : t('shop.out_of_stock')}
             </Text>
           </View>
           
@@ -127,7 +129,7 @@ export default function ProductDetailScreen() {
           
           {product.inStock && (
             <View style={styles.quantityContainer}>
-              <Text style={styles.quantityLabel}>Quantity:</Text>
+              <Text style={styles.quantityLabel}>{t('shop.quantity')}:</Text>
               
               <View style={styles.quantityControls}>
                 <TouchableOpacity
@@ -151,7 +153,7 @@ export default function ProductDetailScreen() {
           )}
           
           <Button
-            title="Add to Cart"
+            title={t('shop.add_to_cart')}
             onPress={handleAddToCart}
             disabled={!product.inStock}
             icon={<ShoppingBag size={20} color={COLORS.white} />}
@@ -165,7 +167,7 @@ export default function ProductDetailScreen() {
               onPress={async () => {
                 try {
                   if (!user) {
-                    Alert.alert('Connexion requise', 'Veuillez vous connecter pour contacter le vendeur');
+                    Alert.alert(t('auth.sign_in'), t('shop.login_to_contact_seller'));
                     return;
                   }
                   
@@ -181,14 +183,14 @@ export default function ProductDetailScreen() {
                   router.push(`/messages/${conversationId}`);
                 } catch (error) {
                   console.error('Error creating conversation:', error);
-                  Alert.alert('Erreur', 'Impossible de contacter le vendeur');
+                  Alert.alert(t('common.error'), t('shop.unable_to_contact_seller'));
                 }
               }}
               noPadding
             >
               <View style={styles.contactButtonInner}>
                 <MessageCircle size={20} color={COLORS.black} />
-                <Text style={styles.contactButtonText}>Contacter le vendeur</Text>
+                <Text style={styles.contactButtonText}>{t('shop.contact_seller')}</Text>
               </View>
             </GlassCard>
           )}
