@@ -17,9 +17,10 @@ import Input from '@/components/Input';
 import PhotoUploader from '@/components/PhotoUploader';
 import CountryCodePicker from '@/components/CountryCodePicker';
 import DropdownSelector from '@/components/DropdownSelector';
-import { useAuth } from '@/hooks/auth-store';
+import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { isPseudoTaken, isEmailTaken } from '@/services/user-validation';
 import { trpc } from '@/lib/trpc';
+import { StorageService } from '@/services/storage';
 import {
   ArrowLeft,
   Mail,
@@ -35,9 +36,10 @@ import {
 
 export default function EditProfileScreen() {
   const router = useRouter();
-  const { user, updateUser } = useAuth();
+  const { user, updateUser } = useFirebaseUser();
   
   const [loading, setLoading] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(user?.photo || null);
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName] = useState(user?.lastName || '');
@@ -115,6 +117,34 @@ export default function EditProfileScreen() {
     { pseudo: pseudo.trim() || undefined, email: /\S+@\S+\.\S+/.test(email) ? email.trim().toLowerCase() : undefined },
     { enabled: false }
   );
+
+  const handlePhotoChange = async (uri: string | null) => {
+    if (!user) return;
+    
+    try {
+      setUploadingPhoto(true);
+      console.log('📤 Uploading profile photo in edit:', uri);
+      
+      let photoUrl: string | null = null;
+      
+      if (uri) {
+        photoUrl = await StorageService.uploadProfilePicture(user.id, uri, {
+          onProgress: (progress) => {
+            console.log(`📊 Upload progress: ${progress.progress.toFixed(1)}%`);
+          },
+        });
+        console.log('✅ Photo uploaded to Firebase Storage:', photoUrl);
+      }
+      
+      setProfilePhoto(photoUrl);
+    } catch (error) {
+      console.error('❌ Error uploading photo:', error);
+      Alert.alert('Erreur', 'Impossible d\'uploader la photo. Veuillez réessayer.');
+      setProfilePhoto(user.photo || null);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!validateForm() || !user) return;
@@ -237,15 +267,19 @@ export default function EditProfileScreen() {
         {/* Profile Photo */}
         <View style={styles.photoSection}>
           <Text style={styles.photoLabel}>Photo de profil</Text>
-          <PhotoUploader
-            value={profilePhoto || undefined}
-            onChange={(uri) => {
-              console.log('Profile photo changed in edit:', uri);
-              setProfilePhoto(uri);
-            }}
-            placeholder="Ajouter une photo"
-            style={styles.profilePhotoUploader}
-          />
+          <View style={styles.photoContainer}>
+            <PhotoUploader
+              value={profilePhoto || undefined}
+              onChange={handlePhotoChange}
+              placeholder="Ajouter une photo"
+              style={styles.profilePhotoUploader}
+            />
+            {uploadingPhoto && (
+              <View style={styles.uploadingOverlay}>
+                <Text style={styles.uploadingText}>Upload...</Text>
+              </View>
+            )}
+          </View>
         </View>
         
         {/* Form */}
@@ -427,10 +461,29 @@ const styles = StyleSheet.create({
     color: COLORS.black,
     marginBottom: 16,
   },
+  photoContainer: {
+    position: 'relative',
+  },
   profilePhotoUploader: {
     width: 120,
     height: 120,
     borderRadius: 60,
+  },
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 60,
+  },
+  uploadingText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '600' as const,
   },
   formContainer: {
     width: '100%',

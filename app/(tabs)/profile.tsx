@@ -22,6 +22,7 @@ import Badge from '@/components/Badge';
 import Button from '@/components/Button';
 import PhotoUploader from '@/components/PhotoUploader';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
+import { StorageService } from '@/services/storage';
 import { useBadges } from '@/hooks/badges-store';
 import { useChallenges } from '@/hooks/challenges-store';
 import { usePremium } from '@/hooks/premium-store';
@@ -72,6 +73,7 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | undefined>(user?.photo);
   const [selectedCatSitterTab, setSelectedCatSitterTab] = useState<'overview' | 'bookings' | 'messages'>('overview');
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   
   // Update profile photo when user changes
   useEffect(() => {
@@ -113,17 +115,39 @@ export default function ProfileScreen() {
   };
   
   const handlePhotoChange = async (uri: string | null) => {
-    if (user) {
-      console.log('Updating profile photo:', uri);
-      setProfilePhoto(uri || undefined);
-      // Update user profile photo
-      const result = await updateUser({ ...user, photo: uri || undefined });
+    if (!user) return;
+    
+    try {
+      setUploadingPhoto(true);
+      console.log('📤 Uploading profile photo:', uri);
+      
+      let photoUrl: string | undefined = undefined;
+      
+      if (uri) {
+        photoUrl = await StorageService.uploadProfilePicture(user.id, uri, {
+          onProgress: (progress) => {
+            console.log(`📊 Upload progress: ${progress.progress.toFixed(1)}%`);
+          },
+        });
+        console.log('✅ Photo uploaded to Firebase Storage:', photoUrl);
+      }
+      
+      setProfilePhoto(photoUrl);
+      
+      const result = await updateUser({ ...user, photo: photoUrl });
       if (result.success) {
-        console.log('Profile photo updated successfully');
+        console.log('✅ Profile photo updated successfully');
+        Alert.alert('Succès', 'Photo de profil mise à jour avec succès.');
       } else {
-        console.error('Failed to update profile photo:', result.error);
+        console.error('❌ Failed to update profile photo:', result.error);
         Alert.alert('Erreur', 'Impossible de mettre à jour la photo de profil.');
       }
+    } catch (error) {
+      console.error('❌ Error uploading photo:', error);
+      Alert.alert('Erreur', 'Impossible d\'uploader la photo. Veuillez réessayer.');
+      setProfilePhoto(user.photo);
+    } finally {
+      setUploadingPhoto(false);
     }
   };
   
@@ -237,24 +261,16 @@ export default function ProfileScreen() {
         {/* Profile Info */}
         <View style={styles.profileSection}>
           <View style={styles.profilePhotoContainer}>
-            {profilePhoto ? (
-              <TouchableOpacity onPress={handleEditProfile}>
-                <Image 
-                  source={{ uri: profilePhoto }} 
-                  style={styles.profilePhoto}
-                  contentFit="cover"
-                />
-                <View style={styles.cameraOverlay}>
-                  <Camera size={20} color={COLORS.white} />
-                </View>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity onPress={handleEditProfile} style={styles.profilePhotoPlaceholder}>
-                <UserIcon size={40} color={COLORS.mediumGray} />
-                <View style={styles.cameraOverlay}>
-                  <Camera size={20} color={COLORS.white} />
-                </View>
-              </TouchableOpacity>
+            <PhotoUploader
+              value={profilePhoto}
+              onChange={handlePhotoChange}
+              placeholder="Ajouter photo"
+              style={styles.profilePhotoUploader}
+            />
+            {uploadingPhoto && (
+              <View style={styles.uploadingOverlay}>
+                <Text style={styles.uploadingText}>Upload...</Text>
+              </View>
             )}
           </View>
           
@@ -804,33 +820,29 @@ const styles = StyleSheet.create({
   profilePhotoContainer: {
     position: 'relative',
     marginBottom: 16,
-  },
-  profilePhoto: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: COLORS.lightGray,
-  },
-  profilePhotoPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: COLORS.lightGray,
-    justifyContent: 'center',
     alignItems: 'center',
   },
-  cameraOverlay: {
+  profilePhotoUploader: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    overflow: 'hidden',
+  },
+  uploadingOverlay: {
     position: 'absolute',
-    bottom: 8,
-    right: 8,
-    backgroundColor: COLORS.primary,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.white,
+    borderRadius: 50,
+  },
+  uploadingText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '600' as const,
   },
   header: {
     flexDirection: 'row',

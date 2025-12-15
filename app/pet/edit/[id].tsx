@@ -18,8 +18,9 @@ import PhotoUploader from '@/components/PhotoUploader';
 import BreedSelector from '@/components/BreedSelector';
 import GenderSelector from '@/components/GenderSelector';
 import DatePicker from '@/components/DatePicker';
-import { useAuth } from '@/hooks/auth-store';
+import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { usePets } from '@/hooks/pets-store';
+import { StorageService } from '@/services/storage';
 import { Gender, Pet } from '@/types';
 import { ArrowLeft, Plus, Trash2, Palette, Heart, Tag } from 'lucide-react-native';
 
@@ -39,10 +40,12 @@ const CHARACTER_TRAITS = [
 export default function EditPetScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { updatePet } = useAuth();
+  const { user, updatePet } = useFirebaseUser();
   const { getPet } = usePets();
   
   const [loading, setLoading] = useState(false);
+  const [uploadingMainPhoto, setUploadingMainPhoto] = useState(false);
+  const [uploadingGalleryPhoto, setUploadingGalleryPhoto] = useState<Record<number, boolean>>({});
   const [pet, setPet] = useState<Pet | null>(null);
   
   // Pet data
@@ -122,6 +125,59 @@ export default function EditPetScreen() {
     return Object.keys(newErrors).length === 0;
   };
   
+  const handleMainPhotoChange = async (uri: string | null) => {
+    if (!user || !pet) return;
+    
+    try {
+      setUploadingMainPhoto(true);
+      console.log('📤 Uploading main pet photo:', uri);
+      
+      let photoUrl: string | null = null;
+      
+      if (uri) {
+        photoUrl = await StorageService.uploadPetPhoto(user.id, pet.id, uri, {
+          onProgress: (progress) => {
+            console.log(`📊 Upload progress: ${progress.progress.toFixed(1)}%`);
+          },
+        });
+        console.log('✅ Pet photo uploaded to Firebase Storage:', photoUrl);
+      }
+      
+      setMainPhoto(photoUrl);
+    } catch (error) {
+      console.error('❌ Error uploading pet photo:', error);
+      Alert.alert('Erreur', 'Impossible d\'uploader la photo. Veuillez réessayer.');
+    } finally {
+      setUploadingMainPhoto(false);
+    }
+  };
+
+  const handleUpdateGalleryPhoto = async (index: number, uri: string | null) => {
+    if (!user || !pet) return;
+    
+    try {
+      setUploadingGalleryPhoto(prev => ({ ...prev, [index]: true }));
+      
+      const updatedPhotos = [...galleryPhotos];
+      
+      if (uri) {
+        console.log('📤 Uploading gallery photo:', uri);
+        const photoUrl = await StorageService.uploadPetPhoto(user.id, pet.id, uri);
+        console.log('✅ Gallery photo uploaded:', photoUrl);
+        updatedPhotos[index] = photoUrl;
+      } else {
+        updatedPhotos.splice(index, 1);
+      }
+      
+      setGalleryPhotos(updatedPhotos);
+    } catch (error) {
+      console.error('❌ Error uploading gallery photo:', error);
+      Alert.alert('Erreur', 'Impossible d\'uploader la photo.');
+    } finally {
+      setUploadingGalleryPhoto(prev => ({ ...prev, [index]: false }));
+    }
+  };
+
   const handleUpdatePet = async () => {
     if (!validate() || !pet) return;
     
@@ -176,18 +232,6 @@ export default function EditPetScreen() {
   
   const handleAddGalleryPhoto = () => {
     setGalleryPhotos([...galleryPhotos, '']);
-  };
-  
-  const handleUpdateGalleryPhoto = (index: number, uri: string | null) => {
-    const updatedPhotos = [...galleryPhotos];
-    
-    if (uri) {
-      updatedPhotos[index] = uri;
-    } else {
-      updatedPhotos.splice(index, 1);
-    }
-    
-    setGalleryPhotos(updatedPhotos);
   };
   
   const handleAddWalkTime = () => {
@@ -252,21 +296,34 @@ export default function EditPetScreen() {
         <Text style={styles.sectionTitle}>Informations sur votre animal</Text>
         
         <View style={styles.photoSection}>
-          <PhotoUploader
-            value={mainPhoto || undefined}
-            onChange={setMainPhoto}
-            placeholder="Main Photo"
-            required
-          />
+          <View style={styles.mainPhotoContainer}>
+            <PhotoUploader
+              value={mainPhoto || undefined}
+              onChange={handleMainPhotoChange}
+              placeholder="Photo principale"
+              required
+            />
+            {uploadingMainPhoto && (
+              <View style={styles.uploadingOverlay}>
+                <Text style={styles.uploadingText}>Upload...</Text>
+              </View>
+            )}
+          </View>
           
           <View style={styles.galleryContainer}>
             {galleryPhotos.map((photo, index) => (
-              <PhotoUploader
-                key={index}
-                value={photo}
-                onChange={uri => handleUpdateGalleryPhoto(index, uri)}
-                placeholder="Gallery Photo"
-              />
+              <View key={index} style={styles.galleryPhotoContainer}>
+                <PhotoUploader
+                  value={photo}
+                  onChange={uri => handleUpdateGalleryPhoto(index, uri)}
+                  placeholder="Galerie"
+                />
+                {uploadingGalleryPhoto[index] && (
+                  <View style={styles.uploadingOverlay}>
+                    <Text style={styles.uploadingText}>...</Text>
+                  </View>
+                )}
+              </View>
             ))}
             
             {galleryPhotos.length < 3 && (
@@ -452,6 +509,28 @@ const styles = StyleSheet.create({
   photoSection: {
     flexDirection: 'row',
     marginBottom: 16,
+  },
+  mainPhotoContainer: {
+    position: 'relative',
+  },
+  galleryPhotoContainer: {
+    position: 'relative',
+  },
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+  },
+  uploadingText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '600' as const,
   },
   galleryContainer: {
     flex: 1,
