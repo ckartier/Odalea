@@ -39,11 +39,6 @@ export default function EditProfileScreen() {
   
   const [loading, setLoading] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(user?.photo || null);
-  
-  // Update profile photo when user changes
-  useEffect(() => {
-    setProfilePhoto(user?.photo || null);
-  }, [user?.photo]);
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName] = useState(user?.lastName || '');
   const [pseudo, setPseudo] = useState(user?.pseudo || '');
@@ -55,6 +50,22 @@ export default function EditProfileScreen() {
   const [city, setCity] = useState(user?.city || '');
   
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  useEffect(() => {
+    if (user) {
+      console.log('📝 Syncing form with user data:', user);
+      setProfilePhoto(user.photo || null);
+      setFirstName(user.firstName || '');
+      setLastName(user.lastName || '');
+      setPseudo(user.pseudo || '');
+      setEmail(user.email || '');
+      setCountryCode(user.countryCode || 'FR');
+      setPhoneNumber(user.phoneNumber || '');
+      setAddress(user.address || '');
+      setZipCode(user.zipCode || '');
+      setCity(user.city || '');
+    }
+  }, [user]);
   
   // Don't navigate during initial render to avoid mounting issues
   // Instead, handle the redirect in the render logic
