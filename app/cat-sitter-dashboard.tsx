@@ -31,9 +31,59 @@ import {
   TrendingUp,
   Award,
   Heart,
+  DollarSign,
+  Package,
+  Home,
+  Dog,
+  Moon,
+  Scissors,
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
+
+interface StandardService {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  duration: number;
+  icon: string;
+}
+
+const STANDARD_SERVICES: StandardService[] = [
+  {
+    id: 'sitting',
+    name: 'Garde d\'animaux',
+    description: 'Garde à domicile pendant votre absence',
+    price: 15,
+    duration: 4,
+    icon: 'home',
+  },
+  {
+    id: 'walking',
+    name: 'Promenade',
+    description: 'Promenades de 30 à 60 minutes dans votre quartier',
+    price: 12,
+    duration: 1,
+    icon: 'walk',
+  },
+  {
+    id: 'overnight',
+    name: 'Garde de nuit',
+    description: 'Garde complète de nuit à votre domicile',
+    price: 45,
+    duration: 12,
+    icon: 'moon',
+  },
+  {
+    id: 'grooming',
+    name: 'Toilettage',
+    description: 'Soins de toilettage et d\'hygiène de base',
+    price: 25,
+    duration: 2,
+    icon: 'scissors',
+  },
+];
 
 export default function CatSitterDashboardScreen() {
   const router = useRouter();
@@ -44,6 +94,7 @@ export default function CatSitterDashboardScreen() {
     messages,
     loading,
     createProfile,
+    updateProfile,
     toggleAvailability,
     respondToBooking,
     getUnreadMessagesCount,
@@ -51,10 +102,10 @@ export default function CatSitterDashboardScreen() {
   } = useCatSitter();
 
   const [selectedTab, setSelectedTab] = useState<'overview' | 'bookings' | 'messages' | 'calendar'>('overview');
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
   useEffect(() => {
     if (user && !profile) {
-      // Create initial profile if user is a cat-sitter but doesn't have a profile yet
       if (user.isCatSitter) {
         createProfile(user.id, {
           hourlyRate: 15,
@@ -65,7 +116,50 @@ export default function CatSitterDashboardScreen() {
         });
       }
     }
+    if (profile && profile.services) {
+      setSelectedServices(profile.services);
+    }
   }, [user, profile, createProfile]);
+
+  const calculateTotalEarnings = () => {
+    const completedBookings = bookingRequests.filter(
+      (b) => b.status === 'completed' || b.status === 'accepted'
+    );
+    return completedBookings.reduce((sum, booking) => sum + booking.totalPrice, 0);
+  };
+
+  const getServiceIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'home':
+        return <Home size={20} color={COLORS.primary} />;
+      case 'walk':
+        return <Dog size={20} color={COLORS.primary} />;
+      case 'moon':
+        return <Moon size={20} color={COLORS.primary} />;
+      case 'scissors':
+        return <Scissors size={20} color={COLORS.primary} />;
+      default:
+        return <Package size={20} color={COLORS.primary} />;
+    }
+  };
+
+  const toggleService = async (serviceId: string) => {
+    const serviceName = STANDARD_SERVICES.find(s => s.id === serviceId)?.name;
+    if (!serviceName) return;
+
+    let updatedServices: string[];
+    if (selectedServices.includes(serviceName)) {
+      updatedServices = selectedServices.filter(s => s !== serviceName);
+    } else {
+      updatedServices = [...selectedServices, serviceName];
+    }
+    
+    setSelectedServices(updatedServices);
+    
+    if (profile) {
+      await updateProfile({ services: updatedServices });
+    }
+  };
 
   const handleToggleAvailability = async () => {
     const result = await toggleAvailability();
@@ -100,7 +194,15 @@ export default function CatSitterDashboardScreen() {
       <View style={styles.statsGrid}>
         <View style={[styles.statCard, SHADOWS.small]}>
           <View style={styles.statIcon}>
-            <Euro size={24} color={COLORS.success} />
+            <DollarSign size={24} color={COLORS.success} />
+          </View>
+          <Text style={styles.statValue}>{calculateTotalEarnings()}€</Text>
+          <Text style={styles.statLabel}>Gains totaux</Text>
+        </View>
+
+        <View style={[styles.statCard, SHADOWS.small]}>
+          <View style={styles.statIcon}>
+            <Euro size={24} color={COLORS.catSitter} />
           </View>
           <Text style={styles.statValue}>{profile?.hourlyRate || 0}€/h</Text>
           <Text style={styles.statLabel}>Tarif horaire</Text>
@@ -121,14 +223,57 @@ export default function CatSitterDashboardScreen() {
           <Text style={styles.statValue}>{profile?.totalBookings || 0}</Text>
           <Text style={styles.statLabel}>Réservations</Text>
         </View>
+      </View>
 
-        <View style={[styles.statCard, SHADOWS.small]}>
-          <View style={styles.statIcon}>
-            <Award size={24} color={COLORS.catSitter} />
-          </View>
-          <Text style={styles.statValue}>{profile?.reviewCount || 0}</Text>
-          <Text style={styles.statLabel}>Avis clients</Text>
+      {/* Services Standards */}
+      <View style={[styles.servicesCard, SHADOWS.small]}>
+        <Text style={styles.sectionTitle}>Prestations proposées</Text>
+        <Text style={styles.sectionSubtitle}>Sélectionnez les services que vous souhaitez offrir</Text>
+        
+        <View style={styles.servicesList}>
+          {STANDARD_SERVICES.map((service) => {
+            const serviceName = service.name;
+            const isSelected = selectedServices.includes(serviceName);
+            
+            return (
+              <TouchableOpacity
+                key={service.id}
+                style={[
+                  styles.serviceOption,
+                  isSelected && styles.selectedServiceOption,
+                ]}
+                onPress={() => toggleService(service.id)}
+              >
+                <View style={styles.serviceIconContainer}>
+                  {getServiceIcon(service.icon)}
+                </View>
+                <View style={styles.serviceDetails}>
+                  <Text style={styles.serviceOptionName}>{service.name}</Text>
+                  <Text style={styles.serviceOptionDescription} numberOfLines={1}>
+                    {service.description}
+                  </Text>
+                  <Text style={styles.serviceOptionPrice}>
+                    {service.price}€/{service.duration}h
+                  </Text>
+                </View>
+                <View style={[
+                  styles.checkbox,
+                  isSelected && styles.checkboxSelected,
+                ]}>
+                  {isSelected && <CheckCircle size={20} color={COLORS.white} />}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
+        
+        <TouchableOpacity 
+          style={styles.manageServicesButton}
+          onPress={() => router.push('/cat-sitter-settings')}
+        >
+          <Settings size={16} color={COLORS.primary} />
+          <Text style={styles.manageServicesText}>Gérer mes prestations</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Availability Toggle */}
@@ -563,6 +708,89 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.darkGray,
     textAlign: 'center',
+  },
+  servicesCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: COLORS.darkGray,
+    marginBottom: 16,
+  },
+  servicesList: {
+    gap: 12,
+  },
+  serviceOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: COLORS.lightGray,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  selectedServiceOption: {
+    borderColor: COLORS.catSitter,
+    backgroundColor: COLORS.white,
+  },
+  serviceIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  serviceDetails: {
+    flex: 1,
+  },
+  serviceOptionName: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: COLORS.black,
+    marginBottom: 2,
+  },
+  serviceOptionDescription: {
+    fontSize: 13,
+    color: COLORS.darkGray,
+    marginBottom: 2,
+  },
+  serviceOptionPrice: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: COLORS.success,
+  },
+  checkbox: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: COLORS.mediumGray,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxSelected: {
+    backgroundColor: COLORS.catSitter,
+    borderColor: COLORS.catSitter,
+  },
+  manageServicesButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: COLORS.lightGray,
+  },
+  manageServicesText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: COLORS.primary,
   },
   availabilityCard: {
     backgroundColor: COLORS.white,
