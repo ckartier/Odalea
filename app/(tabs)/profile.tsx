@@ -21,11 +21,12 @@ import PetCard from '@/components/PetCard';
 import Badge from '@/components/Badge';
 import Button from '@/components/Button';
 import PhotoUploader from '@/components/PhotoUploader';
-import { useAuth as useUser } from '@/hooks/auth-store';
+import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { useBadges } from '@/hooks/badges-store';
 import { useChallenges } from '@/hooks/challenges-store';
 import { usePremium } from '@/hooks/premium-store';
 import { useCatSitter } from '@/hooks/cat-sitter-store';
+import { useFriends } from '@/hooks/friends-store';
 import { 
   LogOut, 
   MapPin, 
@@ -52,7 +53,8 @@ import {
 export default function ProfileScreen() {
   const router = useRouter();
   const toHref = (path: string): Href => path as Href;
-  const { user, signOut, updateUser } = useUser();
+  const { user, signOut, updateUser } = useFirebaseUser();
+  const { friends, isLoading: friendsLoading } = useFriends();
   const { getUnlockedBadges } = useBadges();
   const { getUserActiveChallenges, getUserCompletedChallenges } = useChallenges();
   const { isPremium } = usePremium();
@@ -93,11 +95,7 @@ export default function ProfileScreen() {
   const activeChallenges = user ? getUserActiveChallenges(user.id) : [];
   const completedChallenges = user ? getUserCompletedChallenges(user.id) : [];
   
-  // Mock friends data - in real app this would come from a friends store
-  const mockFriends = [
-    { id: '1', firstName: 'Léo', lastName: 'Duval', pseudo: 'leo_duval', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face' },
-    { id: '2', firstName: 'Claire', lastName: 'Martin', pseudo: 'claire_martin', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face' },
-  ];
+
   
   const onRefresh = async () => {
     setRefreshing(true);
@@ -194,7 +192,7 @@ export default function ProfileScreen() {
         <View style={styles.headerInner}>
           <View style={styles.headerLeft}>
             <Text style={styles.headerName}>@{user.pseudo}</Text>
-            <Text style={styles.friendsCount}>{mockFriends.length} amis</Text>
+            <Text style={styles.friendsCount}>{friends.length} {friends.length <= 1 ? 'ami' : 'amis'}</Text>
           </View>
           
           <View style={styles.headerActions}>
@@ -239,16 +237,25 @@ export default function ProfileScreen() {
         {/* Profile Info */}
         <View style={styles.profileSection}>
           <View style={styles.profilePhotoContainer}>
-            <PhotoUploader
-              value={profilePhoto || undefined}
-              onChange={handlePhotoChange}
-              placeholder="Photo de profil"
-              style={styles.profilePhotoUploader}
-            >
-              <TouchableOpacity style={styles.cameraOverlay}>
-                <Camera size={20} color={COLORS.white} />
+            {profilePhoto ? (
+              <TouchableOpacity onPress={handleEditProfile}>
+                <Image 
+                  source={{ uri: profilePhoto }} 
+                  style={styles.profilePhoto}
+                  contentFit="cover"
+                />
+                <View style={styles.cameraOverlay}>
+                  <Camera size={20} color={COLORS.white} />
+                </View>
               </TouchableOpacity>
-            </PhotoUploader>
+            ) : (
+              <TouchableOpacity onPress={handleEditProfile} style={styles.profilePhotoPlaceholder}>
+                <UserIcon size={40} color={COLORS.mediumGray} />
+                <View style={styles.cameraOverlay}>
+                  <Camera size={20} color={COLORS.white} />
+                </View>
+              </TouchableOpacity>
+            )}
           </View>
           
           <View style={styles.detailsContainer}>
@@ -310,26 +317,46 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
         
-        <FlatList
-          data={mockFriends}
-          renderItem={({ item }) => (
-            <GlassCard 
-              tint={tint as 'male' | 'female' | 'neutral'}
-              style={styles.friendItem}
-              onPress={() => router.push(toHref(`/messages/${item.id}`))}
-            >
-              <Image source={{ uri: item.avatar }} style={styles.friendAvatar} />
-              <View style={styles.friendInfo}>
-                <Text style={styles.friendName}>@{item.pseudo}</Text>
-                <Text style={styles.friendAction}>Envoyer un message</Text>
-              </View>
-            </GlassCard>
-          )}
-          keyExtractor={item => item.id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.friendsList}
-        />
+        {friends.length > 0 ? (
+          <FlatList
+            data={friends.slice(0, 10)}
+            renderItem={({ item }) => (
+              <GlassCard 
+                tint={tint as 'male' | 'female' | 'neutral'}
+                style={styles.friendItem}
+                onPress={() => router.push(toHref(`/messages/${item.id}`))}
+              >
+                {item.photo ? (
+                  <Image 
+                    source={{ uri: item.photo }} 
+                    style={styles.friendAvatar}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View style={[styles.friendAvatar, styles.friendAvatarPlaceholder]}>
+                    <UserIcon size={24} color={COLORS.mediumGray} />
+                  </View>
+                )}
+                <View style={styles.friendInfo}>
+                  <Text style={styles.friendName}>@{item.pseudo || item.name}</Text>
+                  <Text style={styles.friendAction}>Envoyer un message</Text>
+                </View>
+              </GlassCard>
+            )}
+            keyExtractor={item => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.friendsList}
+          />
+        ) : (
+          <GlassCard tint={tint as 'male' | 'female' | 'neutral'} style={styles.emptyFriendsCard}>
+            <Users size={32} color={COLORS.mediumGray} />
+            <Text style={styles.emptyFriendsText}>Aucun ami pour le moment</Text>
+            <TouchableOpacity onPress={() => router.push(toHref('/friends'))}>
+              <Text style={styles.addFriendsText}>Ajouter des amis</Text>
+            </TouchableOpacity>
+          </GlassCard>
+        )}
         
         {/* My Pets Section */}
         <View style={styles.sectionHeader}>
@@ -778,10 +805,19 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginBottom: 16,
   },
-  profilePhotoUploader: {
+  profilePhoto: {
     width: 100,
     height: 100,
     borderRadius: 50,
+    backgroundColor: COLORS.lightGray,
+  },
+  profilePhotoPlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: COLORS.lightGray,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cameraOverlay: {
     position: 'absolute',
@@ -966,6 +1002,11 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     marginBottom: 8,
+    backgroundColor: COLORS.lightGray,
+  },
+  friendAvatarPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   friendInfo: {
     alignItems: 'center',
@@ -981,6 +1022,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.primary,
     textAlign: 'center',
+  },
+  emptyFriendsCard: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+  },
+  emptyFriendsText: {
+    fontSize: 14,
+    color: COLORS.darkGray,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  addFriendsText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: COLORS.primary,
+    marginTop: 8,
   },
   challengesContainer: {
     marginBottom: 16,
