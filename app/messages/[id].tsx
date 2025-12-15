@@ -15,7 +15,7 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import { useMessaging } from '@/hooks/messaging-store';
-import { useAuth } from '@/hooks/auth-store';
+import { useAuth } from '@/hooks/user-store';
 import { Message } from '@/types';
 import { ArrowUp, Info, Paperclip } from 'lucide-react-native';
 
@@ -33,6 +33,7 @@ export default function ChatScreen() {
   
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [sendingMessage, setSendingMessage] = useState(false);
   const [quickReplies] = useState<string[]>([
     'Bonjour 👋',
     'Disponible demain ?',
@@ -48,12 +49,32 @@ export default function ChatScreen() {
   
   const flatListRef = useRef<FlatList>(null);
   
+  const conversation = conversations.find(c => c.id === id);
   let otherUser = getConversationUser(id as string);
-  if (!otherUser) {
-    const conv = conversations.find(c => c.id === id);
-    const fallbackUserId = conv?.participants.find(pid => pid !== user?.id);
+  
+  if (!otherUser && conversation) {
+    const fallbackUserId = conversation.participants.find(pid => pid !== user?.id);
     if (fallbackUserId) {
-      otherUser = { id: fallbackUserId, pseudo: 'user-' + String(fallbackUserId).slice(-4), firstName: '', lastName: '', name: '', email: '', phoneNumber: '', countryCode: '', address: '', zipCode: '', city: '', isCatSitter: false, isPremium: false, createdAt: Date.now(), pets: [] } as any;
+      otherUser = { 
+        id: fallbackUserId, 
+        pseudo: 'user-' + String(fallbackUserId).slice(-4), 
+        firstName: 'Utilisateur', 
+        lastName: '', 
+        name: 'Utilisateur', 
+        email: '', 
+        phoneNumber: '', 
+        countryCode: '', 
+        address: '', 
+        zipCode: '', 
+        city: '', 
+        isCatSitter: false, 
+        isPremium: false, 
+        createdAt: Date.now(), 
+        pets: [],
+        isProfessional: false,
+        isActive: true,
+        profileComplete: false
+      } as any;
     }
   }
   
@@ -85,16 +106,23 @@ export default function ChatScreen() {
   }, [messages]);
   
   const handleSend = async () => {
-    if ((!newMessage.trim() && attachments.length === 0) || !user) return;
+    if ((!newMessage.trim() && attachments.length === 0) || !user || sendingMessage) return;
+    
+    setSendingMessage(true);
     try {
+      console.log('[Chat] Sending message to conversation:', id);
       await sendMessage.mutateAsync({
         conversationId: id as string,
         content: newMessage.trim() || '[media] 📎',
       });
       setNewMessage('');
       setAttachments([]);
+      console.log('[Chat] Message sent successfully');
     } catch (error) {
-      console.error('Failed to send message', error);
+      console.error('[Chat] Failed to send message:', error);
+      alert('Erreur lors de l\'envoi du message. Veuillez réessayer.');
+    } finally {
+      setSendingMessage(false);
     }
   };
   
@@ -127,10 +155,10 @@ export default function ChatScreen() {
     );
   };
   
-  if (!id) {
+  if (!id || (!loading && !conversation)) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Conversation not found</Text>
+        <Text style={styles.errorText}>Conversation introuvable</Text>
       </View>
     );
   }
@@ -228,12 +256,16 @@ export default function ChatScreen() {
             <TouchableOpacity
               style={[
                 styles.sendButton,
-                !newMessage.trim() ? styles.sendButtonDisabled : null,
+                (!newMessage.trim() || sendingMessage) ? styles.sendButtonDisabled : null,
               ]}
               onPress={handleSend}
-              disabled={!newMessage.trim()}
+              disabled={!newMessage.trim() || sendingMessage}
             >
-              <ArrowUp size={20} color={COLORS.white} />
+              {sendingMessage ? (
+                <ActivityIndicator size="small" color={COLORS.white} />
+              ) : (
+                <ArrowUp size={20} color={COLORS.white} />
+              )}
             </TouchableOpacity>
           </View>
         </>
@@ -377,5 +409,10 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: COLORS.darkGray,
+    opacity: 0.5,
+  },
+  errorText: {
+    fontSize: 16,
+    color: COLORS.darkGray,
   },
 });
