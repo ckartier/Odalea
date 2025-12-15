@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -13,32 +13,28 @@ import { Stack, router } from 'expo-router';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import { useI18n } from '@/hooks/i18n-store';
 import { useSocial } from '@/hooks/social-store';
-import { X, Camera, MapPin, Users, Hash } from 'lucide-react-native';
+import { usePets } from '@/hooks/pets-store';
+import { X, Camera, MapPin } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
-
-
-type PostType = 'story' | 'photo' | 'event' | 'playdate' | 'advice';
-
-const postTypes: { key: PostType; label: string; icon: any }[] = [
-  { key: 'story', label: 'Story', icon: Hash },
-  { key: 'photo', label: 'Photo', icon: Camera },
-  { key: 'event', label: 'Event', icon: Users },
-  { key: 'playdate', label: 'Playdate', icon: Users },
-  { key: 'advice', label: 'Advice', icon: Hash },
-];
 
 export default function CreatePostScreen() {
   const { t } = useI18n();
   const { createPost, isCreatingPost } = useSocial();
+  const { userPets } = usePets();
   
-  // Debug: Check authentication status
-  React.useEffect(() => {
-    console.log('🔍 Create Post - Component mounted');
-  }, []);
   const [content, setContent] = useState('');
-  const [selectedType, setSelectedType] = useState<PostType>('story');
   const [photos, setPhotos] = useState<string[]>([]);
   const [location, setLocation] = useState('');
+
+  useEffect(() => {
+    console.log('🔍 Create Post - Component mounted');
+    
+    const primaryPet = userPets.find(pet => pet.isPrimary) || userPets[0];
+    if (primaryPet?.mainPhoto) {
+      setPhotos([primaryPet.mainPhoto]);
+      console.log('🐾 Auto-added pet photo:', primaryPet.name);
+    }
+  }, [userPets]);
 
   const handlePost = async () => {
     if (!content.trim()) {
@@ -50,13 +46,8 @@ export default function CreatePostScreen() {
       const postData = {
         content: content.trim(),
         images: photos.length > 0 ? photos : undefined,
-        type: selectedType === 'story' ? 'text' as const : 
-              selectedType === 'photo' ? 'photo' as const :
-              selectedType === 'event' ? 'text' as const :
-              selectedType === 'playdate' ? 'text' as const :
-              'text' as const,
+        type: photos.length > 0 ? 'photo' as const : 'text' as const,
         location: location ? { name: location, latitude: 0, longitude: 0 } : undefined,
-        tags: selectedType !== 'story' ? [selectedType] : undefined
       };
       
       console.log('📝 Creating post with data:', postData);
@@ -150,39 +141,6 @@ export default function CreatePostScreen() {
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Post Type Selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Post Type</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {postTypes.map(type => {
-              const IconComponent = type.icon;
-              return (
-                <TouchableOpacity
-                  key={type.key}
-                  style={[
-                    styles.typeButton,
-                    selectedType === type.key && styles.selectedTypeButton,
-                  ]}
-                  onPress={() => setSelectedType(type.key)}
-                >
-                  <IconComponent
-                    size={20}
-                    color={selectedType === type.key ? COLORS.white : COLORS.darkGray}
-                  />
-                  <Text
-                    style={[
-                      styles.typeText,
-                      selectedType === type.key && styles.selectedTypeText,
-                    ]}
-                  >
-                    {type.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-
         {/* Content Input */}
         <View style={styles.section}>
           <TextInput
@@ -303,27 +261,7 @@ const styles = StyleSheet.create({
     color: COLORS.black,
     marginBottom: 12,
   },
-  typeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: 8,
-    borderRadius: 16,
-    backgroundColor: COLORS.lightGray,
-  },
-  selectedTypeButton: {
-    backgroundColor: COLORS.primary,
-  },
-  typeText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: COLORS.darkGray,
-    marginLeft: 6,
-  },
-  selectedTypeText: {
-    color: COLORS.white,
-  },
+
   contentInput: {
     backgroundColor: COLORS.white,
     borderRadius: 12,
