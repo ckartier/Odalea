@@ -3,14 +3,14 @@ import createContextHook from '@nkzw/create-context-hook';
 import { loadLanguagePreference, saveLanguagePreference, t, getCurrentLocale } from '@/services/i18n';
 
 export const [I18nContext, useI18n] = createContextHook(() => {
-  const [currentLocale, setCurrentLocale] = useState<'en' | 'fr'>('fr'); // Default to French
+  const [currentLocale, setCurrentLocale] = useState<'en' | 'fr' | 'es' | 'de' | 'it'>('fr'); // Default to French
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const initializeLanguage = async () => {
       try {
         const locale = await loadLanguagePreference();
-        setCurrentLocale(locale as 'en' | 'fr');
+        setCurrentLocale(locale as 'en' | 'fr' | 'es' | 'de' | 'it');
       } catch (error) {
         console.error('Error initializing language:', error);
         setCurrentLocale('fr'); // Default to French
@@ -22,7 +22,7 @@ export const [I18nContext, useI18n] = createContextHook(() => {
     initializeLanguage();
   }, []);
 
-  const changeLanguage = async (language: 'en' | 'fr') => {
+  const changeLanguage = async (language: 'en' | 'fr' | 'es' | 'de' | 'it') => {
     try {
       await saveLanguagePreference(language);
       setCurrentLocale(language);

@@ -19,7 +19,7 @@ interface AnimalSelectorProps {
   value?: string;
   onSelect: (animalId: string) => void;
   error?: string;
-  language?: 'en' | 'fr';
+  language?: 'en' | 'fr' | 'es' | 'de' | 'it';
 }
 
 export default function AnimalSelector({
@@ -73,9 +73,10 @@ export default function AnimalSelector({
 
   const filteredAnimals = useMemo(
     () =>
-      animals.filter((animal) =>
-        (animal?.name?.[language] ?? '').toLowerCase().includes(searchQuery.toLowerCase())
-      ),
+      animals.filter((animal) => {
+        const name = animal?.name?.[language as 'en' | 'fr'] ?? animal?.name?.en ?? animal?.name?.fr ?? '';
+        return name.toLowerCase().includes(searchQuery.toLowerCase());
+      }),
     [animals, language, searchQuery]
   );
 
@@ -130,7 +131,7 @@ export default function AnimalSelector({
             <View style={styles.selectedAnimal}>
               <Text style={styles.emoji}>{selectedAnimal.emoji}</Text>
               <Text style={styles.selectedText}>
-                {selectedAnimal.name?.[language] ?? ''}
+                {selectedAnimal.name?.[language as 'en' | 'fr'] ?? selectedAnimal.name?.en ?? selectedAnimal.name?.fr ?? ''}
               </Text>
             </View>
           ) : loading ? (
@@ -198,7 +199,7 @@ export default function AnimalSelector({
                   >
                     <Text style={styles.animalEmoji}>{animal.emoji}</Text>
                     <Text style={styles.animalName}>
-                      {animal.name?.[language] ?? ''}
+                      {animal.name?.[language as 'en' | 'fr'] ?? animal.name?.en ?? animal.name?.fr ?? ''}
                     </Text>
                     {value === animal.id && (
                       <View style={styles.selectedIndicator} />

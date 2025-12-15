@@ -5,10 +5,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Import translations
 import en from '@/locales/en.json';
 import fr from '@/locales/fr.json';
+import es from '@/locales/es.json';
+import de from '@/locales/de.json';
+import it from '@/locales/it.json';
 
 const i18n = new I18n({
   en,
   fr,
+  es,
+  de,
+  it,
 });
 
 // Set the locale once at the beginning of your app - default to French as specified
@@ -22,7 +28,8 @@ i18n.defaultLocale = 'fr'; // Default to French as specified
 export const loadLanguagePreference = async (): Promise<string> => {
   try {
     const savedLanguage = await AsyncStorage.getItem('user_language');
-    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'fr')) {
+    const supportedLanguages = ['en', 'fr', 'es', 'de', 'it'];
+    if (savedLanguage && supportedLanguages.includes(savedLanguage)) {
       i18n.locale = savedLanguage;
       return savedLanguage;
     }
@@ -37,7 +44,7 @@ export const loadLanguagePreference = async (): Promise<string> => {
 };
 
 // Save language preference
-export const saveLanguagePreference = async (language: 'en' | 'fr'): Promise<void> => {
+export const saveLanguagePreference = async (language: 'en' | 'fr' | 'es' | 'de' | 'it'): Promise<void> => {
   try {
     await AsyncStorage.setItem('user_language', language);
     i18n.locale = language;

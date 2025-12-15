@@ -52,6 +52,21 @@ export default function SettingsScreen() {
           onPress: () => changeLanguage('en'),
           style: currentLocale === 'en' ? 'default' : 'cancel',
         },
+        {
+          text: 'Español',
+          onPress: () => changeLanguage('es'),
+          style: currentLocale === 'es' ? 'default' : 'cancel',
+        },
+        {
+          text: 'Deutsch',
+          onPress: () => changeLanguage('de'),
+          style: currentLocale === 'de' ? 'default' : 'cancel',
+        },
+        {
+          text: 'Italiano',
+          onPress: () => changeLanguage('it'),
+          style: currentLocale === 'it' ? 'default' : 'cancel',
+        },
       ]
     );
   };
@@ -127,7 +142,7 @@ export default function SettingsScreen() {
       id: 'language',
       title: t('settings.language'),
       icon: <Globe size={24} color={currentTheme.text} />,
-      subtitle: currentLocale === 'fr' ? 'Français' : 'English',
+      subtitle: currentLocale === 'fr' ? 'Français' : currentLocale === 'en' ? 'English' : currentLocale === 'es' ? 'Español' : currentLocale === 'de' ? 'Deutsch' : 'Italiano',
       onPress: handleLanguageChange,
     },
     {
