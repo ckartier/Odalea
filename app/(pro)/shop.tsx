@@ -53,11 +53,11 @@ export default function ProShopScreen() {
   };
 
   const handleProductPress = (productId: string) => {
-    router.push(`/shop/product/${productId}`);
+    router.push(`/shop/product/${productId}` as any);
   };
 
   const handleVendorPress = (sellerId: string) => {
-    router.push(`/profile/${sellerId}`);
+    router.push(`/profile/${sellerId}` as any);
   };
 
   return (
@@ -69,7 +69,7 @@ export default function ProShopScreen() {
           title: 'Boutique Pro',
           headerShown: true,
           headerRight: () => (
-            <TouchableOpacity onPress={() => router.push('/shop/cart')} style={styles.cartButton}>
+            <TouchableOpacity onPress={() => router.push('/shop/cart' as any)} style={styles.cartButton}>
               <ShoppingCart size={24} color={COLORS.primary} />
             </TouchableOpacity>
           ),

@@ -12,6 +12,7 @@ import { Image } from 'expo-image';
 import { useRouter, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
+import GlassView from '@/components/GlassView';
 import { useAuth } from '@/hooks/auth-store';
 import { useUsersDirectory } from '@/hooks/firestore-users';
 import { useMessaging } from '@/hooks/messaging-store';
@@ -24,12 +25,22 @@ export default function NewMessageScreen() {
   const { createConversation, areFriends, hasPendingRequest, sendFriendRequest } = useMessaging();
   
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterByAnimal, setFilterByAnimal] = useState<string>('');
   
   useEffect(() => {
     setSearch(searchQuery);
   }, [searchQuery, setSearch]);
   
-  const filteredUsers = (usersQuery.data ?? []).filter(u => u.id !== user?.id);
+  const filteredUsers = (usersQuery.data ?? [])
+    .filter(u => u.id !== user?.id)
+    .filter(u => {
+      if (!filterByAnimal) return true;
+      const userAnimals = u.pets || [];
+      return userAnimals.some(pet => 
+        pet.breed?.toLowerCase().includes(filterByAnimal.toLowerCase()) ||
+        pet.name?.toLowerCase().includes(filterByAnimal.toLowerCase())
+      );
+    });
   const loading = usersQuery.isLoading;
   
   const handleUserPress = async (selectedUserId: string) => {
@@ -55,10 +66,11 @@ export default function NewMessageScreen() {
     };
     
     return (
-      <TouchableOpacity
-        style={[styles.userItem, SHADOWS.small]}
-        onPress={() => handleUserPress(item.id)}
-      >
+      <GlassView intensity={25} tint="light" liquidGlass style={styles.userItem}>
+        <TouchableOpacity
+          style={styles.userItemInner}
+          onPress={() => handleUserPress(item.id)}
+        >
         <Image
           source={{ uri: item.animalPhoto || item.pets?.[0]?.mainPhoto || 'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=500' }}
           style={styles.avatar}
@@ -88,7 +100,8 @@ export default function NewMessageScreen() {
             </TouchableOpacity>
           )}
         </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </GlassView>
     );
   };
   
@@ -98,15 +111,47 @@ export default function NewMessageScreen() {
       
       <Stack.Screen options={{ title: 'Nouveau message' }} />
       
-      <View style={styles.searchContainer}>
-        <Search size={20} color={COLORS.darkGray} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Rechercher des utilisateurs..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          autoCapitalize="none"
-        />
+      <View style={styles.searchSection}>
+        <View style={styles.searchContainer}>
+          <Search size={20} color={COLORS.darkGray} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Rechercher des utilisateurs..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+          />
+        </View>
+        
+        <View style={styles.filterContainer}>
+          <Text style={styles.filterLabel}>Filtrer par animal :</Text>
+          <View style={styles.filterButtons}>
+            <TouchableOpacity
+              style={[styles.filterButton, !filterByAnimal && styles.filterButtonActive]}
+              onPress={() => setFilterByAnimal('')}
+            >
+              <Text style={[styles.filterButtonText, !filterByAnimal && styles.filterButtonTextActive]}>Tous</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterButton, filterByAnimal === 'chat' && styles.filterButtonActive]}
+              onPress={() => setFilterByAnimal('chat')}
+            >
+              <Text style={[styles.filterButtonText, filterByAnimal === 'chat' && styles.filterButtonTextActive]}>Chats</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterButton, filterByAnimal === 'chien' && styles.filterButtonActive]}
+              onPress={() => setFilterByAnimal('chien')}
+            >
+              <Text style={[styles.filterButtonText, filterByAnimal === 'chien' && styles.filterButtonTextActive]}>Chiens</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterButton, filterByAnimal === 'autre' && styles.filterButtonActive]}
+              onPress={() => setFilterByAnimal('autre')}
+            >
+              <Text style={[styles.filterButtonText, filterByAnimal === 'autre' && styles.filterButtonTextActive]}>Autres</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
       
       {loading ? (
@@ -138,15 +183,54 @@ export default function NewMessageScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: 'transparent',
+  },
+  searchSection: {
+    padding: 16,
+    backgroundColor: 'transparent',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: COLORS.white,
     borderRadius: 12,
     paddingHorizontal: 12,
-    margin: 16,
+    marginBottom: 12,
+    ...SHADOWS.small,
+  },
+  filterContainer: {
+    marginTop: 8,
+  },
+  filterLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: COLORS.black,
+    marginBottom: 8,
+  },
+  filterButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.mediumGray,
+    ...SHADOWS.small,
+  },
+  filterButtonActive: {
+    backgroundColor: COLORS.maleAccent,
+    borderColor: COLORS.maleAccent,
+  },
+  filterButtonText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+    color: COLORS.darkGray,
+  },
+  filterButtonTextActive: {
+    color: COLORS.white,
   },
   searchInput: {
     flex: 1,
@@ -163,12 +247,14 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   userItem: {
+    borderRadius: 20,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  userItemInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
+    padding: 16,
   },
   avatar: {
     width: 50,

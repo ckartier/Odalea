@@ -19,7 +19,7 @@ export default function ProLayout() {
   // Only redirect if user is logged in but not professional
   // Allow access for non-logged in users (they might want to register as pro)
   if (user && !user.isProfessional) {
-    return <Redirect href="/home" />;
+    return <Redirect href="/(tabs)/community" />;
   }
 
   return (

@@ -48,11 +48,11 @@ export default function ProDashboardScreen() {
   };
 
   const handleAddProduct = () => {
-    router.push('/pro/products/add');
+    router.push('/pro/products/add' as any);
   };
 
   const handleViewProducts = () => {
-    router.push('/pro/products');
+    router.push('/pro/products' as any);
   };
 
   const handleViewOrders = () => {

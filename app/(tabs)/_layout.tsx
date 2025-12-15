@@ -12,7 +12,7 @@ export default function TabLayout() {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
 
   const handleMenuToggle = useCallback(() => {
-    router.push('/menu');
+    router.push('/menu' as any);
   }, [router]);
 
   const topBarHeight = useTopBarHeight();
