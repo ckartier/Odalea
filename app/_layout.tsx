@@ -75,23 +75,44 @@ const RootLayoutNav = React.memo(() => {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="cat-sitter" options={{ headerShown: false }} />
       <Stack.Screen name="cat-sitter/[id]" options={{ headerShown: true }} />
+      <Stack.Screen name="cat-sitter-dashboard" options={{ headerShown: true }} />
+      <Stack.Screen name="cat-sitter-settings" options={{ headerShown: true }} />
       <Stack.Screen name="pet/[id]" options={{ headerShown: true }} />
+      <Stack.Screen name="pet/add" options={{ headerShown: true }} />
+      <Stack.Screen name="pet/edit/[id]" options={{ headerShown: true }} />
       <Stack.Screen name="profile/[id]" options={{ headerShown: true }} />
+      <Stack.Screen name="profile/edit" options={{ headerShown: true }} />
       <Stack.Screen name="messages/[id]" options={{ headerShown: true }} />
       <Stack.Screen name="messages/new" options={{ headerShown: true }} />
       <Stack.Screen name="shop/product/[id]" options={{ headerShown: true }} />
+      <Stack.Screen name="shop/cart" options={{ headerShown: true }} />
+      <Stack.Screen name="shop/order-confirmation" options={{ headerShown: true }} />
       <Stack.Screen name="lost-found/report" options={{ headerShown: true }} />
       <Stack.Screen name="lost-found/[id]" options={{ headerShown: true }} />
       <Stack.Screen name="booking/[id]" options={{ headerShown: true }} />
       <Stack.Screen name="booking/confirmation/[id]" options={{ headerShown: true }} />
+      <Stack.Screen name="challenges/[id]" options={{ headerShown: true }} />
+      <Stack.Screen name="community/create" options={{ headerShown: true }} />
       <Stack.Screen name="premium" options={{ headerShown: true }} />
-      <Stack.Screen name="(pro)" options={{ headerShown: false }} />
-      <Stack.Screen name="cat-sitter-dashboard" options={{ headerShown: true }} />
-      <Stack.Screen name="cat-sitter-settings" options={{ headerShown: true }} />
+      <Stack.Screen name="badges" options={{ headerShown: true }} />
+      <Stack.Screen name="friends" options={{ headerShown: true }} />
+      <Stack.Screen name="search" options={{ headerShown: true }} />
+      <Stack.Screen name="settings" options={{ headerShown: true }} />
+      <Stack.Screen name="settings/notifications" options={{ headerShown: true }} />
+      <Stack.Screen name="settings/privacy" options={{ headerShown: true }} />
+      <Stack.Screen name="settings/blocked-users" options={{ headerShown: true }} />
+      <Stack.Screen name="settings/faq" options={{ headerShown: true }} />
+      <Stack.Screen name="settings/help" options={{ headerShown: true }} />
+      <Stack.Screen name="settings/support" options={{ headerShown: true }} />
+      <Stack.Screen name="settings/privacy-policy" options={{ headerShown: true }} />
+      <Stack.Screen name="settings/terms" options={{ headerShown: true }} />
+      <Stack.Screen name="settings/rgpd" options={{ headerShown: true }} />
       <Stack.Screen name="legal/terms" options={{ headerShown: true }} />
       <Stack.Screen name="legal/privacy" options={{ headerShown: true }} />
-      {/* removed firebase-test registration */}
-      {/* removed admin-tools registration */}
+      <Stack.Screen name="(pro)" options={{ headerShown: false }} />
+      <Stack.Screen name="users" options={{ headerShown: true }} />
+      <Stack.Screen name="firestore-collections" options={{ headerShown: true }} />
+      <Stack.Screen name="firebase-seed-challenges" options={{ headerShown: true }} />
     </Stack>
   );
 });
