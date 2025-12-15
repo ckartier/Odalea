@@ -21,15 +21,19 @@ export const COLORS = {
   accentLight: '#7DD4EE',
   
   male: '#A3D5FF',
+  maleVivid: '#6BB6FF',
   female: '#FFB3D9',
+  femaleVivid: '#FF8AC9',
   default: '#06B6D4',
   maleAccent: '#6BB6FF',
   femaleAccent: '#FF8AC9',
+  neutralLight: '#E0F2FE',
+  neutralVivid: '#BAE6FD',
   
   white: '#FFFFFF',
   black: '#0F172A',
   gray: '#64748B',
-  lightGray: '#F8FAFC',
+  lightGray: '#F8F9FA',
   mediumGray: '#E2E8F0',
   darkGray: '#475569',
   
@@ -62,7 +66,7 @@ export const COLORS = {
   overlay: 'rgba(15, 23, 42, 0.6)',
   overlayLight: 'rgba(15, 23, 42, 0.4)',
   cardBackground: '#FFFFFF',
-  screenBackground: '#F8FAFC',
+  screenBackground: '#F8F9FA',
   surfaceBackground: '#F1F5F9',
   neutral: '#E2E8F0',
   border: '#CBD5E1',
@@ -78,8 +82,14 @@ export const COLORS = {
   menuBackground: 'rgba(255, 255, 255, 0.95)',
   menuShadow: 'rgba(0, 0, 0, 0.15)',
   
-  alertBackground: '#F8FAFC',
+  alertBackground: '#F8F9FA',
 
+  glassTintLight: 'rgba(255, 255, 255, 0.7)',
+  glassTintDark: 'rgba(0, 0, 0, 0.5)',
+  glassTintMale: 'rgba(163, 213, 255, 0.4)',
+  glassTintFemale: 'rgba(255, 179, 217, 0.4)',
+  glassTintNeutral: 'rgba(224, 242, 254, 0.5)',
+  
   liquidGlassMale: 'rgba(163, 213, 255, 0.25)',
   liquidGlassFemale: 'rgba(255, 179, 217, 0.25)',
   liquidGlassNeutral: 'rgba(255, 255, 255, 0.25)',
@@ -131,9 +141,23 @@ export const SHADOWS = {
   },
   liquidGlass: {
     shadowColor: 'rgba(163, 213, 255, 0.5)',
-    shadowOffset: { width: 0, height: scale(8) },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
-    shadowRadius: scale(20),
+    shadowRadius: 20,
+    elevation: 6,
+  },
+  liquidGlassFemale: {
+    shadowColor: 'rgba(255, 179, 217, 0.5)',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 6,
+  },
+  liquidGlassNeutral: {
+    shadowColor: 'rgba(224, 242, 254, 0.5)',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
     elevation: 6,
   },
 };

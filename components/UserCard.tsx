@@ -60,7 +60,7 @@ const UserCard: React.FC<UserCardProps> = ({
       <GlassView
         tint="neutral"
         liquidGlass={true}
-        style={[styles.container, SHADOWS.liquidGlass]}
+        style={[styles.container, SHADOWS.liquidGlassNeutral]}
       >
         <View style={styles.imageContainer}>
           <Image

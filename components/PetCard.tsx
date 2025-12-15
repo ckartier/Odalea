@@ -89,7 +89,10 @@ const PetCard: React.FC<PetCardProps> = ({
       <GlassView
         tint={getTint()}
         liquidGlass={true}
-        style={[styles.container, SHADOWS.liquidGlass]}
+        style={[
+          styles.container,
+          pet.gender === 'male' ? SHADOWS.liquidGlass : SHADOWS.liquidGlassFemale,
+        ]}
       >
         <Image
           source={{ uri: mainPhotoUri }}

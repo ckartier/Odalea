@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS, DIMENSIONS, IS_TABLET, RESPONSIVE_LAYOUT, moderateScale } from '@/constants/colors';
 import { X } from 'lucide-react-native';
+import GlassView from './GlassView';
 
 interface ResponsiveModalProps extends Omit<ModalProps, 'children'> {
   children: React.ReactNode;
@@ -102,12 +103,15 @@ const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
             style,
           ]}
         >
-          <View
+          <GlassView
+            tint={tint}
+            liquidGlass={true}
+            intensity={50}
             style={[
               styles.modalContent,
               modalSize,
               size === 'fullscreen' && styles.fullscreenContent,
-              SHADOWS.xl,
+              tint === 'male' ? SHADOWS.liquidGlass : tint === 'female' ? SHADOWS.liquidGlassFemale : SHADOWS.liquidGlassNeutral,
               contentStyle,
             ]}
           >
@@ -122,7 +126,7 @@ const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
             )}
             
             {children}
-          </View>
+          </GlassView>
         </View>
       </View>
     </Modal>
@@ -154,7 +158,6 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(24),
     padding: DIMENSIONS.SPACING.lg,
     position: 'relative',
-    backgroundColor: COLORS.white,
   },
   fullscreenContent: {
     borderRadius: 0,

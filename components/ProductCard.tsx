@@ -44,7 +44,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       <GlassView
         tint="neutral"
         liquidGlass={true}
-        style={[styles.container, SHADOWS.liquidGlass]}
+        style={[styles.container, SHADOWS.liquidGlassNeutral]}
       >
         <Image
           source={{ uri: product.imageUrl }}

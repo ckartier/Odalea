@@ -63,7 +63,6 @@ const Button: React.FC<ButtonProps> = ({
   const getShadow = () => {
     if (variant === 'ghost') return SHADOWS.none;
     if (disabled) return SHADOWS.none;
-    if (liquidGlass) return SHADOWS.liquidGlass;
     switch (size) {
       case 'xs':
       case 'small':
@@ -77,14 +76,30 @@ const Button: React.FC<ButtonProps> = ({
   };
 
   const getGradientColors = (): [string, string] => {
-    if (disabled) return ['#E2E8F0', '#CBD5E1'];
+    if (disabled) return [COLORS.mediumGray, COLORS.border];
     switch (variant) {
       case 'male':
-        return ['#A3D5FF', '#6BB6FF'];
+        return [COLORS.male, COLORS.maleVivid];
       case 'female':
-        return ['#FFB3D9', '#FF8AC9'];
+        return [COLORS.female, COLORS.femaleVivid];
+      case 'primary':
+        return [COLORS.primary, COLORS.primaryDark];
       default:
-        return ['#A3D5FF', '#FFB3D9'];
+        return [COLORS.neutralLight, COLORS.neutralVivid];
+    }
+  };
+
+  const getShadowForVariant = () => {
+    if (disabled || variant === 'ghost') return SHADOWS.none;
+    if (!liquidGlass) return getShadow();
+    
+    switch (variant) {
+      case 'male':
+        return SHADOWS.liquidGlass;
+      case 'female':
+        return SHADOWS.liquidGlassFemale;
+      default:
+        return SHADOWS.liquidGlassNeutral;
     }
   };
 
@@ -148,36 +163,75 @@ const Button: React.FC<ButtonProps> = ({
     </>
   );
 
-  if (liquidGlass) {
+  if (liquidGlass && (variant === 'male' || variant === 'female' || variant === 'subtle')) {
     return (
-      <GlassView
-        tint="neutral"
-        liquidGlass={true}
-        intensity={50}
+      <TouchableOpacity
+        testID="button"
+        accessibilityRole="button"
         style={[
-          styles.button,
+          styles.buttonWrapper,
           {
-            borderRadius: getBorderRadius(),
-            ...getPadding(),
             width: fullWidth ? '100%' : undefined,
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
           },
-          getShadow(),
           style,
         ]}
+        onPress={onPress || (() => {})}
+        disabled={disabled || loading}
+        activeOpacity={0.8}
+        {...props}
       >
-        <TouchableOpacity
-          testID="button"
-          accessibilityRole="button"
-          style={styles.touchable}
-          onPress={onPress || (() => {})}
-          disabled={disabled || loading}
-          activeOpacity={0.8}
-          {...props}
+        <GlassView
+          tint={getTint()}
+          liquidGlass={true}
+          intensity={40}
+          style={[
+            styles.button,
+            {
+              borderRadius: getBorderRadius(),
+              ...getPadding(),
+            },
+            getShadowForVariant(),
+          ]}
         >
           <ButtonContent />
-        </TouchableOpacity>
-      </GlassView>
+        </GlassView>
+      </TouchableOpacity>
+    );
+  }
+
+  if (gradient && (variant === 'male' || variant === 'female' || variant === 'primary')) {
+    return (
+      <TouchableOpacity
+        testID="button"
+        accessibilityRole="button"
+        style={[
+          styles.buttonWrapper,
+          {
+            width: fullWidth ? '100%' : undefined,
+          },
+          style,
+        ]}
+        onPress={onPress || (() => {})}
+        disabled={disabled || loading}
+        activeOpacity={0.8}
+        {...props}
+      >
+        <LinearGradient
+          colors={getGradientColors()}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[
+            styles.button,
+            {
+              borderRadius: getBorderRadius(),
+              ...getPadding(),
+            },
+            getShadowForVariant(),
+          ]}
+        >
+          <ButtonContent />
+        </LinearGradient>
+      </TouchableOpacity>
     );
   }
 
@@ -207,6 +261,9 @@ const Button: React.FC<ButtonProps> = ({
 };
 
 const styles = StyleSheet.create({
+  buttonWrapper: {
+    overflow: 'hidden',
+  },
   button: {
     flexDirection: 'row',
     justifyContent: 'center',

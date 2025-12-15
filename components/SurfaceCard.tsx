@@ -9,11 +9,22 @@ interface SurfaceCardProps extends ViewProps {
 }
 
 export default function SurfaceCard({ style, children, tint = 'neutral', ...rest }: SurfaceCardProps) {
+  const getShadow = () => {
+    switch (tint) {
+      case 'male':
+        return SHADOWS.liquidGlass;
+      case 'female':
+        return SHADOWS.liquidGlassFemale;
+      default:
+        return SHADOWS.liquidGlassNeutral;
+    }
+  };
+
   return (
     <GlassView
       tint={tint}
       liquidGlass={true}
-      style={[styles.card, SHADOWS.medium, style]}
+      style={[styles.card, getShadow(), style]}
       {...rest}
     >
       {children}
