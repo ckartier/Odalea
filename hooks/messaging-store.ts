@@ -101,11 +101,27 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
   const sendMessage = useMutation({
     mutationFn: async ({ conversationId, content }: { conversationId: string; content: string }) => {
       if (!user?.id) throw new Error('User not signed in');
-      const conv = conversations.find(c => c.id === conversationId);
-      if (!conv) throw new Error('Conversation not found');
+      
+      let conv = conversations.find(c => c.id === conversationId);
+      
+      if (!conv) {
+        console.log('[Messaging] Conversation not in local state, fetching from database');
+        try {
+          const allConversations = await databaseService.messaging.getConversations(user.id);
+          conv = allConversations.find(c => c.id === conversationId);
+          if (!conv) {
+            throw new Error('Conversation not found in database');
+          }
+        } catch (error) {
+          console.error('[Messaging] Failed to fetch conversation from database:', error);
+          throw new Error('Conversation not found');
+        }
+      }
+      
       const participants = conv.participants || [];
       const recipientId = participants.find(pid => pid !== user.id);
       if (!recipientId) throw new Error('Recipient not found');
+      
       const tempMessage: Message = {
         id: `temp-${Date.now()}`,
         senderId: user.id,
@@ -118,6 +134,7 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
         ...prev,
         [conversationId]: [...(prev[conversationId] ?? []), tempMessage],
       }));
+      
       const messagePayload: any = {
         senderId: user.id,
         receiverId: recipientId,
