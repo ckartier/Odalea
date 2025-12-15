@@ -1001,6 +1001,42 @@ export const professionalService = {
       }
       throw error;
     }
+  },
+
+  // Save professional services
+  async saveServices(userId: string, servicesData: any): Promise<void> {
+    try {
+      const servicesRef = doc(db, COLLECTIONS.PROFESSIONALS, userId);
+      await setDoc(servicesRef, {
+        services: servicesData,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      console.log('✅ Professional services saved successfully');
+    } catch (error) {
+      console.error('❌ Error saving professional services:', error);
+      throw error;
+    }
+  },
+
+  // Get professional services
+  async getServices(userId: string): Promise<any | null> {
+    try {
+      const servicesRef = doc(db, COLLECTIONS.PROFESSIONALS, userId);
+      const servicesSnap = await getDoc(servicesRef);
+      
+      if (servicesSnap.exists()) {
+        const data = servicesSnap.data();
+        return data.services || null;
+      }
+      return null;
+    } catch (error) {
+      console.error('❌ Error getting professional services:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning null services due to permission rules');
+        return null;
+      }
+      throw error;
+    }
   }
 };
 

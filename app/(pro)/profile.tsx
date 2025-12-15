@@ -29,6 +29,8 @@ import {
   TrendingUp,
   Award,
   CheckCircle,
+  Briefcase,
+  ArrowRight,
 } from 'lucide-react-native';
 
 export default function ProProfileScreen() {
@@ -274,6 +276,27 @@ export default function ProProfileScreen() {
             </View>
           </>
         )}
+        
+        {/* Services Management Quick Access */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Gestion des prestations</Text>
+        </View>
+        
+        <TouchableOpacity 
+          style={[styles.servicesManagementCard, SHADOWS.small]}
+          onPress={() => router.push('/(pro)/services/manage')}
+        >
+          <View style={styles.servicesManagementIcon}>
+            <Briefcase size={24} color={COLORS.primary} />
+          </View>
+          <View style={styles.servicesManagementContent}>
+            <Text style={styles.servicesManagementTitle}>Gérer vos prestations</Text>
+            <Text style={styles.servicesManagementSubtitle}>
+              Prix, disponibilités, calendrier et services
+            </Text>
+          </View>
+          <ArrowRight size={20} color={COLORS.darkGray} />
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -484,5 +507,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.darkGray,
     lineHeight: 20,
+  },
+  servicesManagementCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+  },
+  servicesManagementIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: `${COLORS.primary}20`,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  servicesManagementContent: {
+    flex: 1,
+  },
+  servicesManagementTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: COLORS.black,
+    marginBottom: 2,
+  },
+  servicesManagementSubtitle: {
+    fontSize: 14,
+    color: COLORS.darkGray,
   },
 });
