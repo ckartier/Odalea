@@ -25,6 +25,7 @@ import {
   X,
 } from 'lucide-react-native';
 import { useFriends } from '@/hooks/friends-store';
+import { useMessaging } from '@/hooks/messaging-store';
 import { databaseService } from '@/services/database';
 import { User, FriendRequest } from '@/types';
 import FriendRequestsModal from '@/components/FriendRequestsModal';
@@ -46,6 +47,7 @@ export default function FriendsScreen() {
     cancelFriendRequest,
     isLoading 
   } = useFriends();
+  const { createConversation } = useMessaging();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('friends');
@@ -148,8 +150,14 @@ export default function FriendsScreen() {
     );
   };
 
-  const handleSendMessage = (friendId: string) => {
-    router.push(`/messages/${friendId}`);
+  const handleSendMessage = async (friendId: string) => {
+    try {
+      const conversationId = await createConversation.mutateAsync(friendId);
+      router.push(`/messages/${conversationId}`);
+    } catch (error) {
+      console.error('[Friends] Failed to create conversation:', error);
+      Alert.alert('Erreur', 'Impossible de créer la conversation. Veuillez réessayer.');
+    }
   };
 
   const showFriendOptions = (friend: User) => {
@@ -202,8 +210,9 @@ export default function FriendsScreen() {
       
       <View style={styles.friendActions}>
         <TouchableOpacity
-          style={styles.actionButton}
+          style={[styles.actionButton, createConversation.isPending && styles.actionButtonDisabled]}
           onPress={() => handleSendMessage(item.id)}
+          disabled={createConversation.isPending}
         >
           <MessageCircle size={20} color={COLORS.primary} />
         </TouchableOpacity>
@@ -570,6 +579,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.lightGray,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  actionButtonDisabled: {
+    opacity: 0.5,
   },
   cancelButton: {
     backgroundColor: COLORS.lightGray,
