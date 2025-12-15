@@ -188,57 +188,73 @@ export default function FriendsScreen() {
     );
   };
 
-  const renderFriend = ({ item }: { item: User }) => (
-    <TouchableOpacity
-      style={[styles.friendItem, SHADOWS.small]}
-      onPress={() => router.push(`/profile/${item.id}`)}
-    >
-      <View style={styles.friendInfo}>
-        <View style={styles.avatarContainer}>
-          <Image
-            source={{ uri: item.photo || 'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=100' }}
-            style={styles.avatar}
-            contentFit="cover"
-          />
+  const renderFriend = ({ item }: { item: User }) => {
+    const photoUrl = item.photo || 
+                     (item.pets && item.pets.length > 0 && item.pets[0].mainPhoto) || 
+                     'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=200';
+    
+    console.log(`[Friends] Rendering friend ${item.pseudo}, photo:`, photoUrl);
+    
+    return (
+      <TouchableOpacity
+        style={[styles.friendItem, SHADOWS.small]}
+        onPress={() => router.push(`/profile/${item.id}`)}
+      >
+        <View style={styles.friendInfo}>
+          <View style={styles.avatarContainer}>
+            <Image
+              source={{ uri: photoUrl }}
+              style={styles.avatar}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+            />
+          </View>
+          
+          <View style={styles.friendDetails}>
+            <Text style={styles.friendName}>@{item.pseudo || item.name}</Text>
+            {item.city && <Text style={styles.friendLocation}>{item.city}</Text>}
+          </View>
         </View>
         
-        <View style={styles.friendDetails}>
-          <Text style={styles.friendName}>@{item.pseudo || item.name}</Text>
-          {item.city && <Text style={styles.friendLocation}>{item.city}</Text>}
+        <View style={styles.friendActions}>
+          <TouchableOpacity
+            style={[styles.actionButton, createConversation.isPending && styles.actionButtonDisabled]}
+            onPress={() => handleSendMessage(item.id)}
+            disabled={createConversation.isPending}
+          >
+            <MessageCircle size={20} color={COLORS.primary} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => showFriendOptions(item)}
+          >
+            <MoreVertical size={20} color={COLORS.darkGray} />
+          </TouchableOpacity>
         </View>
-      </View>
-      
-      <View style={styles.friendActions}>
-        <TouchableOpacity
-          style={[styles.actionButton, createConversation.isPending && styles.actionButtonDisabled]}
-          onPress={() => handleSendMessage(item.id)}
-          disabled={createConversation.isPending}
-        >
-          <MessageCircle size={20} color={COLORS.primary} />
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => showFriendOptions(item)}
-        >
-          <MoreVertical size={20} color={COLORS.darkGray} />
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const renderSentRequest = ({ item }: { item: SentRequestWithInfo }) => {
     const receiverName = item.receiverInfo?.pseudo || item.receiverInfo?.name || 'Utilisateur';
-    const receiverPhoto = item.receiverInfo?.photo;
+    const receiverPhoto = item.receiverInfo?.photo || 
+                         (item.receiverInfo?.pets && item.receiverInfo.pets.length > 0 && item.receiverInfo.pets[0].mainPhoto) || 
+                         'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=200';
+
+    console.log(`[Friends] Rendering sent request to ${receiverName}, photo:`, receiverPhoto);
 
     return (
       <View style={[styles.friendItem, SHADOWS.small]}>
         <View style={styles.friendInfo}>
-          <Image
-            source={{ uri: receiverPhoto || 'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=100' }}
-            style={styles.avatar}
-            contentFit="cover"
-          />
+          <View style={styles.avatarContainer}>
+            <Image
+              source={{ uri: receiverPhoto }}
+              style={styles.avatar}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+            />
+          </View>
           
           <View style={styles.friendDetails}>
             <Text style={styles.friendName}>@{receiverName}</Text>
@@ -542,6 +558,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
+    backgroundColor: COLORS.lightGray,
   },
   friendDetails: {
     flex: 1,
