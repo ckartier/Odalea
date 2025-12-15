@@ -34,17 +34,7 @@ export default function ChatScreen() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sendingMessage, setSendingMessage] = useState(false);
-  const [quickReplies] = useState<string[]>([
-    'Bonjour 👋',
-    'Disponible demain ?',
-    'Merci !',
-    'On se parle plus tard.',
-    'Parfait, merci 🙏',
-    'Pouvez-vous envoyer des photos ?',
-    'Je suis en déplacement, je reviens vers vous.',
-    'Adresse exacte ?',
-    'Quel est votre tarif ?',
-  ]);
+
   const [attachments, setAttachments] = useState<string[]>([]);
   
   const flatListRef = useRef<FlatList>(null);
@@ -127,8 +117,19 @@ export default function ChatScreen() {
   };
   
   const formatTime = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (!timestamp || isNaN(timestamp) || timestamp <= 0) {
+      return '--:--';
+    }
+    try {
+      const date = new Date(timestamp);
+      if (isNaN(date.getTime())) {
+        return '--:--';
+      }
+      return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    } catch (error) {
+      console.error('[Chat] Error formatting time:', error);
+      return '--:--';
+    }
   };
   
   const renderMessage = ({ item }: { item: Message }) => {
@@ -199,25 +200,53 @@ export default function ChatScreen() {
             contentContainerStyle={styles.messagesContainer}
             showsVerticalScrollIndicator={false}
             ListHeaderComponent={
-              <View style={styles.header}>
-                <Image
-                  source={{ uri: (otherUser?.pets?.[0]?.mainPhoto as string | undefined) || 'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=500' }}
-                  style={styles.avatar}
-                  contentFit="cover"
-                />
-                <Text style={styles.headerText}>
-                  Début de votre conversation avec @{otherUser?.pseudo ?? 'utilisateur'}
-                </Text>
-              </View>
+              otherUser && (
+                <View style={styles.header}>
+                  {otherUser.pets && otherUser.pets.length > 0 && otherUser.pets[0].mainPhoto ? (
+                    <Image
+                      source={{ uri: otherUser.pets[0].mainPhoto }}
+                      style={styles.avatar}
+                      contentFit="cover"
+                    />
+                  ) : otherUser.photo ? (
+                    <Image
+                      source={{ uri: otherUser.photo }}
+                      style={styles.avatar}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                      <Text style={styles.avatarPlaceholderText}>
+                        {(otherUser.pseudo?.[0] || otherUser.name?.[0] || '?').toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                  <Text style={styles.headerText}>
+                    Début de votre conversation avec @{otherUser.pseudo ?? 'utilisateur'}
+                  </Text>
+                </View>
+              )
             }
           />
           
-          <View style={styles.quickRepliesRow}>
-            {quickReplies.map((qr, idx) => (
-              <TouchableOpacity key={idx} style={styles.quickReplyChip} onPress={() => setNewMessage(prev => (prev ? prev + ' ' : '') + qr)}>
-                <Text style={styles.quickReplyText}>{qr}</Text>
-              </TouchableOpacity>
-            ))}
+          <View style={styles.conductNotice}>
+            <Text style={styles.conductNoticeText}>
+              💬 Soyez respectueux dans vos échanges. Consultez nos{' '}
+              <Text 
+                style={styles.conductLink}
+                onPress={() => router.push('/legal/terms')}
+              >
+                Conditions Générales
+              </Text>
+              {' '}et notre{' '}
+              <Text 
+                style={styles.conductLink}
+                onPress={() => router.push('/legal/privacy')}
+              >
+                Politique de Confidentialité
+              </Text>
+              .
+            </Text>
           </View>
 
           <View style={styles.inputContainer}>
@@ -343,22 +372,33 @@ const styles = StyleSheet.create({
     color: COLORS.darkGray,
     alignSelf: 'flex-end',
   },
-  quickRepliesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+  conductNotice: {
     paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-  quickReplyChip: {
+    paddingVertical: 12,
     backgroundColor: COLORS.lightGray,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 14,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.mediumGray,
   },
-  quickReplyText: {
-    color: COLORS.darkGray,
+  conductNoticeText: {
     fontSize: 12,
+    color: COLORS.darkGray,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  conductLink: {
+    color: COLORS.maleAccent,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+  avatarPlaceholder: {
+    backgroundColor: COLORS.maleAccent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarPlaceholderText: {
+    fontSize: 24,
+    color: COLORS.white,
+    fontWeight: '600',
   },
   inputContainer: {
     flexDirection: 'row',
