@@ -2,6 +2,16 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+export interface CustomService {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  duration: number;
+  icon: string;
+  isActive: boolean;
+}
+
 export interface CatSitterProfile {
   id: string;
   userId: string;
@@ -9,6 +19,7 @@ export interface CatSitterProfile {
   hourlyRate: number;
   description: string;
   services: string[];
+  customServices?: CustomService[];
   availability: {
     [key: string]: { start: string; end: string; available: boolean };
   };

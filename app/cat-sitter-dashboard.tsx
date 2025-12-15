@@ -9,6 +9,8 @@ import {
   Alert,
   Switch,
   Dimensions,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -37,6 +39,9 @@ import {
   Dog,
   Moon,
   Scissors,
+  Edit2,
+  X,
+  Save,
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -48,6 +53,10 @@ interface StandardService {
   price: number;
   duration: number;
   icon: string;
+}
+
+interface CustomService extends StandardService {
+  isActive: boolean;
 }
 
 const STANDARD_SERVICES: StandardService[] = [
@@ -103,6 +112,13 @@ export default function CatSitterDashboardScreen() {
 
   const [selectedTab, setSelectedTab] = useState<'overview' | 'bookings' | 'messages' | 'calendar'>('overview');
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [customServices, setCustomServices] = useState<CustomService[]>([]);
+  const [editingService, setEditingService] = useState<CustomService | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  const [editedDescription, setEditedDescription] = useState('');
+  const [editedPrice, setEditedPrice] = useState('');
+  const [editedDuration, setEditedDuration] = useState('');
 
   useEffect(() => {
     if (user && !profile) {
@@ -118,6 +134,17 @@ export default function CatSitterDashboardScreen() {
     }
     if (profile && profile.services) {
       setSelectedServices(profile.services);
+    }
+    
+    const storedServices = profile?.customServices as any;
+    if (storedServices && Array.isArray(storedServices)) {
+      setCustomServices(storedServices);
+    } else {
+      const defaultServices = STANDARD_SERVICES.map(s => ({
+        ...s,
+        isActive: false,
+      }));
+      setCustomServices(defaultServices);
     }
   }, [user, profile, createProfile]);
 
@@ -144,21 +171,62 @@ export default function CatSitterDashboardScreen() {
   };
 
   const toggleService = async (serviceId: string) => {
-    const serviceName = STANDARD_SERVICES.find(s => s.id === serviceId)?.name;
-    if (!serviceName) return;
-
-    let updatedServices: string[];
-    if (selectedServices.includes(serviceName)) {
-      updatedServices = selectedServices.filter(s => s !== serviceName);
-    } else {
-      updatedServices = [...selectedServices, serviceName];
-    }
+    const updatedServices = customServices.map(service => {
+      if (service.id === serviceId) {
+        return { ...service, isActive: !service.isActive };
+      }
+      return service;
+    });
     
-    setSelectedServices(updatedServices);
+    setCustomServices(updatedServices);
     
     if (profile) {
-      await updateProfile({ services: updatedServices });
+      await updateProfile({ customServices: updatedServices });
     }
+  };
+
+  const openEditModal = (service: CustomService) => {
+    setEditingService(service);
+    setEditedName(service.name);
+    setEditedDescription(service.description);
+    setEditedPrice(service.price.toString());
+    setEditedDuration(service.duration.toString());
+    setShowEditModal(true);
+  };
+
+  const saveServiceEdit = async () => {
+    if (!editingService) return;
+
+    const price = parseFloat(editedPrice);
+    const duration = parseFloat(editedDuration);
+
+    if (isNaN(price) || isNaN(duration) || price <= 0 || duration <= 0) {
+      Alert.alert('Erreur', 'Veuillez entrer des valeurs valides pour le prix et la durée');
+      return;
+    }
+
+    const updatedServices = customServices.map(service => {
+      if (service.id === editingService.id) {
+        return {
+          ...service,
+          name: editedName,
+          description: editedDescription,
+          price,
+          duration,
+        };
+      }
+      return service;
+    });
+
+    setCustomServices(updatedServices);
+    
+    if (profile) {
+      await updateProfile({ customServices: updatedServices });
+    }
+
+    setShowEditModal(false);
+    setEditingService(null);
+    Alert.alert('Succès', 'Prestation modifiée avec succès');
   };
 
   const handleToggleAvailability = async () => {
@@ -231,38 +299,47 @@ export default function CatSitterDashboardScreen() {
         <Text style={styles.sectionSubtitle}>Sélectionnez les services que vous souhaitez offrir</Text>
         
         <View style={styles.servicesList}>
-          {STANDARD_SERVICES.map((service) => {
-            const serviceName = service.name;
-            const isSelected = selectedServices.includes(serviceName);
+          {customServices.map((service) => {
+            const isSelected = service.isActive;
             
             return (
-              <TouchableOpacity
+              <View
                 key={service.id}
                 style={[
                   styles.serviceOption,
                   isSelected && styles.selectedServiceOption,
                 ]}
-                onPress={() => toggleService(service.id)}
               >
-                <View style={styles.serviceIconContainer}>
-                  {getServiceIcon(service.icon)}
-                </View>
-                <View style={styles.serviceDetails}>
-                  <Text style={styles.serviceOptionName}>{service.name}</Text>
-                  <Text style={styles.serviceOptionDescription} numberOfLines={1}>
-                    {service.description}
-                  </Text>
-                  <Text style={styles.serviceOptionPrice}>
-                    {service.price}€/{service.duration}h
-                  </Text>
-                </View>
-                <View style={[
-                  styles.checkbox,
-                  isSelected && styles.checkboxSelected,
-                ]}>
-                  {isSelected && <CheckCircle size={20} color={COLORS.white} />}
-                </View>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.serviceMainContent}
+                  onPress={() => toggleService(service.id)}
+                >
+                  <View style={styles.serviceIconContainer}>
+                    {getServiceIcon(service.icon)}
+                  </View>
+                  <View style={styles.serviceDetails}>
+                    <Text style={styles.serviceOptionName}>{service.name}</Text>
+                    <Text style={styles.serviceOptionDescription} numberOfLines={1}>
+                      {service.description}
+                    </Text>
+                    <Text style={styles.serviceOptionPrice}>
+                      {service.price}€/{service.duration}h
+                    </Text>
+                  </View>
+                  <View style={[
+                    styles.checkbox,
+                    isSelected && styles.checkboxSelected,
+                  ]}>
+                    {isSelected && <CheckCircle size={20} color={COLORS.white} />}
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.editServiceButton}
+                  onPress={() => openEditModal(service)}
+                >
+                  <Edit2 size={18} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
             );
           })}
         </View>
@@ -511,6 +588,101 @@ export default function CatSitterDashboardScreen() {
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
+      
+      {/* Edit Service Modal */}
+      <Modal
+        visible={showEditModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Modifier la prestation</Text>
+              <TouchableOpacity onPress={() => setShowEditModal(false)}>
+                <X size={24} color={COLORS.darkGray} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Nom de la prestation</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editedName}
+                  onChangeText={setEditedName}
+                  placeholder="Ex: Garde d'animaux"
+                  placeholderTextColor={COLORS.mediumGray}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Description</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  value={editedDescription}
+                  onChangeText={setEditedDescription}
+                  placeholder="Décrivez votre prestation"
+                  placeholderTextColor={COLORS.mediumGray}
+                  multiline
+                  numberOfLines={3}
+                />
+              </View>
+
+              <View style={styles.inputRow}>
+                <View style={[styles.inputGroup, { flex: 1 }]}>
+                  <Text style={styles.inputLabel}>Prix (€)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={editedPrice}
+                    onChangeText={setEditedPrice}
+                    placeholder="15"
+                    placeholderTextColor={COLORS.mediumGray}
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+
+                <View style={[styles.inputGroup, { flex: 1 }]}>
+                  <Text style={styles.inputLabel}>Durée (heures)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={editedDuration}
+                    onChangeText={setEditedDuration}
+                    placeholder="4"
+                    placeholderTextColor={COLORS.mediumGray}
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.pricePreview}>
+                <Text style={styles.pricePreviewLabel}>Aperçu du tarif:</Text>
+                <Text style={styles.pricePreviewValue}>
+                  {editedPrice || '0'}€ / {editedDuration || '0'}h
+                </Text>
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowEditModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Annuler</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={saveServiceEdit}
+              >
+                <Save size={18} color={COLORS.white} />
+                <Text style={styles.saveButtonText}>Enregistrer</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       <Stack.Screen
         options={{
           headerShown: true,
@@ -726,11 +898,25 @@ const styles = StyleSheet.create({
   serviceOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
     backgroundColor: COLORS.lightGray,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: 'transparent',
+    overflow: 'hidden',
+  },
+  serviceMainContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+  },
+  editServiceButton: {
+    padding: 12,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderLeftWidth: 1,
+    borderLeftColor: COLORS.lightGray,
   },
   selectedServiceOption: {
     borderColor: COLORS.catSitter,
@@ -1073,5 +1259,110 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 16,
     fontWeight: '600' as const,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '90%',
+    ...SHADOWS.large,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightGray,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: COLORS.black,
+  },
+  modalBody: {
+    padding: 20,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: COLORS.black,
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: COLORS.lightGray,
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 16,
+    color: COLORS.black,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  textArea: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  pricePreview: {
+    backgroundColor: COLORS.lightGray,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  pricePreviewLabel: {
+    fontSize: 14,
+    color: COLORS.darkGray,
+    marginBottom: 4,
+  },
+  pricePreviewValue: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+    color: COLORS.success,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: 12,
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.lightGray,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: COLORS.lightGray,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: COLORS.darkGray,
+  },
+  saveButton: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: COLORS.success,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: COLORS.white,
   },
 });
