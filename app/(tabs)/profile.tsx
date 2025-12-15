@@ -15,6 +15,7 @@ import { Image } from 'expo-image';
 import { Href, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
+import { TYPOGRAPHY } from '@/constants/typography';
 import GlassCard from '@/components/GlassCard';
 import AppBackground from '@/components/AppBackground';
 import PetCard from '@/components/PetCard';
@@ -38,7 +39,6 @@ import {
   Star, 
   User as UserIcon,
   Users,
-  Camera,
   Trophy,
   Heart,
   Euro,
@@ -56,7 +56,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const toHref = (path: string): Href => path as Href;
   const { user, signOut, updateUser } = useFirebaseUser();
-  const { friends, isLoading: friendsLoading } = useFriends();
+  const { friends } = useFriends();
   const { getUnlockedBadges } = useBadges();
   const { getUserActiveChallenges, getUserCompletedChallenges } = useChallenges();
   const { isPremium } = usePremium();
@@ -797,12 +797,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerName: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    color: COLORS.black,
+    ...TYPOGRAPHY.h3,
   },
   friendsCount: {
-    fontSize: 14,
+    ...TYPOGRAPHY.body2,
     color: COLORS.darkGray,
     marginTop: 2,
   },
@@ -894,7 +892,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   detailText: {
-    fontSize: 14,
+    ...TYPOGRAPHY.body2,
     color: COLORS.darkGray,
   },
   actionsContainer: {
@@ -929,14 +927,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   membershipTitle: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: COLORS.black,
+    ...TYPOGRAPHY.h5,
     marginBottom: 2,
   },
   membershipSubtitle: {
-    fontSize: 12,
-    color: COLORS.darkGray,
+    ...TYPOGRAPHY.caption,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -946,12 +941,10 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600' as const,
-    color: COLORS.black,
+    ...TYPOGRAPHY.h4,
   },
   seeAllText: {
-    fontSize: 14,
+    ...TYPOGRAPHY.body2,
     color: COLORS.maleAccent,
   },
   petsContainer: {
@@ -973,8 +966,7 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
   },
   addPetText: {
-    fontSize: 16,
-    fontWeight: '500' as const,
+    ...TYPOGRAPHY.h5,
     color: COLORS.maleAccent,
     marginTop: 8,
   },
@@ -995,15 +987,13 @@ const styles = StyleSheet.create({
     minHeight: 40,
   },
   infoLabel: {
-    fontSize: 14,
-    fontWeight: '500' as const,
-    color: COLORS.black,
+    ...TYPOGRAPHY.label,
     marginLeft: 10,
     width: 90,
   },
   infoValue: {
+    ...TYPOGRAPHY.body2,
     flex: 1,
-    fontSize: 14,
     color: COLORS.darkGray,
   },
   divider: {
@@ -1034,14 +1024,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   friendName: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: COLORS.black,
+    ...TYPOGRAPHY.h6,
     textAlign: 'center',
     marginBottom: 4,
   },
   friendAction: {
-    fontSize: 12,
+    ...TYPOGRAPHY.caption,
     color: COLORS.primary,
     textAlign: 'center',
   },
@@ -1051,14 +1039,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   emptyFriendsText: {
-    fontSize: 14,
+    ...TYPOGRAPHY.body2,
     color: COLORS.darkGray,
     marginTop: 12,
     textAlign: 'center',
   },
   addFriendsText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
+    ...TYPOGRAPHY.h6,
     color: COLORS.primary,
     marginTop: 8,
   },
@@ -1074,19 +1061,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   challengeStatNumber: {
-    fontSize: 24,
-    fontWeight: '700' as const,
-    color: COLORS.black,
+    ...TYPOGRAPHY.h2,
     marginTop: 8,
   },
   challengeStatLabel: {
-    fontSize: 12,
-    color: COLORS.darkGray,
+    ...TYPOGRAPHY.caption,
     marginTop: 4,
   },
   managePremiumText: {
-    fontSize: 14,
-    fontWeight: '500' as const,
+    ...TYPOGRAPHY.subtitle2,
     color: COLORS.primary,
   },
   // Cat-Sitter Dashboard Styles
@@ -1113,13 +1096,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   catSitterTabText: {
-    fontSize: 12,
-    color: COLORS.darkGray,
-    fontWeight: '500' as const,
+    ...TYPOGRAPHY.tabLabel,
   },
   activeCatSitterTabText: {
+    ...TYPOGRAPHY.tabLabelActive,
     color: COLORS.white,
-    fontWeight: '600' as const,
   },
   catSitterBadge: {
     position: 'absolute',
@@ -1133,9 +1114,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   catSitterBadgeText: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: '600' as const,
+    ...TYPOGRAPHY.badge,
   },
   catSitterContent: {
     backgroundColor: COLORS.white,

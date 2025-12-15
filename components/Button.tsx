@@ -9,8 +9,9 @@ import {
   TouchableOpacityProps,
   View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+
 import { COLORS, SHADOWS, DIMENSIONS, IS_SMALL_DEVICE, moderateScale } from '@/constants/colors';
+import { TYPOGRAPHY } from '@/constants/typography';
 import GlassView from './GlassView';
 
 interface ButtonProps extends TouchableOpacityProps {
@@ -75,19 +76,7 @@ const Button: React.FC<ButtonProps> = ({
     }
   };
 
-  const getGradientColors = (): [string, string] => {
-    if (disabled) return [COLORS.mediumGray, COLORS.border];
-    switch (variant) {
-      case 'male':
-        return [COLORS.male, COLORS.maleVivid];
-      case 'female':
-        return [COLORS.female, COLORS.femaleVivid];
-      case 'primary':
-        return [COLORS.primary, COLORS.primaryDark];
-      default:
-        return [COLORS.neutralLight, COLORS.neutralVivid];
-    }
-  };
+
 
   const getShadowForVariant = () => {
     if (disabled || variant === 'ghost') return SHADOWS.none;
@@ -123,18 +112,17 @@ const Button: React.FC<ButtonProps> = ({
     };
   };
 
-  const getFontSize = () => {
+  const getTextStyle = () => {
     switch (size) {
       case 'xs':
-        return DIMENSIONS.FONT_SIZES.xs;
+        return TYPOGRAPHY.buttonSmall;
       case 'small':
-        return DIMENSIONS.FONT_SIZES.sm;
+        return TYPOGRAPHY.buttonSmall;
       case 'large':
-        return DIMENSIONS.FONT_SIZES.lg;
       case 'xl':
-        return DIMENSIONS.FONT_SIZES.xl;
+        return TYPOGRAPHY.buttonLarge;
       default:
-        return DIMENSIONS.FONT_SIZES.md;
+        return TYPOGRAPHY.button;
     }
   };
 
@@ -156,7 +144,7 @@ const Button: React.FC<ButtonProps> = ({
       ) : (
         <>
           {icon && iconPosition === 'left' && <View style={styles.iconContainer}>{icon as React.ReactNode}</View>}
-          <Text style={[styles.text, { color: getTextColor(), fontSize: getFontSize() }, textStyle]}>{title}</Text>
+          <Text style={[styles.text, getTextStyle(), { color: getTextColor() }, textStyle]}>{title}</Text>
           {icon && iconPosition === 'right' && <View style={styles.iconContainer}>{icon as React.ReactNode}</View>}
         </>
       )}
@@ -246,9 +234,7 @@ const styles = StyleSheet.create({
     gap: moderateScale(6),
   },
   text: {
-    fontWeight: '600' as const,
     textAlign: 'center',
-    letterSpacing: 0.5,
   },
   iconContainer: {
     justifyContent: 'center',

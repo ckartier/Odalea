@@ -12,6 +12,7 @@ import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
+import { TYPOGRAPHY } from '@/constants/typography';
 import { useI18n } from '@/hooks/i18n-store';
 import { 
   Users, 
@@ -487,13 +488,10 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.primary,
   },
   tabText: {
-    fontSize: 14,
-    fontWeight: '500' as const,
-    color: COLORS.darkGray,
+    ...TYPOGRAPHY.tabLabel,
   },
   activeTabText: {
-    color: COLORS.primary,
-    fontWeight: '600' as const,
+    ...TYPOGRAPHY.tabLabelActive,
   },
   badge: {
     position: 'absolute',
@@ -508,15 +506,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   badgeText: {
-    color: COLORS.white,
+    ...TYPOGRAPHY.badge,
     fontSize: 12,
-    fontWeight: '700' as const,
   },
   listContent: {
     padding: 16,
   },
   sectionInfo: {
-    fontSize: 14,
+    ...TYPOGRAPHY.body2,
     color: COLORS.darkGray,
     marginBottom: 16,
     textAlign: 'center',
@@ -532,9 +529,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   viewRequestsButtonText: {
+    ...TYPOGRAPHY.h5,
     color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600' as const,
   },
   friendItem: {
     flexDirection: 'row',
@@ -564,13 +560,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   friendName: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: COLORS.black,
+    ...TYPOGRAPHY.h5,
     marginBottom: 2,
   },
   friendLocation: {
-    fontSize: 14,
+    ...TYPOGRAPHY.body2,
     color: COLORS.darkGray,
     marginBottom: 4,
   },
@@ -581,9 +575,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   statusText: {
-    fontSize: 12,
+    ...TYPOGRAPHY.caption,
     color: COLORS.warning,
-    fontWeight: '500' as const,
   },
   friendActions: {
     flexDirection: 'row',
@@ -610,16 +603,13 @@ const styles = StyleSheet.create({
     padding: 32,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600' as const,
-    color: COLORS.black,
+    ...TYPOGRAPHY.h3,
     marginTop: 16,
     marginBottom: 8,
   },
   emptyDescription: {
-    fontSize: 16,
+    ...TYPOGRAPHY.body1,
     color: COLORS.darkGray,
     textAlign: 'center',
-    lineHeight: 22,
   },
 });
