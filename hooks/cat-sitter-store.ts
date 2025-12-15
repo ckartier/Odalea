@@ -29,7 +29,17 @@ export interface CatSitterProfile {
   petTypes: string[];
   languages: string[];
   insurance: boolean;
+  insuranceNumber?: string;
+  insuranceCompany?: string;
+  insuranceExpiryDate?: string;
   emergencyContact: boolean;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  certifications?: string[];
+  firstAidCertified?: boolean;
+  backgroundCheckVerified?: boolean;
+  maxPetsAtOnce?: number;
+  homeType?: string;
   responseTime: string;
   totalBookings: number;
   rating: number;

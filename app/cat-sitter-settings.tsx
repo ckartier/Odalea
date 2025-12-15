@@ -22,15 +22,18 @@ import {
   Save,
   Euro,
   Clock,
-  Camera,
-  Plus,
   X,
   Check,
   Edit3,
-  Calendar,
   Globe,
   Shield,
   Heart,
+  Award,
+  Phone,
+  Star,
+  Users,
+  FileCheck,
+  Home,
 } from 'lucide-react-native';
 import ContinuousSlider from '@/components/ContinuousSlider';
 
@@ -86,7 +89,16 @@ export default function CatSitterSettingsScreen() {
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [insurance, setInsurance] = useState<boolean>(false);
+  const [insuranceNumber, setInsuranceNumber] = useState<string>('');
+  const [insuranceCompany, setInsuranceCompany] = useState<string>('');
+  const [insuranceExpiryDate, setInsuranceExpiryDate] = useState<string>('');
   const [emergencyContact, setEmergencyContact] = useState<boolean>(false);
+  const [emergencyContactName, setEmergencyContactName] = useState<string>('');
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState<string>('');
+  const [firstAidCertified, setFirstAidCertified] = useState<boolean>(false);
+  const [backgroundCheckVerified, setBackgroundCheckVerified] = useState<boolean>(false);
+  const [maxPetsAtOnce, setMaxPetsAtOnce] = useState<string>('2');
+  const [homeType, setHomeType] = useState<string>('');
   const [availability, setAvailability] = useState<{[key: string]: { start: string; end: string; available: boolean }}>({});
   const [radiusKm, setRadiusKm] = useState<number>(5);
   
@@ -105,7 +117,16 @@ export default function CatSitterSettingsScreen() {
       setSelectedLanguages(profile.languages);
       setPhotos(profile.photos);
       setInsurance(profile.insurance);
+      setInsuranceNumber(profile.insuranceNumber || '');
+      setInsuranceCompany(profile.insuranceCompany || '');
+      setInsuranceExpiryDate(profile.insuranceExpiryDate || '');
       setEmergencyContact(profile.emergencyContact);
+      setEmergencyContactName(profile.emergencyContactName || '');
+      setEmergencyContactPhone(profile.emergencyContactPhone || '');
+      setFirstAidCertified(profile.firstAidCertified || false);
+      setBackgroundCheckVerified(profile.backgroundCheckVerified || false);
+      setMaxPetsAtOnce(profile.maxPetsAtOnce?.toString() || '2');
+      setHomeType(profile.homeType || '');
       setAvailability(profile.availability);
       if (typeof profile.radiusKm === 'number') setRadiusKm(profile.radiusKm);
     }
@@ -137,7 +158,16 @@ export default function CatSitterSettingsScreen() {
       languages: selectedLanguages,
       photos,
       insurance,
+      insuranceNumber: insurance ? insuranceNumber : undefined,
+      insuranceCompany: insurance ? insuranceCompany : undefined,
+      insuranceExpiryDate: insurance ? insuranceExpiryDate : undefined,
       emergencyContact,
+      emergencyContactName: emergencyContact ? emergencyContactName : undefined,
+      emergencyContactPhone: emergencyContact ? emergencyContactPhone : undefined,
+      firstAidCertified,
+      backgroundCheckVerified,
+      maxPetsAtOnce: parseInt(maxPetsAtOnce) || 2,
+      homeType: homeType.trim() || undefined,
       availability,
       radiusKm,
     });
@@ -250,7 +280,29 @@ export default function CatSitterSettingsScreen() {
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          {/* Basic Info */}
+          {profile && (
+            <View style={[styles.section, SHADOWS.small]}>
+              <Text style={styles.sectionTitle}>Évaluations</Text>
+              <View style={styles.statsRow}>
+                <View style={styles.statItem}>
+                  <Star size={24} color={COLORS.warning} fill={COLORS.warning} />
+                  <Text style={styles.statValue}>{profile.rating.toFixed(1)}</Text>
+                  <Text style={styles.statLabel}>Note moyenne</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Award size={24} color={COLORS.primary} />
+                  <Text style={styles.statValue}>{profile.reviewCount}</Text>
+                  <Text style={styles.statLabel}>Avis</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Check size={24} color={COLORS.success} />
+                  <Text style={styles.statValue}>{profile.totalBookings}</Text>
+                  <Text style={styles.statLabel}>Prestations</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
           <View style={[styles.section, SHADOWS.small]}>
             <Text style={styles.sectionTitle}>Informations de base</Text>
             
@@ -283,7 +335,6 @@ export default function CatSitterSettingsScreen() {
             </View>
           </View>
 
-          {/* Services */}
           <View style={[styles.section, SHADOWS.small]}>
             <Text style={styles.sectionTitle}>Services proposés</Text>
             <View style={styles.tagsContainer}>
@@ -310,7 +361,6 @@ export default function CatSitterSettingsScreen() {
             </View>
           </View>
 
-          {/* Pet Types */}
           <View style={[styles.section, SHADOWS.small]}>
             <Text style={styles.sectionTitle}>Types d&apos;animaux</Text>
             <View style={styles.tagsContainer}>
@@ -337,7 +387,6 @@ export default function CatSitterSettingsScreen() {
             </View>
           </View>
 
-          {/* Languages */}
           <View style={[styles.section, SHADOWS.small]}>
             <Text style={styles.sectionTitle}>Langues parlées</Text>
             <View style={styles.tagsContainer}>
@@ -362,7 +411,6 @@ export default function CatSitterSettingsScreen() {
             </View>
           </View>
 
-          {/* Photos */}
           <View style={[styles.section, SHADOWS.small]}>
             <Text style={styles.sectionTitle}>Photos ({photos.length}/6)</Text>
             <View style={styles.photosGrid}>
@@ -398,7 +446,6 @@ export default function CatSitterSettingsScreen() {
             </View>
           </View>
 
-          {/* Availability */}
           <View style={[styles.section, SHADOWS.small]}>
             <Text style={styles.sectionTitle}>Disponibilités</Text>
             {DAYS_OF_WEEK.map(({ key, label }) => (
@@ -422,7 +469,6 @@ export default function CatSitterSettingsScreen() {
             ))}
           </View>
 
-          {/* Service Radius */}
           <View style={[styles.section, SHADOWS.small]}>
             <Text style={styles.sectionTitle}>Rayon d&apos;intervention</Text>
             <View style={styles.radiusRow}>
@@ -445,9 +491,8 @@ export default function CatSitterSettingsScreen() {
             </View>
           </View>
 
-          {/* Additional Options */}
           <View style={[styles.section, SHADOWS.small]}>
-            <Text style={styles.sectionTitle}>Options supplémentaires</Text>
+            <Text style={styles.sectionTitle}>Assurance</Text>
             
             <View style={styles.switchRow}>
               <View style={styles.switchInfo}>
@@ -467,6 +512,44 @@ export default function CatSitterSettingsScreen() {
               />
             </View>
 
+            {insurance && (
+              <>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Numéro d&apos;assurance</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={insuranceNumber}
+                    onChangeText={setInsuranceNumber}
+                    placeholder="123456789"
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Compagnie d&apos;assurance</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={insuranceCompany}
+                    onChangeText={setInsuranceCompany}
+                    placeholder="AXA, Allianz, etc."
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Date d&apos;expiration</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={insuranceExpiryDate}
+                    onChangeText={setInsuranceExpiryDate}
+                    placeholder="31/12/2025"
+                  />
+                </View>
+              </>
+            )}
+          </View>
+
+          <View style={[styles.section, SHADOWS.small]}>
+            <Text style={styles.sectionTitle}>Contact d&apos;urgence</Text>
+            
             <View style={styles.switchRow}>
               <View style={styles.switchInfo}>
                 <Heart size={20} color={COLORS.primary} />
@@ -484,6 +567,105 @@ export default function CatSitterSettingsScreen() {
                 thumbColor={emergencyContact ? COLORS.white : COLORS.mediumGray}
               />
             </View>
+
+            {emergencyContact && (
+              <>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Nom du contact</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={emergencyContactName}
+                    onChangeText={setEmergencyContactName}
+                    placeholder="Jean Dupont"
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Téléphone</Text>
+                  <View style={styles.priceInputContainer}>
+                    <Phone size={20} color={COLORS.darkGray} />
+                    <TextInput
+                      style={styles.priceInput}
+                      value={emergencyContactPhone}
+                      onChangeText={setEmergencyContactPhone}
+                      placeholder="+33 6 12 34 56 78"
+                      keyboardType="phone-pad"
+                    />
+                  </View>
+                </View>
+              </>
+            )}
+          </View>
+
+          <View style={[styles.section, SHADOWS.small]}>
+            <Text style={styles.sectionTitle}>Certifications et vérifications</Text>
+            
+            <View style={styles.switchRow}>
+              <View style={styles.switchInfo}>
+                <Award size={20} color={COLORS.primary} />
+                <View style={styles.switchTextContainer}>
+                  <Text style={styles.switchLabel}>Certificat de premiers secours</Text>
+                  <Text style={styles.switchDescription}>
+                    Formation aux premiers secours pour animaux
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={firstAidCertified}
+                onValueChange={setFirstAidCertified}
+                trackColor={{ false: COLORS.lightGray, true: COLORS.success }}
+                thumbColor={firstAidCertified ? COLORS.white : COLORS.mediumGray}
+              />
+            </View>
+
+            <View style={styles.switchRow}>
+              <View style={styles.switchInfo}>
+                <FileCheck size={20} color={COLORS.primary} />
+                <View style={styles.switchTextContainer}>
+                  <Text style={styles.switchLabel}>Vérification des antécédents</Text>
+                  <Text style={styles.switchDescription}>
+                    Casier judiciaire vérifié
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={backgroundCheckVerified}
+                onValueChange={setBackgroundCheckVerified}
+                trackColor={{ false: COLORS.lightGray, true: COLORS.success }}
+                thumbColor={backgroundCheckVerified ? COLORS.white : COLORS.mediumGray}
+              />
+            </View>
+          </View>
+
+          <View style={[styles.section, SHADOWS.small]}>
+            <Text style={styles.sectionTitle}>Informations complémentaires</Text>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Type de logement</Text>
+              <View style={styles.priceInputContainer}>
+                <Home size={20} color={COLORS.darkGray} />
+                <TextInput
+                  style={styles.priceInput}
+                  value={homeType}
+                  onChangeText={setHomeType}
+                  placeholder="Appartement, Maison avec jardin, etc."
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Nombre maximum d&apos;animaux en même temps</Text>
+              <View style={styles.priceInputContainer}>
+                <Users size={20} color={COLORS.darkGray} />
+                <TextInput
+                  style={styles.priceInput}
+                  value={maxPetsAtOnce}
+                  onChangeText={setMaxPetsAtOnce}
+                  placeholder="2"
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
           </View>
 
           <Button
@@ -495,7 +677,6 @@ export default function CatSitterSettingsScreen() {
         </View>
       </ScrollView>
 
-      {/* Availability Modal */}
       <Modal
         visible={showAvailabilityModal}
         transparent
@@ -653,6 +834,13 @@ const styles = StyleSheet.create({
     color: COLORS.black,
     minHeight: 100,
   },
+  input: {
+    backgroundColor: COLORS.lightGray,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: COLORS.black,
+  },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -687,10 +875,6 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: COLORS.primary,
   },
-  radiusControls: {
-    flexDirection: 'row',
-    gap: 12,
-  },
   photosGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -714,15 +898,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.error,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  addPhotoPlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  addPhotoText: {
-    fontSize: 12,
-    color: COLORS.darkGray,
   },
   availabilityRow: {
     flexDirection: 'row',
@@ -780,6 +955,25 @@ const styles = StyleSheet.create({
   saveButton: {
     marginTop: 16,
     marginBottom: 32,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 8,
+  },
+  statItem: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+    color: COLORS.black,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: COLORS.darkGray,
+    textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,
