@@ -12,6 +12,8 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import Button from '@/components/Button';
+import GlassCard from '@/components/GlassCard';
+import AppBackground from '@/components/AppBackground';
 import { useShop } from '@/hooks/shop-store';
 import { useAuth } from '@/hooks/auth-store';
 import { databaseService } from '@/services/database';
@@ -76,7 +78,7 @@ export default function ProductDetailScreen() {
   }
   
   return (
-    <View style={styles.container}>
+    <AppBackground>
       <StatusBar style="dark" />
       
       <Stack.Screen options={{ title: product.name }} />
@@ -85,13 +87,15 @@ export default function ProductDetailScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Image
-          source={{ uri: product.imageUrl }}
-          style={styles.productImage}
-          contentFit="cover"
-        />
+        <GlassCard tint="neutral" style={styles.imageContainer} noPadding>
+          <Image
+            source={{ uri: product.imageUrl }}
+            style={styles.productImage}
+            contentFit="cover"
+          />
+        </GlassCard>
         
-        <View style={styles.contentContainer}>
+        <GlassCard tint="neutral" style={styles.contentContainer}>
           <View style={styles.header}>
             <Text style={styles.productName}>{product.name}</Text>
             
@@ -155,7 +159,8 @@ export default function ProductDetailScreen() {
           />
           
           {product.sellerId && product.sellerId !== user?.id && (
-            <TouchableOpacity
+            <GlassCard
+              tint="male"
               style={styles.contactButton}
               onPress={async () => {
                 try {
@@ -179,21 +184,24 @@ export default function ProductDetailScreen() {
                   Alert.alert('Erreur', 'Impossible de contacter le vendeur');
                 }
               }}
+              noPadding
             >
-              <MessageCircle size={20} color={COLORS.primary} />
-              <Text style={styles.contactButtonText}>Contacter le vendeur</Text>
-            </TouchableOpacity>
+              <View style={styles.contactButtonInner}>
+                <MessageCircle size={20} color={COLORS.black} />
+                <Text style={styles.contactButtonText}>Contacter le vendeur</Text>
+              </View>
+            </GlassCard>
           )}
-        </View>
+        </GlassCard>
       </ScrollView>
-    </View>
+    </AppBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: 'transparent',
   },
   loadingContainer: {
     flex: 1,
@@ -201,14 +209,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scrollContent: {
+    padding: 16,
     paddingBottom: 40,
+  },
+  imageContainer: {
+    marginBottom: 16,
   },
   productImage: {
     width: '100%',
     height: 300,
   },
   contentContainer: {
-    padding: 16,
+    marginBottom: 16,
   },
   header: {
     flexDirection: 'row',
@@ -226,7 +238,7 @@ const styles = StyleSheet.create({
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -287,11 +299,11 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.mediumGray,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
   },
   quantityValue: {
     fontSize: 16,
@@ -305,22 +317,19 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   contactButton: {
+    marginTop: 12,
+  },
+  contactButtonInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 20,
-    marginTop: 12,
-    ...SHADOWS.small,
   },
   contactButtonText: {
     fontSize: 16,
     fontWeight: '600' as const,
-    color: COLORS.primary,
+    color: COLORS.black,
     marginLeft: 8,
   },
 });

@@ -13,6 +13,9 @@ import { COLORS, SHADOWS, DIMENSIONS } from '@/constants/colors';
 import { useI18n } from '@/hooks/i18n-store';
 import { useAuth } from '@/hooks/auth-store';
 import FloatingMenu from '@/components/FloatingMenu';
+import GlassCard from '@/components/GlassCard';
+import AppBackground from '@/components/AppBackground';
+import Button from '@/components/Button';
 import {
   Heart,
   Star,
@@ -133,12 +136,14 @@ export default function CatSitterScreen() {
   }, [sortBy, showOnlyAvailable]);
 
   const renderSitter = useCallback(({ item }: { item: CatSitter }) => (
-    <TouchableOpacity
-      style={[styles.sitterCard, SHADOWS.medium]}
+    <GlassCard
+      tint="neutral"
+      style={styles.sitterCard}
       onPress={() => handleSitterPress(item.id)}
-      activeOpacity={0.9}
       testID={`sitter-card-${item.id}`}
+      noPadding
     >
+      <View style={styles.sitterCardInner}>
       <View style={styles.sitterHeader}>
         <View style={styles.avatarContainer}>
           <View style={[styles.avatar, { backgroundColor: COLORS.catSitter }]}
@@ -212,62 +217,63 @@ export default function CatSitterScreen() {
       </View>
 
       <View style={styles.actionsContainer}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.messageButton]}
+        <Button
+          title={t('sitters.message')}
           onPress={() => handleMessageSitter(item.id)}
-          testID={`sitter-message-${item.id}`}
-        >
-          <MessageCircle size={16} color={COLORS.primary} />
-          <Text style={styles.messageButtonText}>{t('sitters.message')}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionButton, styles.bookButton, !item.isAvailable && styles.disabledButton]}
+          variant="subtle"
+          size="small"
+          icon={<MessageCircle size={16} color={COLORS.black} />}
+          style={styles.messageButton}
+        />
+        
+        <Button
+          title={t('sitters.book_now')}
           onPress={() => handleBookSitter(item.id)}
+          variant="male"
+          size="small"
           disabled={!item.isAvailable}
-          testID={`sitter-book-${item.id}`}
-        >
-          <Calendar size={16} color={COLORS.white} />
-          <Text style={styles.bookButtonText}>{t('sitters.book_now')}</Text>
-        </TouchableOpacity>
+          icon={<Calendar size={16} color={COLORS.black} />}
+          style={styles.bookButton}
+        />
       </View>
-    </TouchableOpacity>
+      </View>
+    </GlassCard>
   ), [handleBookSitter, handleMessageSitter, handleSitterPress, t]);
 
   return (
-    <View style={styles.container} testID="cat-sitter-screen">
+    <AppBackground>
       <StatusBar style="dark" />
       <FlatList
         ListHeaderComponent={(
           <View style={styles.filtersBar}>
             <View style={styles.sortChips}>
-              <TouchableOpacity
-                accessibilityRole="button"
-                testID="sort-distance"
-                style={[styles.chip, sortBy === 'distance' && styles.chipActive]}
+              <GlassCard
+                tint={sortBy === 'distance' ? 'male' : 'neutral'}
+                style={styles.chip}
                 onPress={() => setSortBy('distance')}
+                noPadding
               >
                 <Text style={[styles.chipText, sortBy === 'distance' && styles.chipTextActive]}>Distance</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                accessibilityRole="button"
-                testID="sort-popularity"
-                style={[styles.chip, sortBy === 'popularity' && styles.chipActive]}
+              </GlassCard>
+              <GlassCard
+                tint={sortBy === 'popularity' ? 'male' : 'neutral'}
+                style={styles.chip}
                 onPress={() => setSortBy('popularity')}
+                noPadding
               >
                 <Text style={[styles.chipText, sortBy === 'popularity' && styles.chipTextActive]}>Popularité</Text>
-              </TouchableOpacity>
+              </GlassCard>
             </View>
-            <TouchableOpacity
-              accessibilityRole="button"
-              testID="filter-available"
-              style={[styles.toggleButton, showOnlyAvailable && styles.toggleButtonActive]}
+            <GlassCard
+              tint={showOnlyAvailable ? 'female' : 'neutral'}
+              style={styles.toggleButton}
               onPress={() => setShowOnlyAvailable(v => !v)}
+              noPadding
             >
               <Text style={[styles.toggleText, showOnlyAvailable && styles.toggleTextActive]}>
                 {showOnlyAvailable ? 'Disponibles' : 'Tous'}
               </Text>
-            </TouchableOpacity>
+            </GlassCard>
           </View>
         )}
         data={data}
@@ -283,14 +289,14 @@ export default function CatSitterScreen() {
         onToggle={() => setIsMenuVisible(false)}
         isProfessional={user?.isProfessional}
       />
-    </View>
+    </AppBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: 'transparent',
   },
   content: {
     flex: 1,
@@ -314,49 +320,32 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 16,
-    backgroundColor: COLORS.lightGray,
-    borderWidth: 1,
-    borderColor: COLORS.mediumGray,
-  },
-  chipActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-    ...SHADOWS.small,
   },
   chipText: {
-    color: COLORS.darkGray,
+    color: COLORS.black,
     fontWeight: '600' as const,
   },
   chipTextActive: {
-    color: COLORS.white,
+    fontWeight: '700' as const,
   },
   toggleButton: {
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 16,
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.mediumGray,
-  },
-  toggleButtonActive: {
-    backgroundColor: COLORS.success,
-    borderColor: COLORS.success,
   },
   toggleText: {
-    color: COLORS.darkGray,
+    color: COLORS.black,
     fontWeight: '600' as const,
   },
   toggleTextActive: {
-    color: COLORS.white,
+    fontWeight: '700' as const,
   },
   sitterCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: DIMENSIONS.SPACING.md,
-    padding: DIMENSIONS.SPACING.md,
     marginHorizontal: DIMENSIONS.SPACING.md,
     marginBottom: DIMENSIONS.SPACING.md,
+  },
+  sitterCardInner: {
+    padding: DIMENSIONS.SPACING.md,
     minHeight: DIMENSIONS.COMPONENT_SIZES.CARD_MIN_HEIGHT + 100,
   },
   sitterHeader: {
@@ -507,36 +496,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: DIMENSIONS.SPACING.sm + 4,
   },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: DIMENSIONS.SPACING.sm + 4,
-    borderRadius: DIMENSIONS.SPACING.sm + 4,
-    gap: DIMENSIONS.SPACING.sm,
-    minHeight: DIMENSIONS.COMPONENT_SIZES.BUTTON_HEIGHT - 8,
-  },
   messageButton: {
-    backgroundColor: COLORS.lightGray,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-  },
-  messageButtonText: {
-    fontSize: DIMENSIONS.FONT_SIZES.sm,
-    fontWeight: '600' as const,
-    color: COLORS.primary,
+    flex: 1,
   },
   bookButton: {
-    backgroundColor: COLORS.catSitter,
-  },
-  bookButtonText: {
-    fontSize: DIMENSIONS.FONT_SIZES.sm,
-    fontWeight: '600' as const,
-    color: COLORS.white,
-  },
-  disabledButton: {
-    backgroundColor: COLORS.mediumGray,
-    opacity: 0.6,
+    flex: 1,
   },
 });

@@ -12,6 +12,8 @@ import { useRouter, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import Button from '@/components/Button';
+import GlassCard from '@/components/GlassCard';
+import AppBackground from '@/components/AppBackground';
 import PaymentModal from '@/components/PaymentModal';
 import { useShop } from '@/hooks/shop-store';
 import { useI18n } from '@/hooks/i18n-store';
@@ -88,7 +90,7 @@ export default function CartScreen() {
   };
   
   return (
-    <View style={styles.container}>
+    <AppBackground>
       <StatusBar style="dark" />
       
       <Stack.Screen options={{ title: t('shop.shopping_cart') }} />
@@ -100,10 +102,13 @@ export default function CartScreen() {
             showsVerticalScrollIndicator={false}
           >
             {cart.map(item => (
-              <View 
-                key={item.product.id} 
-                style={[styles.cartItem, SHADOWS.small]}
+              <GlassCard
+                key={item.product.id}
+                tint="neutral"
+                style={styles.cartItem}
+                noPadding
               >
+                <View style={styles.cartItemInner}>
                 <Image
                   source={{ uri: item.product.imageUrl }}
                   style={styles.productImage}
@@ -145,11 +150,12 @@ export default function CartScreen() {
                     </TouchableOpacity>
                   </View>
                 </View>
-              </View>
+                </View>
+              </GlassCard>
             ))}
           </ScrollView>
           
-          <View style={styles.footer}>
+          <GlassCard tint="neutral" style={styles.footer} noPadding>
             <View style={styles.summaryContainer}>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>{t('shop.subtotal')}</Text>
@@ -179,10 +185,10 @@ export default function CartScreen() {
               loading={loading}
               style={styles.checkoutButton}
             />
-          </View>
+          </GlassCard>
         </>
       ) : (
-        <View style={styles.emptyContainer}>
+        <GlassCard tint="neutral" style={styles.emptyContainer}>
           <ShoppingBag size={64} color={COLORS.darkGray} />
           <Text style={styles.emptyTitle}>{t('shop.your_cart_is_empty')}</Text>
           <Text style={styles.emptyText}>
@@ -193,7 +199,7 @@ export default function CartScreen() {
             onPress={() => router.replace('/(tabs)/shop')}
             style={styles.continueButton}
           />
-        </View>
+        </GlassCard>
       )}
       
       <PaymentModal
@@ -202,7 +208,7 @@ export default function CartScreen() {
         onPaymentSuccess={handlePaymentSuccess}
         total={getTotalPrice() + 5.99}
       />
-    </View>
+    </AppBackground>
   );
 }
 
@@ -216,11 +222,11 @@ const styles = StyleSheet.create({
     paddingBottom: 200,
   },
   cartItem: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 12,
     marginBottom: 16,
+  },
+  cartItemInner: {
+    flexDirection: 'row',
+    padding: 12,
   },
   productImage: {
     width: 80,
@@ -251,7 +257,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -267,7 +273,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: 'rgba(255, 179, 217, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 'auto',
@@ -277,13 +283,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: COLORS.white,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.mediumGray,
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 32,
-    ...SHADOWS.large,
   },
   summaryContainer: {
     marginBottom: 16,

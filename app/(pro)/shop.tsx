@@ -15,6 +15,8 @@ import { useShop } from '@/hooks/shop-store';
 import { useAuth } from '@/hooks/user-store';
 import { useI18n } from '@/hooks/i18n-store';
 import ProductCard from '@/components/ProductCard';
+import GlassCard from '@/components/GlassCard';
+import AppBackground from '@/components/AppBackground';
 import {
   Search,
   Filter,
@@ -61,7 +63,7 @@ export default function ProShopScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <AppBackground>
       <StatusBar style="dark" />
       
       <Stack.Screen
@@ -85,19 +87,23 @@ export default function ProShopScreen() {
       >
         {/* Search Bar */}
         <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Search size={20} color={COLORS.darkGray} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Rechercher des produits"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholderTextColor={COLORS.darkGray}
-            />
-          </View>
-          <TouchableOpacity style={styles.filterButton}>
-            <Filter size={20} color={COLORS.primary} />
-          </TouchableOpacity>
+          <GlassCard tint="neutral" style={styles.searchBar} noPadding>
+            <View style={styles.searchBarInner}>
+              <Search size={20} color={COLORS.darkGray} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Rechercher des produits"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholderTextColor={COLORS.darkGray}
+              />
+            </View>
+          </GlassCard>
+          <GlassCard tint="male" style={styles.filterButton} onPress={() => {}} noPadding>
+            <View style={styles.filterButtonInner}>
+              <Filter size={20} color={COLORS.black} />
+            </View>
+          </GlassCard>
         </View>
 
         {/* Categories */}
@@ -107,13 +113,12 @@ export default function ProShopScreen() {
           contentContainerStyle={styles.categoriesContainer}
         >
           {categories.map((category) => (
-            <TouchableOpacity
+            <GlassCard
               key={category}
-              style={[
-                styles.categoryButton,
-                selectedCategory === category && styles.categoryButtonActive,
-              ]}
+              tint={selectedCategory === category ? 'male' : 'neutral'}
+              style={styles.categoryButton}
               onPress={() => setSelectedCategory(category)}
+              noPadding
             >
               <Text
                 style={[
@@ -123,7 +128,7 @@ export default function ProShopScreen() {
               >
                 {category === 'all' ? 'Tout' : category}
               </Text>
-            </TouchableOpacity>
+            </GlassCard>
           ))}
         </ScrollView>
 
@@ -138,7 +143,7 @@ export default function ProShopScreen() {
         {/* Products Grid */}
         <View style={styles.productsGrid}>
           {filteredProducts.map((product) => (
-            <View key={product.id} style={styles.productContainer}>
+            <GlassCard key={product.id} tint="neutral" style={styles.productContainer} noPadding>
               <ProductCard
                 product={product}
               />
@@ -173,13 +178,13 @@ export default function ProShopScreen() {
                   </View>
                 </TouchableOpacity>
               )}
-            </View>
+            </GlassCard>
           ))}
         </View>
 
         {/* Empty State */}
         {filteredProducts.length === 0 && !loading && (
-          <View style={styles.emptyState}>
+          <GlassCard tint="neutral" style={styles.emptyState}>
             <ShoppingCart size={48} color={COLORS.darkGray} />
             <Text style={styles.emptyTitle}>Aucun produit trouvé</Text>
             <Text style={styles.emptyText}>
@@ -187,17 +192,17 @@ export default function ProShopScreen() {
                 ? 'Essayez de modifier votre recherche'
                 : 'Aucun produit professionnel disponible pour le moment'}
             </Text>
-          </View>
+          </GlassCard>
         )}
       </ScrollView>
-    </View>
+    </AppBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.screenBackground,
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     padding: 16,
@@ -213,14 +218,13 @@ const styles = StyleSheet.create({
   },
   searchBar: {
     flex: 1,
+  },
+  searchBarInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 12,
-    ...SHADOWS.small,
   },
   searchInput: {
     flex: 1,
@@ -228,12 +232,13 @@ const styles = StyleSheet.create({
     color: COLORS.black,
   },
   filterButton: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
+    width: 48,
+    height: 48,
+  },
+  filterButtonInner: {
     padding: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    ...SHADOWS.small,
   },
   categoriesContainer: {
     paddingVertical: 8,
@@ -243,14 +248,6 @@ const styles = StyleSheet.create({
   categoryButton: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.lightGray,
-  },
-  categoryButtonActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
   },
   categoryText: {
     fontSize: 14,
@@ -259,7 +256,7 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   categoryTextActive: {
-    color: COLORS.white,
+    fontWeight: '600' as const,
   },
   section: {
     marginBottom: 20,
@@ -278,10 +275,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   productContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    overflow: 'hidden',
-    ...SHADOWS.small,
+    marginBottom: 16,
   },
   vendorInfo: {
     padding: 12,
@@ -329,10 +323,8 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     padding: 40,
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
     marginTop: 20,
-    ...SHADOWS.small,
+    marginHorizontal: 16,
   },
   emptyTitle: {
     fontSize: 18,

@@ -163,7 +163,7 @@ const Button: React.FC<ButtonProps> = ({
     </>
   );
 
-  if (liquidGlass && (variant === 'male' || variant === 'female' || variant === 'subtle')) {
+  if (liquidGlass || variant === 'primary') {
     return (
       <TouchableOpacity
         testID="button"
@@ -183,7 +183,7 @@ const Button: React.FC<ButtonProps> = ({
         <GlassView
           tint={getTint()}
           liquidGlass={true}
-          intensity={40}
+          intensity={45}
           style={[
             styles.button,
             {
@@ -195,42 +195,6 @@ const Button: React.FC<ButtonProps> = ({
         >
           <ButtonContent />
         </GlassView>
-      </TouchableOpacity>
-    );
-  }
-
-  if (gradient && (variant === 'male' || variant === 'female' || variant === 'primary')) {
-    return (
-      <TouchableOpacity
-        testID="button"
-        accessibilityRole="button"
-        style={[
-          styles.buttonWrapper,
-          {
-            width: fullWidth ? '100%' : undefined,
-          },
-          style,
-        ]}
-        onPress={onPress || (() => {})}
-        disabled={disabled || loading}
-        activeOpacity={0.8}
-        {...props}
-      >
-        <LinearGradient
-          colors={getGradientColors()}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[
-            styles.button,
-            {
-              borderRadius: getBorderRadius(),
-              ...getPadding(),
-            },
-            getShadowForVariant(),
-          ]}
-        >
-          <ButtonContent />
-        </LinearGradient>
       </TouchableOpacity>
     );
   }
