@@ -30,6 +30,7 @@ import {
   Conversation, ProfessionalData, AnimalSpecies, AnimalBreed
 } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJsonParse } from '@/lib/safe-json';
 
 // Collections
 const COLLECTIONS = {
@@ -304,7 +305,7 @@ const mockDataHelpers = {
   async getPosts(): Promise<Post[]> {
     try {
       const stored = await AsyncStorage.getItem(STORAGE_KEYS.POSTS);
-      return stored ? JSON.parse(stored) : [];
+      return safeJsonParse<Post[]>(stored, []);
     } catch (error) {
       console.error('❌ Error getting mock posts:', error);
       return [];
@@ -322,7 +323,7 @@ const mockDataHelpers = {
   async getComments(): Promise<Comment[]> {
     try {
       const stored = await AsyncStorage.getItem(STORAGE_KEYS.COMMENTS);
-      return stored ? JSON.parse(stored) : [];
+      return safeJsonParse<Comment[]>(stored, []);
     } catch (error) {
       console.error('❌ Error getting mock comments:', error);
       return [];
@@ -340,7 +341,7 @@ const mockDataHelpers = {
   async getLikes(): Promise<{ postId: string; userId: string; createdAt: number }[]> {
     try {
       const stored = await AsyncStorage.getItem(STORAGE_KEYS.LIKES);
-      return stored ? JSON.parse(stored) : [];
+      return safeJsonParse<{ postId: string; userId: string; createdAt: number }[]>(stored, []);
     } catch (error) {
       console.error('❌ Error getting mock likes:', error);
       return [];
