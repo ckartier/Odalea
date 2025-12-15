@@ -403,14 +403,15 @@ export default function MapScreen() {
       setPlaces([]);
     } else {
       // Fetch places when vets or stores filters are active
-      await fetchNearbyPlaces();
+      await fetchNearbyPlaces(newFilters);
     }
   };
 
-  const fetchNearbyPlaces = async () => {
+  const fetchNearbyPlaces = async (filters?: Set<MapFilter>) => {
     try {
       const loc = userLocation ?? { latitude: DEFAULT_LAT, longitude: DEFAULT_LNG };
       const apiKey = getGooglePlacesApiKey();
+      const filtersToUse = filters ?? activeFilters;
 
       if (!apiKey) {
         console.error('❌ Google Places API key not found in environment');
@@ -422,11 +423,11 @@ export default function MapScreen() {
         return;
       }
 
-      console.log('🔄 Fetching places for filters:', Array.from(activeFilters));
+      console.log('🔄 Fetching places for filters:', Array.from(filtersToUse));
       const allPlaces: Place[] = [];
 
       // Fetch veterinarians
-      if (activeFilters.has('vets') || activeFilters.has('all')) {
+      if (filtersToUse.has('vets') || filtersToUse.has('all')) {
         const vetParams = new URLSearchParams({
           location: `${loc.latitude},${loc.longitude}`,
           radius: '5000',
@@ -454,13 +455,14 @@ export default function MapScreen() {
               type: 'vet' as const,
               url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`,
             }));
+            console.log(`✅ Loaded ${vetPlaces.length} veterinarians`);
             allPlaces.push(...vetPlaces);
           }
         }
       }
 
       // Fetch pet stores
-      if (activeFilters.has('stores') || activeFilters.has('all')) {
+      if (filtersToUse.has('stores') || filtersToUse.has('all')) {
         const storeParams = new URLSearchParams({
           location: `${loc.latitude},${loc.longitude}`,
           radius: '5000',
@@ -488,6 +490,7 @@ export default function MapScreen() {
               type: 'store' as const,
               url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`,
             }));
+            console.log(`✅ Loaded ${storePlaces.length} pet stores`);
             allPlaces.push(...storePlaces);
           }
         }
