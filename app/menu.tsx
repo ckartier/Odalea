@@ -54,6 +54,7 @@ export default function MenuScreen() {
   const { userPets } = usePets();
 
   const isProfessional = Boolean(user?.isProfessional);
+  const isCatSitter = Boolean(user?.isCatSitter);
 
   useEffect(() => {
     console.log('MenuScreen mounted');
@@ -173,6 +174,16 @@ export default function MenuScreen() {
       icon: <ShoppingBag size={24} color="#2ECC71" />,
       route: '/pro/products',
       color: '#2ECC71',
+    },
+  ] : [];
+
+  const catSitterMenuItems: MenuItem[] = isCatSitter ? [
+    {
+      id: 'cat-sitter-dashboard',
+      title: 'Gestion Cat-Sitter',
+      icon: <Cat size={24} color="#FF6B9D" />,
+      route: '/cat-sitter-dashboard',
+      color: '#FF6B9D',
     },
   ] : [];
 
@@ -309,6 +320,16 @@ export default function MenuScreen() {
             <Text style={styles.sectionTitle}>Espace Pro</Text>
             <View style={styles.menuSection}>
               {proMenuItems.map((item, index) => renderMenuItem(item, index))}
+            </View>
+          </>
+        )}
+
+        {/* Cat-Sitter Section */}
+        {catSitterMenuItems.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>Espace Cat-Sitter</Text>
+            <View style={styles.menuSection}>
+              {catSitterMenuItems.map((item, index) => renderMenuItem(item, index))}
             </View>
           </>
         )}
