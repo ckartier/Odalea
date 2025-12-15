@@ -67,6 +67,7 @@ interface Place {
   phone?: string;
   phoneFormatted?: string;
   type: 'vet' | 'store';
+  url?: string;
 }
 
 type AllPet = Pet & { owner?: User | undefined; isUserPet?: boolean };
@@ -76,6 +77,7 @@ interface PopupConfig {
   title: string;
   message: string;
   phone?: string;
+  url?: string;
 }
 
 const popupColors: Record<PopupConfig['type'], { bg: string; accent: string }> = {
@@ -450,6 +452,7 @@ export default function MapScreen() {
               phone: place.phone,
               phoneFormatted: place.formatted_phone_number || place.international_phone_number,
               type: 'vet' as const,
+              url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`,
             }));
             allPlaces.push(...vetPlaces);
           }
@@ -483,6 +486,7 @@ export default function MapScreen() {
               phone: place.phone,
               phoneFormatted: place.formatted_phone_number || place.international_phone_number,
               type: 'store' as const,
+              url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`,
             }));
             allPlaces.push(...storePlaces);
           }
@@ -702,6 +706,7 @@ export default function MapScreen() {
                 title: place.name,
                 message: `${place.address}${place.rating ? `\n⭐ ${place.rating}/5` : ''}`,
                 phone: phoneInfo,
+                url: place.url,
               });
             }}
           />
@@ -815,6 +820,7 @@ export default function MapScreen() {
                     title: place.name,
                     message: `${place.address}${place.rating ? `\n⭐ ${place.rating}/5` : ''}`,
                     phone: phoneInfo,
+                    url: place.url,
                   });
                 }}
                 activeOpacity={0.8}
@@ -1005,20 +1011,35 @@ export default function MapScreen() {
           <View style={styles.popupContent}>
             <Text style={styles.popupTitle}>{popup.title || ''}</Text>
             <Text style={styles.popupMessage}>{popup.message || ''}</Text>
-            {popup.phone ? (
-              <TouchableOpacity
-                style={styles.phoneButton}
-                onPress={() => {
-                  const phoneNumber = popup.phone?.replace(/[^0-9+]/g, '');
-                  if (phoneNumber) {
-                    Linking.openURL(`tel:${phoneNumber}`);
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.phoneButtonText}>📞 {popup.phone}</Text>
-              </TouchableOpacity>
-            ) : null}
+            <View style={styles.popupActions}>
+              {popup.phone ? (
+                <TouchableOpacity
+                  style={styles.phoneButton}
+                  onPress={() => {
+                    const phoneNumber = popup.phone?.replace(/[^0-9+]/g, '');
+                    if (phoneNumber) {
+                      Linking.openURL(`tel:${phoneNumber}`);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.phoneButtonText}>📞 {popup.phone}</Text>
+                </TouchableOpacity>
+              ) : null}
+              {popup.url ? (
+                <TouchableOpacity
+                  style={styles.mapButton}
+                  onPress={() => {
+                    if (popup.url) {
+                      Linking.openURL(popup.url);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.mapButtonText}>🗺️ Ouvrir dans Maps</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
           </View>
           <TouchableOpacity onPress={hidePopup} style={styles.popupClose} testID="popup-close">
             <Text style={styles.popupCloseText}>OK</Text>
@@ -1336,8 +1357,11 @@ const styles = StyleSheet.create({
     color: '#f8fafc',
     marginTop: 2,
   },
-  phoneButton: {
+  popupActions: {
     marginTop: 12,
+    gap: 8,
+  },
+  phoneButton: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
@@ -1345,6 +1369,18 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   phoneButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  mapButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.35)',
+    alignSelf: 'flex-start',
+  },
+  mapButtonText: {
     fontSize: 14,
     fontWeight: '700',
     color: '#fff',
