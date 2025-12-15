@@ -45,7 +45,7 @@ import {
   X,
 } from 'lucide-react-native';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { petService, userService } from '@/services/database';
+import { petService, userService, petSitterService } from '@/services/database';
 import { getBlurredUserLocation, getBlurredPetLocation } from '@/services/location-privacy';
 import { track } from '@/services/tracking';
 
@@ -562,6 +562,35 @@ export default function MapScreen() {
     staleTime: 10000,
   });
 
+  const catSittersQuery = useQuery({
+    queryKey: ['map', 'catSitters'],
+    queryFn: async () => {
+      console.log('🔄 Fetching cat sitters from Firestore');
+      const profiles = await petSitterService.getAllProfiles(100);
+      console.log(`✅ Loaded ${profiles.length} cat sitters from Firestore`);
+      
+      // Fetch user data for each cat sitter profile
+      const catSittersWithUsers = await Promise.all(
+        profiles.map(async (profile) => {
+          try {
+            const user = await userService.getUser(profile.userId);
+            return { ...profile, user };
+          } catch (error) {
+            console.error(`❌ Error fetching user for cat sitter ${profile.userId}:`, error);
+            return null;
+          }
+        })
+      );
+      
+      // Filter out null values and users without location
+      return catSittersWithUsers.filter(
+        (cs) => cs && cs.user && cs.user.location?.latitude && cs.user.location?.longitude
+      ) as Array<{ user: User; isActive: boolean; radiusKm: number }>;
+    },
+    refetchInterval: 30000,
+    staleTime: 10000,
+  });
+
   const normalizeUser = useCallback(
     (u: User): User => ({
       id: u.id,
@@ -633,15 +662,27 @@ export default function MapScreen() {
     return false;
   });
 
+  const catSittersWithLocation = catSittersQuery.data ?? [];
+
   const filteredUsers = usersWithLocation.filter((u) => {
     // Filter out test users
     if (u.email?.includes('test') || u.pseudo?.toLowerCase().includes('test')) {
       return false;
     }
+    // Don't show users who are cat sitters here (they'll be shown via catSittersQuery)
+    if (u.isCatSitter && activeFilters.has('sitters')) {
+      return false;
+    }
     if (activeFilters.size === 0) return false;
     if (activeFilters.has('all')) return true;
-    if (activeFilters.has('sitters') && (u.isCatSitter || u.isProfessional)) return true;
     if (activeFilters.has('friends')) return true;
+    return false;
+  });
+
+  const filteredCatSitters = catSittersWithLocation.filter((cs) => {
+    if (activeFilters.size === 0) return false;
+    if (activeFilters.has('all')) return true;
+    if (activeFilters.has('sitters')) return true;
     return false;
   });
 
@@ -681,6 +722,9 @@ export default function MapScreen() {
         ))}
         {Platform.OS !== 'web' && filteredUsers.map((u) => (
           <UserMarker key={`user-${u.id}`} user={u} onPress={() => setSelectedUser(u)} />
+        ))}
+        {Platform.OS !== 'web' && filteredCatSitters.map((cs) => (
+          <UserMarker key={`cat-sitter-${cs.user.id}`} user={cs.user} isCatSitter onPress={() => setSelectedUser(cs.user)} />
         ))}
         {Platform.OS !== 'web' && places
           .filter((place) => {

@@ -5,14 +5,15 @@ import { COLORS, SHADOWS } from '@/constants/colors';
 import { User } from '@/types';
 import { Marker } from 'react-native-maps';
 import { getBlurredUserLocation } from '@/services/location-privacy';
-import { Stethoscope } from 'lucide-react-native';
+import { Stethoscope, Users } from 'lucide-react-native';
 
 interface UserMarkerProps {
   user: User;
+  isCatSitter?: boolean;
   onPress?: () => void;
 }
 
-const UserMarker: React.FC<UserMarkerProps> = ({ user, onPress }) => {
+const UserMarker: React.FC<UserMarkerProps> = ({ user, isCatSitter = false, onPress }) => {
   const blurredLocation = useMemo(() => {
     if (!user.location) return null;
     return getBlurredUserLocation(user.id, user.location);
@@ -53,6 +54,11 @@ const UserMarker: React.FC<UserMarkerProps> = ({ user, onPress }) => {
       {isVetProfessional && (
         <View style={styles.vetBadge}>
           <Stethoscope size={12} color="#fff" />
+        </View>
+      )}
+      {isCatSitter && (
+        <View style={styles.catSitterBadge}>
+          <Users size={12} color="#fff" />
         </View>
       )}
     </Marker>
@@ -98,6 +104,19 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     backgroundColor: '#10b981',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.white,
+  },
+  catSitterBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#6366f1',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,

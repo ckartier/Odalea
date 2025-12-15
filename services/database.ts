@@ -1291,6 +1291,24 @@ export const petSitterService = {
       return null;
     }
   },
+  async getAllProfiles(limitCount = 100): Promise<any[]> {
+    try {
+      console.log('🔄 Fetching all cat sitter profiles');
+      const profilesRef = collection(db, COLLECTIONS.PET_SITTER_PROFILES);
+      const q = query(profilesRef, where('isActive', '==', true), limit(limitCount));
+      const qs = await getDocs(q);
+      const profiles = qs.docs.map(d => ({ id: d.id, ...d.data() }));
+      console.log(`✅ Loaded ${profiles.length} active cat sitter profiles`);
+      return profiles;
+    } catch (error) {
+      console.error('❌ Error getting all cat sitter profiles:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty profiles due to permission rules');
+        return [];
+      }
+      return [];
+    }
+  },
   async listBookingsForSitter(sitterUserId: string): Promise<any[]> {
     try {
       const bookingsRef = collection(db, COLLECTIONS.BOOKINGS);

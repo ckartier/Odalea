@@ -1,6 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { petSitterService, userService } from '@/services/database';
 
 export interface CustomService {
   id: string;
@@ -140,22 +141,36 @@ export const [CatSitterContext, useCatSitter] = createContextHook(() => {
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
 
-  // Load cat-sitter data from storage
-  useEffect(() => {
-    const loadData = async () => {
-      try {
+  // Load cat-sitter profile
+  const loadProfile = async (userId: string) => {
+    try {
+      console.log('🔄 Loading cat sitter profile from Firebase for user:', userId);
+      const firebaseProfile = await petSitterService.getProfile(userId);
+      
+      if (firebaseProfile) {
+        console.log('✅ Cat sitter profile loaded from Firebase');
+        setProfile(firebaseProfile as CatSitterProfile);
+        return firebaseProfile;
+      } else {
+        console.log('ℹ️ No cat sitter profile found in Firebase');
+        // Try AsyncStorage as fallback
         const storedProfile = await AsyncStorage.getItem('catSitterProfile');
         if (storedProfile) {
-          setProfile(JSON.parse(storedProfile));
+          console.log('✅ Cat sitter profile loaded from AsyncStorage');
+          const parsed = JSON.parse(storedProfile);
+          setProfile(parsed);
+          return parsed;
         }
-      } catch (error) {
-        console.error('Failed to load cat-sitter data:', error);
-      } finally {
-        setInitializing(false);
       }
-    };
+      return null;
+    } catch (error) {
+      console.error('❌ Failed to load cat-sitter data:', error);
+      return null;
+    }
+  };
 
-    loadData();
+  useEffect(() => {
+    setInitializing(false);
   }, []);
 
   // Save profile to storage when it changes
@@ -180,14 +195,14 @@ export const [CatSitterContext, useCatSitter] = createContextHook(() => {
   const createProfile = async (userId: string, profileData: Partial<CatSitterProfile>) => {
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
       const newProfile: CatSitterProfile = {
-        id: `cat-sitter-${Date.now()}`,
+        id: userId,
         userId,
         isActive: true,
         hourlyRate: profileData.hourlyRate ?? 15,
         description: profileData.description ?? '',
         services: profileData.services ?? ['Pet Sitting'],
+        customServices: profileData.customServices ?? [],
         availability: profileData.availability ?? defaultAvailability,
         photos: profileData.photos ?? [],
         experience: profileData.experience ?? '1 year',
@@ -203,9 +218,22 @@ export const [CatSitterContext, useCatSitter] = createContextHook(() => {
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
+      
+      // Save to Firebase
+      await petSitterService.saveProfile(userId, newProfile);
+      console.log('✅ Cat sitter profile saved to Firebase');
+      
+      // Update user to mark as cat sitter
+      const user = await userService.getUser(userId);
+      if (user && !user.isCatSitter) {
+        await userService.saveUser({ ...user, isCatSitter: true });
+        console.log('✅ User marked as cat sitter');
+      }
+      
       setProfile(newProfile);
       return { success: true, profile: newProfile };
     } catch (error) {
+      console.error('❌ Failed to create cat-sitter profile:', error);
       return { success: false, error: 'Failed to create cat-sitter profile' };
     } finally {
       setLoading(false);
@@ -216,15 +244,20 @@ export const [CatSitterContext, useCatSitter] = createContextHook(() => {
     if (!profile) return { success: false, error: 'No profile found' };
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
       const updatedProfile = {
         ...profile,
         ...updates,
         updatedAt: Date.now(),
       };
+      
+      // Save to Firebase
+      await petSitterService.saveProfile(profile.userId, updatedProfile);
+      console.log('✅ Cat sitter profile updated in Firebase');
+      
       setProfile(updatedProfile);
       return { success: true, profile: updatedProfile };
     } catch (error) {
+      console.error('❌ Failed to update profile:', error);
       return { success: false, error: 'Failed to update profile' };
     } finally {
       setLoading(false);
@@ -316,6 +349,7 @@ export const [CatSitterContext, useCatSitter] = createContextHook(() => {
     bookingRequests,
     messages,
     loading,
+    loadProfile,
     createProfile,
     updateProfile,
     toggleAvailability,

@@ -102,6 +102,7 @@ export default function CatSitterDashboardScreen() {
     bookingRequests,
     messages,
     loading,
+    loadProfile,
     createProfile,
     updateProfile,
     toggleAvailability,
@@ -121,17 +122,28 @@ export default function CatSitterDashboardScreen() {
   const [editedDuration, setEditedDuration] = useState('');
 
   useEffect(() => {
-    if (user && !profile) {
-      if (user.isCatSitter) {
-        createProfile(user.id, {
-          hourlyRate: 15,
-          description: 'Passionné(e) par les animaux, je propose mes services de garde avec amour et attention.',
-          services: ['Pet Sitting', 'Feeding', 'Playing'],
-          petTypes: ['Cats', 'Dogs'],
-          languages: ['French'],
-        });
+    const initProfile = async () => {
+      if (user) {
+        console.log('🔄 Loading cat sitter profile for user:', user.id);
+        const existingProfile = await loadProfile(user.id);
+        
+        if (!existingProfile && user.isCatSitter) {
+          console.log('📝 Creating new cat sitter profile');
+          createProfile(user.id, {
+            hourlyRate: 15,
+            description: 'Passionné(e) par les animaux, je propose mes services de garde avec amour et attention.',
+            services: ['Pet Sitting', 'Feeding', 'Playing'],
+            petTypes: ['Cats', 'Dogs'],
+            languages: ['French'],
+          });
+        }
       }
-    }
+    };
+    
+    initProfile();
+  }, [user, loadProfile, createProfile]);
+  
+  useEffect(() => {
     if (profile && profile.services) {
       setSelectedServices(profile.services);
     }
@@ -146,7 +158,7 @@ export default function CatSitterDashboardScreen() {
       }));
       setCustomServices(defaultServices);
     }
-  }, [user, profile, createProfile]);
+  }, [profile]);
 
   const calculateTotalEarnings = () => {
     const completedBookings = bookingRequests.filter(
