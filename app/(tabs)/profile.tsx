@@ -10,6 +10,8 @@ import {
   Alert,
   Platform,
   Switch,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Href, useRouter } from 'expo-router';
@@ -50,6 +52,8 @@ import {
   XCircle,
   ArrowRight,
   Lock,
+  X,
+  Edit3,
 } from 'lucide-react-native';
 
 export default function ProfileScreen() {
@@ -69,12 +73,16 @@ export default function ProfileScreen() {
     respondToBooking,
     getUnreadMessagesCount,
     getPendingBookingsCount,
+    updateProfile,
   } = useCatSitter();
   
   const [refreshing, setRefreshing] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | undefined>(user?.photo);
   const [selectedCatSitterTab, setSelectedCatSitterTab] = useState<'overview' | 'bookings' | 'messages'>('overview');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [showServicesModal, setShowServicesModal] = useState(false);
+  const [editingService, setEditingService] = useState<string | null>(null);
+  const [newServiceName, setNewServiceName] = useState('');
   
   // Update profile photo when user changes
   useEffect(() => {
@@ -178,6 +186,51 @@ export default function ProfileScreen() {
         `Vous êtes maintenant ${catSitterProfile?.isActive ? 'indisponible' : 'disponible'}`
       );
     }
+  };
+  
+  const handleAddService = async () => {
+    if (!catSitterProfile || !newServiceName.trim()) return;
+
+    const updatedServices = editingService
+      ? catSitterProfile.services.map(s => s === editingService ? newServiceName.trim() : s)
+      : [...catSitterProfile.services, newServiceName.trim()];
+
+    const result = await updateProfile({ services: updatedServices });
+    if (result.success) {
+      setNewServiceName('');
+      setEditingService(null);
+      setShowServicesModal(false);
+      Alert.alert('Succès', editingService ? 'Service modifié avec succès' : 'Service ajouté avec succès');
+    }
+  };
+
+  const handleDeleteService = async (service: string) => {
+    if (!catSitterProfile) return;
+
+    Alert.alert(
+      'Supprimer le service',
+      `Voulez-vous vraiment supprimer "${service}" ?`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            const updatedServices = catSitterProfile.services.filter(s => s !== service);
+            const result = await updateProfile({ services: updatedServices });
+            if (result.success) {
+              Alert.alert('Succès', 'Service supprimé avec succès');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleEditService = (service: string) => {
+    setEditingService(service);
+    setNewServiceName(service);
+    setShowServicesModal(true);
   };
   
   const handleBookingResponse = async (bookingId: string, response: 'accepted' | 'declined') => {
@@ -608,6 +661,48 @@ export default function ProfileScreen() {
                       <ArrowRight size={18} color={COLORS.darkGray} />
                     </TouchableOpacity>
                   </View>
+                  
+                  {/* Services Management */}
+                  <View style={styles.catSitterServicesSection}>
+                    <View style={styles.catSitterServicesSectionHeader}>
+                      <Text style={styles.catSitterSectionTitle}>Mes prestations</Text>
+                      <TouchableOpacity
+                        style={styles.addServiceButton}
+                        onPress={() => {
+                          setEditingService(null);
+                          setNewServiceName('');
+                          setShowServicesModal(true);
+                        }}
+                      >
+                        <Plus size={16} color={COLORS.white} />
+                        <Text style={styles.addServiceButtonText}>Ajouter</Text>
+                      </TouchableOpacity>
+                    </View>
+                    
+                    <View style={styles.servicesGrid}>
+                      {catSitterProfile?.services.map((service, index) => (
+                        <View key={index} style={styles.serviceChip}>
+                          <Heart size={14} color={COLORS.primary} />
+                          <Text style={styles.serviceChipText}>{service}</Text>
+                          <TouchableOpacity
+                            onPress={() => handleEditService(service)}
+                            style={styles.serviceChipAction}
+                          >
+                            <Edit3 size={12} color={COLORS.darkGray} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => handleDeleteService(service)}
+                            style={styles.serviceChipAction}
+                          >
+                            <X size={12} color={COLORS.error} />
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                      {(!catSitterProfile?.services || catSitterProfile.services.length === 0) && (
+                        <Text style={styles.noServicesText}>Aucune prestation configurée</Text>
+                      )}
+                    </View>
+                  </View>
                 </View>
               )}
               
@@ -767,6 +862,62 @@ export default function ProfileScreen() {
           </View>
         </GlassCard>
       </ScrollView>
+      
+      {/* Services Modal */}
+      <Modal
+        visible={showServicesModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowServicesModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {editingService ? 'Modifier la prestation' : 'Nouvelle prestation'}
+              </Text>
+              <TouchableOpacity onPress={() => setShowServicesModal(false)}>
+                <X size={24} color={COLORS.darkGray} />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.modalBody}>
+              <Text style={styles.modalLabel}>Nom de la prestation</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={newServiceName}
+                onChangeText={setNewServiceName}
+                placeholder="Ex: Promenade longue durée"
+                placeholderTextColor={COLORS.mediumGray}
+                autoFocus
+              />
+              
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonCancel]}
+                  onPress={() => {
+                    setShowServicesModal(false);
+                    setNewServiceName('');
+                    setEditingService(null);
+                  }}
+                >
+                  <Text style={styles.modalButtonCancelText}>Annuler</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonSave, !newServiceName.trim() && styles.modalButtonDisabled]}
+                  onPress={handleAddService}
+                  disabled={!newServiceName.trim()}
+                >
+                  <Text style={styles.modalButtonSaveText}>
+                    {editingService ? 'Modifier' : 'Ajouter'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </AppBackground>
   );
 }
@@ -1392,5 +1543,133 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 14,
     fontWeight: '600' as const,
+  },
+  catSitterServicesSection: {
+    marginTop: 16,
+  },
+  catSitterServicesSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  addServiceButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    gap: 4,
+  },
+  addServiceButtonText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  servicesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  serviceChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.screenBackground,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  serviceChipText: {
+    fontSize: 13,
+    color: COLORS.black,
+    fontWeight: '500' as const,
+  },
+  serviceChipAction: {
+    padding: 2,
+  },
+  noServicesText: {
+    fontSize: 14,
+    color: COLORS.darkGray,
+    fontStyle: 'italic',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    width: '100%',
+    maxWidth: 400,
+    ...SHADOWS.large,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightGray,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: COLORS.black,
+  },
+  modalBody: {
+    padding: 16,
+  },
+  modalLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: COLORS.black,
+    marginBottom: 8,
+  },
+  modalInput: {
+    backgroundColor: COLORS.screenBackground,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    fontSize: 14,
+    color: COLORS.black,
+    borderWidth: 1,
+    borderColor: COLORS.mediumGray,
+    marginBottom: 20,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonCancel: {
+    backgroundColor: COLORS.lightGray,
+  },
+  modalButtonCancelText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: COLORS.darkGray,
+  },
+  modalButtonSave: {
+    backgroundColor: COLORS.primary,
+  },
+  modalButtonSaveText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: COLORS.white,
+  },
+  modalButtonDisabled: {
+    opacity: 0.5,
   },
 });
