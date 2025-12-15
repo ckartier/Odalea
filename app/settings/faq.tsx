@@ -289,13 +289,13 @@ const styles = StyleSheet.create({
   categoriesContent: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 8,
   },
   categoryButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     backgroundColor: COLORS.lightGray,
+    marginRight: 8,
   },
   activeCategoryButton: {
     backgroundColor: COLORS.primary,
