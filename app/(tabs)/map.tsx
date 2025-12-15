@@ -396,7 +396,11 @@ export default function MapScreen() {
       console.log('track map_filter_apply failed', e);
     }
 
-    if ((newFilters.has('vets') || newFilters.has('stores')) && places.length === 0) {
+    // Clear places if neither vets nor stores are selected
+    if (!newFilters.has('vets') && !newFilters.has('stores')) {
+      setPlaces([]);
+    } else {
+      // Fetch places when vets or stores filters are active
       await fetchNearbyPlaces();
     }
   };
@@ -416,10 +420,11 @@ export default function MapScreen() {
         return;
       }
 
+      console.log('🔄 Fetching places for filters:', Array.from(activeFilters));
       const allPlaces: Place[] = [];
 
       // Fetch veterinarians
-      if (activeFilters.has('vets')) {
+      if (activeFilters.has('vets') || activeFilters.has('all')) {
         const vetParams = new URLSearchParams({
           location: `${loc.latitude},${loc.longitude}`,
           radius: '5000',
@@ -452,7 +457,7 @@ export default function MapScreen() {
       }
 
       // Fetch pet stores
-      if (activeFilters.has('stores')) {
+      if (activeFilters.has('stores') || activeFilters.has('all')) {
         const storeParams = new URLSearchParams({
           location: `${loc.latitude},${loc.longitude}`,
           radius: '5000',
@@ -541,9 +546,13 @@ export default function MapScreen() {
   const usersQuery = useQuery({
     queryKey: ['map', 'users'],
     queryFn: async () => {
+      console.log('🔄 Fetching users from Firestore');
       const list = await userService.getAllUsers(500);
+      console.log(`✅ Loaded ${list.length} users from Firestore`);
       return list as User[];
     },
+    refetchInterval: 30000,
+    staleTime: 10000,
   });
 
   const normalizeUser = useCallback(
@@ -618,6 +627,10 @@ export default function MapScreen() {
   });
 
   const filteredUsers = usersWithLocation.filter((u) => {
+    // Filter out test users
+    if (u.email?.includes('test') || u.pseudo?.toLowerCase().includes('test')) {
+      return false;
+    }
     if (activeFilters.size === 0) return false;
     if (activeFilters.has('all')) return true;
     if (activeFilters.has('sitters') && (u.isCatSitter || u.isProfessional)) return true;
@@ -662,7 +675,14 @@ export default function MapScreen() {
         {Platform.OS !== 'web' && filteredUsers.map((u) => (
           <UserMarker key={`user-${u.id}`} user={u} onPress={() => setSelectedUser(u)} />
         ))}
-        {Platform.OS !== 'web' && places.map((place) => (
+        {Platform.OS !== 'web' && places
+          .filter((place) => {
+            if (activeFilters.has('all')) return true;
+            if (place.type === 'vet' && activeFilters.has('vets')) return true;
+            if (place.type === 'store' && activeFilters.has('stores')) return true;
+            return false;
+          })
+          .map((place) => (
           <MapMarker
             key={`place-${place.id}`}
             isVet={place.type === 'vet'}
@@ -772,7 +792,14 @@ export default function MapScreen() {
               </TouchableOpacity>
             );
           })}
-          {places.map((place) => {
+          {places
+            .filter((place) => {
+              if (activeFilters.has('all')) return true;
+              if (place.type === 'vet' && activeFilters.has('vets')) return true;
+              if (place.type === 'store' && activeFilters.has('stores')) return true;
+              return false;
+            })
+            .map((place) => {
             const pos = projectPoint(place.location.latitude, place.location.longitude);
             const left = Math.max(24, Math.min(width - 24, pos.left));
             const top = Math.max(24, Math.min(height - 24, pos.top));
