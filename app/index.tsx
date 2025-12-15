@@ -9,12 +9,13 @@ import { COLORS } from '@/constants/colors';
 
 
 export default function IndexScreen() {
-  const { user, loading } = useUser();
+  const { user, loading, initializing } = useUser();
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const isLoading = initializing || loading;
 
   useEffect(() => {
-    console.log('[IndexScreen] Auth state update', { loading, hasUser: Boolean(user) });
-  }, [loading, user]);
+    console.log('[IndexScreen] Auth state update', { loading, initializing, hasUser: Boolean(user) });
+  }, [loading, initializing, user]);
   const scaleAnim = useRef(new Animated.Value(0.5)).current;
   const heartbeatAnim = useRef(new Animated.Value(1)).current;
   const gradientAnim = useRef(new Animated.Value(0)).current;
@@ -84,7 +85,7 @@ export default function IndexScreen() {
   }, [fadeAnim, scaleAnim, heartbeatAnim, gradientAnim]);
 
   // Show loading with animation while checking auth state
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={styles.container}>
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: gradientAnim }]}>

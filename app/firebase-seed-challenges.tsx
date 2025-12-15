@@ -316,7 +316,7 @@ export default function FirebaseSeedChallengesScreen() {
             <Text style={styles.resultDetail}>{r.message}</Text>
           </View>
         ))}
-        {!results.length && <Text style={styles.hint}>Aucun résultat pour l'instant.</Text>}
+        {!results.length && <Text style={styles.hint}>Aucun résultat pour le moment.</Text>}
       </View>
 
       <TouchableOpacity

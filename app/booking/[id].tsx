@@ -170,7 +170,7 @@ export default function BookingScreen() {
       
       setShowPayment(false);
       router.push(`/booking/confirmation/${result.id}`);
-    } catch (error) {
+    } catch (_error) {
       if (Platform.OS === 'web') alert('Une erreur inattendue est survenue'); else Alert.alert('Erreur', 'Une erreur inattendue est survenue');
     } finally {
       setIsLoading(false);
@@ -288,7 +288,7 @@ export default function BookingScreen() {
 
         {/* Time Selection */}
         <View style={[styles.section, SHADOWS.small]}>
-          <Text style={styles.sectionTitle}>Sélectionner l'heure</Text>
+          <Text style={styles.sectionTitle}>Sélectionner heure</Text>
           <View style={styles.timeGrid}>
             {timeSlots.map((time) => (
               <TouchableOpacity

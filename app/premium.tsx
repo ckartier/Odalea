@@ -330,7 +330,7 @@ export default function PremiumScreen() {
           <View style={styles.benefitItem}>
             <Heart size={20} color={COLORS.catSitter} />
             <Text style={styles.benefitText}>
-              Connectez-vous avec plus d'amoureux des animaux dans votre région
+              {"Connectez-vous avec plus d'amoureux des animaux dans votre région"}
             </Text>
           </View>
           
@@ -362,14 +362,14 @@ export default function PremiumScreen() {
           
           <View style={styles.testimonial}>
             <Text style={styles.testimonialText}>
-              "Premium a rendu tellement plus facile de trouver des gardiens d'animaux de confiance. La fonction de portée étendue est incroyable !"
+              {"\"Premium a rendu tellement plus facile de trouver des gardiens d'animaux de confiance. La fonction de portée étendue est incroyable !\""}
             </Text>
             <Text style={styles.testimonialAuthor}>- Sarah M., Utilisatrice Premium</Text>
           </View>
           
           <View style={styles.testimonial}>
             <Text style={styles.testimonialText}>
-              "J'adore l'expérience sans pub et la messagerie illimitée. Ça vaut chaque centime !"
+              {"\"J'adore l'expérience sans pub et la messagerie illimitée. Ça vaut chaque centime !\""}
             </Text>
             <Text style={styles.testimonialAuthor}>- Marc D., Utilisateur Premium</Text>
           </View>

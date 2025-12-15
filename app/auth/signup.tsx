@@ -883,7 +883,7 @@ export default function SignUpScreen() {
 
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TouchableOpacity style={styles.verifyAddressButton} onPress={handleVerifyAddress} testID="verify-address-btn">
-            <Text style={styles.verifyAddressText}>Vérifier l'adresse</Text>
+            <Text style={styles.verifyAddressText}>Vérifier adresse</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.verifyAddressButton} onPress={async () => {
             try {
@@ -953,7 +953,7 @@ export default function SignUpScreen() {
         )}
 
         {verifyingAddress && (
-          <Text style={styles.addressStatus} testID="address-status">Vérification de l'adresse…</Text>
+          <Text style={styles.addressStatus} testID="address-status">Vérification en cours…</Text>
         )}
         {!verifyingAddress && addressSuggestions.length > 0 && (
           <View style={styles.suggestionsBox} testID="address-suggestions">
@@ -1140,7 +1140,7 @@ export default function SignUpScreen() {
             </View>
             <View style={styles.termsTextContainer}>
               <Text style={styles.termsText}>
-                J'accepte les{' '}
+                {"J'accepte les "}
                 <Text 
                   style={styles.linkText}
                   onPress={() => {
@@ -1152,7 +1152,7 @@ export default function SignUpScreen() {
                     }
                   }}
                 >
-                  Conditions Générales d'Utilisation
+                  {"Conditions Générales d'Utilisation"}
                 </Text>
                 {' '}et la{' '}
                 <Text 

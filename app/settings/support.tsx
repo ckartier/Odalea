@@ -238,7 +238,7 @@ export default function SupportScreen() {
             <View style={styles.optionContent}>
               <Text style={styles.optionTitle}>Signaler un problème</Text>
               <Text style={styles.optionDescription}>
-                Aidez-nous à améliorer l\'application
+                {"Aidez-nous à améliorer l'application"}
               </Text>
             </View>
             <ChevronRight size={20} color={COLORS.darkGray} />
@@ -280,7 +280,7 @@ export default function SupportScreen() {
 
         {/* App Information */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Informations de l\'application</Text>
+          <Text style={styles.sectionTitle}>{"Informations de l'application"}</Text>
           
           <View style={[styles.infoCard, SHADOWS.small]}>
             <View style={styles.infoRow}>

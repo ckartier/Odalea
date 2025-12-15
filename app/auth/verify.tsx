@@ -221,7 +221,7 @@ export default function VerifyScreen() {
           opacity: fadeAnim,
           transform: [{ translateY: slideAnim }],
         }]}>
-          We've sent a verification code to your phone number
+          {"We've sent a verification code to your phone number"}
         </Animated.Text>
         
         <Animated.View style={[styles.codeContainer, {
@@ -299,7 +299,7 @@ export default function VerifyScreen() {
         <Animated.View style={[styles.resendContainer, {
           opacity: fadeAnim,
         }]}>
-          <Text style={styles.resendText}>Didn't receive the code?</Text>
+          <Text style={styles.resendText}>{"Didn't receive the code?"}</Text>
           
           {timer > 0 ? (
             <Text style={styles.timerText}>Resend in {timer}s</Text>

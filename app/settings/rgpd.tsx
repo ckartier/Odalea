@@ -140,7 +140,7 @@ export default function RGPDScreen() {
               <Text style={styles.dataItem}>• Données de localisation (avec votre consentement)</Text>
               <Text style={styles.dataItem}>• Messages et communications</Text>
               <Text style={styles.dataItem}>• Photos et médias partagés</Text>
-              <Text style={styles.dataItem}>• Données d'utilisation de l'application</Text>
+              <Text style={styles.dataItem}>{"• Données d'utilisation de l'application"}</Text>
             </View>
           </View>
         </View>
@@ -164,7 +164,7 @@ export default function RGPDScreen() {
           <View style={[styles.contactCard, SHADOWS.small]}>
             <Text style={styles.contactTitle}>Délégué à la Protection des Données</Text>
             <Text style={styles.contactDescription}>
-              Pour toute question concernant vos données personnelles ou l'exercice de vos droits RGPD :
+              {"Pour toute question concernant vos données personnelles ou l'exercice de vos droits RGPD :"}
             </Text>
             <Text style={styles.contactEmail}>dpo@coppet.com</Text>
             <Text style={styles.contactNote}>

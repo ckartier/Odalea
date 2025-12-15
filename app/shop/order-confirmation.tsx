@@ -92,14 +92,14 @@ export default function OrderConfirmationScreen() {
         </View>
 
         <View style={styles.nextStepsCard}>
-          <Text style={styles.nextStepsTitle}>What's Next?</Text>
+          <Text style={styles.nextStepsTitle}>{"What's Next?"}</Text>
           
           <View style={styles.stepItem}>
             <View style={styles.stepNumber}>
               <Text style={styles.stepNumberText}>1</Text>
             </View>
             <Text style={styles.stepText}>
-              You'll receive an order confirmation email shortly
+              {"You'll receive an order confirmation email shortly"}
             </Text>
           </View>
 
@@ -117,7 +117,7 @@ export default function OrderConfirmationScreen() {
               <Text style={styles.stepNumberText}>3</Text>
             </View>
             <Text style={styles.stepText}>
-              You'll get a tracking number when it ships
+              {"You'll get a tracking number when it ships"}
             </Text>
           </View>
         </View>

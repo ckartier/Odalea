@@ -88,7 +88,7 @@ export default function TermsScreen() {
         <View style={styles.section}>
           <View style={styles.header}>
             <FileText size={40} color={COLORS.primary} />
-            <Text style={styles.headerTitle}>Conditions d'utilisation</Text>
+            <Text style={styles.headerTitle}>{"Conditions d'utilisation"}</Text>
             <Text style={styles.headerDescription}>
               Dernière mise à jour : 1er janvier 2024
             </Text>
@@ -98,7 +98,7 @@ export default function TermsScreen() {
         <View style={styles.section}>
           <View style={[styles.introCard, SHADOWS.small]}>
             <Text style={styles.introText}>
-              Bienvenue sur Coppet ! Ces conditions d'utilisation régissent votre utilisation de notre application et de nos services. 
+              {"Bienvenue sur Coppet ! Ces conditions d'utilisation régissent votre utilisation de notre application et de nos services."} 
               En utilisant Coppet, vous acceptez ces conditions dans leur intégralité.
             </Text>
           </View>
@@ -117,8 +117,7 @@ export default function TermsScreen() {
           <View style={[styles.footerCard, SHADOWS.small]}>
             <Text style={styles.footerTitle}>Questions ?</Text>
             <Text style={styles.footerText}>
-              Si vous avez des questions concernant ces conditions d'utilisation, 
-              n'hésitez pas à nous contacter à legal@coppet.com
+              {"Si vous avez des questions concernant ces conditions d'utilisation, n'hésitez pas à nous contacter à legal@coppet.com"}
             </Text>
           </View>
         </View>

@@ -10,12 +10,13 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
   const qc = useQueryClient();
   const [messagesByConv, setMessagesByConv] = useState<Record<string, Message[]>>({});
 
+  const userId = user?.id;
   const conversationsQuery = useQuery({
-    queryKey: ['conversations', user?.id],
+    queryKey: ['conversations', userId],
     queryFn: async () => {
-      if (!user) return [] as Conversation[];
-      console.log('[Messaging] Fetching conversations for', user.id);
-      const data = await databaseService.messaging.getConversations(user.id);
+      if (!userId) return [] as Conversation[];
+      console.log('[Messaging] Fetching conversations for', userId);
+      const data = await databaseService.messaging.getConversations(userId);
       return data;
     },
     enabled: !!user?.id,
@@ -45,11 +46,12 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
     return Array.from(ids);
   }, [conversations, user]);
 
+  const participantIdsCopy = [...otherParticipantIds];
   const usersQuery = useQuery({
-    queryKey: ['conversationUsers', otherParticipantIds.sort().join(',')],
+    queryKey: ['conversationUsers', participantIdsCopy],
     queryFn: async () => {
-      if (otherParticipantIds.length === 0) return [] as User[];
-      const data = await databaseService.user.getUsers(otherParticipantIds);
+      if (participantIdsCopy.length === 0) return [] as User[];
+      const data = await databaseService.user.getUsers(participantIdsCopy);
       return data.map(u => normalizeUser(u));
     },
     enabled: otherParticipantIds.length > 0,
@@ -64,11 +66,11 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
   }, [usersQuery.data]);
 
   const friendRequestsQuery = useQuery({
-    queryKey: ['friendRequests', user?.id],
+    queryKey: ['friendRequests', userId],
     queryFn: async () => {
-      if (!user) return [] as FriendRequest[];
-      console.log('[Messaging] Fetching friend requests for', user.id);
-      const data = await databaseService.friendRequest.getFriendRequests(user.id);
+      if (!userId) return [] as FriendRequest[];
+      console.log('[Messaging] Fetching friend requests for', userId);
+      const data = await databaseService.friendRequest.getFriendRequests(userId);
       return data;
     },
     enabled: !!user?.id,

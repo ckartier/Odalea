@@ -290,7 +290,7 @@ export default function AddProductScreen() {
               </TouchableOpacity>
             </View>
             <Text style={styles.photosHint}>
-              Ajoutez jusqu'à 5 photos de votre produit
+              {"Ajoutez jusqu'à 5 photos de votre produit"}
             </Text>
           </View>
           

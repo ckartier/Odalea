@@ -8,8 +8,8 @@ import FloatingMenu from "@/components/FloatingMenu";
 
 export default function TabLayout() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+  useSafeAreaInsets();
+  useState<boolean>(false);
 
   const handleMenuToggle = useCallback(() => {
     router.push('/menu' as any);

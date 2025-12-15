@@ -148,10 +148,10 @@ export default function ReportLostPetScreen() {
         <View style={styles.form}>
           {/* Pet Information */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Informations sur l'animal</Text>
+            <Text style={styles.sectionTitle}>{"Informations sur l'animal"}</Text>
             
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Nom de l'animal *</Text>
+              <Text style={styles.label}>{"Nom de l'animal *"}</Text>
               <Input
                 placeholder="Ex: Minou, Rex, Coco..."
                 value={formData.petName}
@@ -288,7 +288,7 @@ export default function ReportLostPetScreen() {
 
           <Text style={styles.disclaimer}>
             En publiant ce signalement, vous acceptez que vos informations de contact 
-            soient partagées via la messagerie sécurisée de l'application avec les 
+            {"soient partagées via la messagerie sécurisée de l'application avec les"} 
             personnes qui répondront à votre annonce.
           </Text>
         </View>

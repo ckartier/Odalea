@@ -350,7 +350,7 @@ export default function CatSitterDashboardScreen() {
           <Heart size={64} color={COLORS.mediumGray} />
           <Text style={styles.notCatSitterTitle}>Accès restreint</Text>
           <Text style={styles.notCatSitterText}>
-            Cette page est réservée aux cat-sitters. Activez l'option "Je suis cat-sitter" dans votre profil.
+            {"Cette page est réservée aux cat-sitters. Activez l'option \"Je suis cat-sitter\" dans votre profil."}
           </Text>
           <TouchableOpacity
             style={styles.goToProfileButton}
@@ -383,7 +383,7 @@ export default function CatSitterDashboardScreen() {
         >
           <TrendingUp size={20} color={selectedTab === 'overview' ? COLORS.primary : COLORS.darkGray} />
           <Text style={[styles.tabText, selectedTab === 'overview' && styles.activeTabText]}>
-            Vue d'ensemble
+            {"Vue d'ensemble"}
           </Text>
         </TouchableOpacity>
 

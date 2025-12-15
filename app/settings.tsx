@@ -238,7 +238,7 @@ export default function SettingsScreen() {
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-// Removed FirebaseTest usage
+{/* Removed FirebaseTest usage */}
 
         
         <View style={styles.section}>

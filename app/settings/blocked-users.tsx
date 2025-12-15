@@ -132,7 +132,7 @@ export default function BlockedUsersScreen() {
           <UserX size={64} color={COLORS.darkGray} />
           <Text style={styles.emptyTitle}>Aucun utilisateur bloqué</Text>
           <Text style={styles.emptyDescription}>
-            Vous n'avez bloqué aucun utilisateur. Les utilisateurs que vous bloquez apparaîtront ici.
+            {"Vous n'avez bloqué aucun utilisateur. Les utilisateurs que vous bloquez apparaîtront ici."}
           </Text>
         </View>
       )}

@@ -108,9 +108,9 @@ export default function HelpScreen() {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Centre d'aide</Text>
+          <Text style={styles.sectionTitle}>{"Centre d'aide"}</Text>
           <Text style={styles.sectionDescription}>
-            Trouvez de l'aide et des réponses à vos questions sur l'utilisation de Coppet.
+            {"Trouvez de l'aide et des réponses à vos questions sur l'utilisation de Coppet."}
           </Text>
           
           {helpItems.map((item) => (
@@ -160,7 +160,7 @@ export default function HelpScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Nous contacter</Text>
           <View style={[styles.contactCard, SHADOWS.small]}>
-            <Text style={styles.contactTitle}>Besoin d'aide supplémentaire ?</Text>
+            <Text style={styles.contactTitle}>{"Besoin d'aide supplémentaire ?"}</Text>
             <Text style={styles.contactDescription}>
               Notre équipe de support est là pour vous aider. Nous répondons généralement dans les 24h.
             </Text>

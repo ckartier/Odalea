@@ -230,7 +230,7 @@ export default function FAQScreen() {
         <View style={styles.contactSection}>
           <Text style={styles.contactTitle}>Vous ne trouvez pas votre réponse ?</Text>
           <Text style={styles.contactDescription}>
-            Contactez notre équipe de support pour obtenir de l'aide personnalisée.
+            {"Contactez notre équipe de support pour obtenir de l'aide personnalisée."}
           </Text>
           <TouchableOpacity 
             style={styles.contactButton}
