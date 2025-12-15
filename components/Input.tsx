@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: DIMENSIONS.FONT_SIZES.sm,
-    fontWeight: '600' as const,
+    fontWeight: '700' as const,
     marginBottom: moderateScale(6),
     color: COLORS.black,
   },
@@ -115,6 +115,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 16,
     paddingVertical: moderateScale(4),
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
   },
   input: {
     flex: 1,
@@ -122,6 +123,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     fontSize: DIMENSIONS.FONT_SIZES.md,
     color: COLORS.black,
+    fontWeight: '600' as const,
   },
   inputError: {
     borderColor: COLORS.error,

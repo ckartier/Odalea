@@ -604,22 +604,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
+    fontSize: 20,
+    fontWeight: '800' as const,
     color: COLORS.black,
   },
   captchaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 8,
-    marginBottom: 8,
+    marginTop: 12,
+    marginBottom: 12,
+    backgroundColor: 'rgba(163, 213, 255, 0.15)',
+    padding: 12,
+    borderRadius: 12,
   },
   captchaText: {
-    color: COLORS.darkGray,
+    color: COLORS.black,
+    fontSize: 16,
+    fontWeight: '700' as const,
   },
 });
 

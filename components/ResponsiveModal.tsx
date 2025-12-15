@@ -106,7 +106,7 @@ const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
           <GlassView
             tint={tint}
             liquidGlass={true}
-            intensity={50}
+            intensity={95}
             style={[
               styles.modalContent,
               modalSize,
@@ -158,6 +158,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(24),
     padding: DIMENSIONS.SPACING.lg,
     position: 'relative',
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
   },
   fullscreenContent: {
     borderRadius: 0,
