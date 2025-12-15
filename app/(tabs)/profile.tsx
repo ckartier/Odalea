@@ -49,6 +49,7 @@ import {
   CheckCircle,
   XCircle,
   ArrowRight,
+  Lock,
 } from 'lucide-react-native';
 
 export default function ProfileScreen() {
@@ -240,6 +241,15 @@ export default function ProfileScreen() {
             >
               <Settings size={20} color={COLORS.primary} />
             </TouchableOpacity>
+            
+            {user.role === 'admin' && (
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={() => router.push(toHref('/admin'))}
+              >
+                <Lock size={20} color={COLORS.accent} />
+              </TouchableOpacity>
+            )}
             
             <TouchableOpacity
               style={styles.headerButton}

@@ -219,6 +219,18 @@ export const userService = {
       console.error('❌ Error removing friend:', error);
       throw error;
     }
+  },
+
+  // Delete user
+  async deleteUser(userId: string): Promise<void> {
+    try {
+      const userRef = doc(db, COLLECTIONS.USERS, userId);
+      await deleteDoc(userRef);
+      console.log('✅ User deleted successfully');
+    } catch (error) {
+      console.error('❌ Error deleting user:', error);
+      throw error;
+    }
   }
 };
 

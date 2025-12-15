@@ -25,6 +25,7 @@ export interface User {
   catSitterRadiusKm?: number;
   referralCode?: string;
   isPremium: boolean;
+  role?: 'user' | 'admin';
   createdAt: number;
   pets: Pet[];
   animalType?: string;
