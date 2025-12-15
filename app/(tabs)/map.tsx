@@ -23,6 +23,7 @@ import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SHADOWS } from '@/constants/colors';
+import GlassCard from '@/components/GlassCard';
 import MapView, { PROVIDER_GOOGLE } from '@/components/MapView';
 import MapMarker from '@/components/MapMarker';
 import UserMarker from '@/components/UserMarker';
@@ -55,9 +56,9 @@ interface Region {
   longitudeDelta: number;
 }
 
-type MapFilter = 'all' | 'pets' | 'sitters' | 'friends' | 'lost' | 'vets';
+type MapFilter = 'all' | 'pets' | 'sitters' | 'friends' | 'lost' | 'vets' | 'stores';
 
-interface VetPlace {
+interface Place {
   id: string;
   name: string;
   location: { latitude: number; longitude: number };
@@ -65,6 +66,7 @@ interface VetPlace {
   rating?: number;
   phone?: string;
   phoneFormatted?: string;
+  type: 'vet' | 'store';
 }
 
 type AllPet = Pet & { owner?: User | undefined; isUserPet?: boolean };
@@ -94,6 +96,7 @@ const FILTERS: {
   { key: 'friends', label: 'Amis', Icon: Filter, gradient: ['#f97316', '#facc15'] },
   { key: 'lost', label: 'Perdus', Icon: Search, gradient: ['#f43f5e', '#f97316'] },
   { key: 'vets', label: 'Vétérinaires', Icon: Search, gradient: ['#34d399', '#059669'] },
+  { key: 'stores', label: 'Magasins', Icon: Search, gradient: ['#f59e0b', '#d97706'] },
 ];
 
 const { width, height } = Dimensions.get('window');
@@ -144,8 +147,8 @@ export default function MapScreen() {
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [locationPermission, setLocationPermission] = useState<boolean>(false);
-  const [activeFilters, setActiveFilters] = useState<Set<MapFilter>>(new Set(['all', 'pets', 'sitters', 'friends', 'lost', 'vets']));
-  const [vets, setVets] = useState<VetPlace[]>([]);
+  const [activeFilters, setActiveFilters] = useState<Set<MapFilter>>(new Set(['pets', 'sitters']));
+  const [places, setPlaces] = useState<Place[]>([]);
   const [popup, setPopup] = useState<PopupConfig | null>(null);
   const [showFilterMenu, setShowFilterMenu] = useState<boolean>(false);
   const popupAnim = useRef(new Animated.Value(0)).current;
@@ -393,12 +396,12 @@ export default function MapScreen() {
       console.log('track map_filter_apply failed', e);
     }
 
-    if (newFilters.has('vets') && vets.length === 0) {
-      await fetchNearbyVets();
+    if ((newFilters.has('vets') || newFilters.has('stores')) && places.length === 0) {
+      await fetchNearbyPlaces();
     }
   };
 
-  const fetchNearbyVets = async () => {
+  const fetchNearbyPlaces = async () => {
     try {
       const loc = userLocation ?? { latitude: DEFAULT_LAT, longitude: DEFAULT_LNG };
       const apiKey = getGooglePlacesApiKey();
@@ -408,84 +411,93 @@ export default function MapScreen() {
         showPopup({
           type: 'error',
           title: 'Configuration manquante',
-          message: 'Ajoutez EXPO_PUBLIC_GOOGLE_PLACES_API_KEY (ou EXPO_PUBLIC_GOOGLE_MAPS_API_KEY) pour activer les vétérinaires.',
+          message: 'Ajoutez EXPO_PUBLIC_GOOGLE_PLACES_API_KEY pour activer les lieux.',
         });
         return;
       }
 
-      const params = new URLSearchParams({
-        location: `${loc.latitude},${loc.longitude}`,
-        radius: '5000',
-        type: 'veterinary_care',
-        key: apiKey,
-      });
-      const url = `${GOOGLE_PLACES_ENDPOINT}?${params.toString()}`;
-      console.log('📍 Fetching vets near:', loc);
+      const allPlaces: Place[] = [];
 
-      const response = await fetch(url);
-      if (!response.ok) {
-        console.error('❌ Failed to fetch vets, status:', response.status);
-        showPopup({
-          type: 'error',
-          title: 'Erreur API',
-          message: `Impossible de charger les vétérinaires (${response.status}). Activez la facturation Google Cloud.`,
+      // Fetch veterinarians
+      if (activeFilters.has('vets')) {
+        const vetParams = new URLSearchParams({
+          location: `${loc.latitude},${loc.longitude}`,
+          radius: '5000',
+          type: 'veterinary_care',
+          key: apiKey,
         });
-        return;
+        const vetUrl = `${GOOGLE_PLACES_ENDPOINT}?${vetParams.toString()}`;
+        console.log('📍 Fetching vets near:', loc);
+
+        const vetResponse = await fetch(vetUrl);
+        if (vetResponse.ok) {
+          const vetData = await vetResponse.json();
+          if (vetData.status === 'OK' && vetData.results) {
+            const vetPlaces: Place[] = vetData.results.map((place: any) => ({
+              id: place.place_id,
+              name: place.name,
+              location: {
+                latitude: place.geometry.location.lat,
+                longitude: place.geometry.location.lng,
+              },
+              address: place.vicinity,
+              rating: place.rating,
+              phone: place.phone,
+              phoneFormatted: place.formatted_phone_number || place.international_phone_number,
+              type: 'vet' as const,
+            }));
+            allPlaces.push(...vetPlaces);
+          }
+        }
       }
 
-      const data = await response.json();
-      console.log('📊 Vets API response status:', data.status);
-
-      if (data.status === 'REQUEST_DENIED' || data.status === 'INVALID_REQUEST') {
-        console.error('❌ Google Places API error:', data.error_message);
-        showPopup({
-          type: 'error',
-          title: 'Google Places',
-          message: getGooglePlacesErrorMessage(data.error_message),
+      // Fetch pet stores
+      if (activeFilters.has('stores')) {
+        const storeParams = new URLSearchParams({
+          location: `${loc.latitude},${loc.longitude}`,
+          radius: '5000',
+          type: 'pet_store',
+          key: apiKey,
         });
-        return;
+        const storeUrl = `${GOOGLE_PLACES_ENDPOINT}?${storeParams.toString()}`;
+        console.log('📍 Fetching pet stores near:', loc);
+
+        const storeResponse = await fetch(storeUrl);
+        if (storeResponse.ok) {
+          const storeData = await storeResponse.json();
+          if (storeData.status === 'OK' && storeData.results) {
+            const storePlaces: Place[] = storeData.results.map((place: any) => ({
+              id: place.place_id,
+              name: place.name,
+              location: {
+                latitude: place.geometry.location.lat,
+                longitude: place.geometry.location.lng,
+              },
+              address: place.vicinity,
+              rating: place.rating,
+              phone: place.phone,
+              phoneFormatted: place.formatted_phone_number || place.international_phone_number,
+              type: 'store' as const,
+            }));
+            allPlaces.push(...storePlaces);
+          }
+        }
       }
 
-      if (data.status === 'ZERO_RESULTS') {
-        console.log('ℹ️ No vets found in this area');
-        showPopup({
-          type: 'info',
-          title: 'Aucun vétérinaire',
-          message: 'Aucun vétérinaire trouvé dans un rayon de 5 km.',
-        });
-        setVets([]);
-        return;
-      }
-
-      if (data.results && data.results.length > 0) {
-        const vetPlaces: VetPlace[] = data.results.map((place: any) => ({
-          id: place.place_id,
-          name: place.name,
-          location: {
-            latitude: place.geometry.location.lat,
-            longitude: place.geometry.location.lng,
-          },
-          address: place.vicinity,
-          rating: place.rating,
-          phone: place.phone,
-          phoneFormatted: place.formatted_phone_number || place.international_phone_number,
-        }));
-        setVets(vetPlaces);
+      setPlaces(allPlaces);
+      if (allPlaces.length > 0) {
         showPopup({
           type: 'success',
-          title: 'Vétérinaires trouvés',
-          message: `${vetPlaces.length} établissements à proximité`,
+          title: 'Lieux trouvés',
+          message: `${allPlaces.length} établissements à proximité`,
         });
-      } else {
-        console.log('⚠️ No vets in response');
-        setVets([]);
       }
     } catch (error) {
-      console.error('❌ Error fetching vets:', error);
+      console.error('❌ Error fetching places:', error);
       showPopup({
         type: 'error',
         title: 'Erreur',
-        message: 'Impossible de charger les vétérinaires. Vérifiez votre connexion.',
+        message: 'Impossible de charger les lieux. Vérifiez votre connexion.',
       });
     }
   };
@@ -584,41 +596,9 @@ export default function MapScreen() {
     },
   });
 
-  const usersForMap: User[] = useMemo(() => {
-    const jitter = (seed: number) => {
-      const s = Math.sin(seed) * 10000;
-      return s - Math.floor(s);
-    };
-    return allUsersNormalized.map((u, idx) => {
-      if (u.location?.latitude != null && u.location?.longitude != null) return u;
-      const j1 = jitter(idx + 1) - 0.5;
-      const j2 = jitter(idx + 2) - 0.5;
-      const approx = {
-        latitude: DEFAULT_LAT + j1 * 0.02,
-        longitude: DEFAULT_LNG + j2 * 0.02,
-      } as { latitude: number; longitude: number };
-      return {
-        ...u,
-        city: u.city ?? 'Paris',
-        zipCode: u.zipCode ?? '75018',
-        address: u.address ?? 'Montmartre',
-        location: approx,
-        normalizedAddress:
-          u.normalizedAddress ?? `${u.address ?? 'Montmartre'}, ${u.zipCode ?? '75018'} Paris, France`,
-        isActive: u.isActive ?? true,
-        profileComplete: u.profileComplete ?? false,
-      } as User;
-    });
+  const usersWithLocation = useMemo(() => {
+    return allUsersNormalized.filter((u) => u.location?.latitude != null && u.location?.longitude != null);
   }, [allUsersNormalized]);
-
-  useEffect(() => {
-    const missing = usersForMap.filter((u) => !u.location || u.address === '' || u.city === '' || u.zipCode === '');
-    if (missing.length) {
-      missing.slice(0, 50).forEach((u) => patchUser(u));
-    }
-  }, [usersForMap, patchUser]);
-
-  const usersWithLocation = usersForMap.filter((u) => !!u.location);
 
   const userPetsWithLocation: AllPet[] = user?.pets?.filter((p) => p.location).map((p) => ({
     ...p,
@@ -682,25 +662,25 @@ export default function MapScreen() {
         {Platform.OS !== 'web' && filteredUsers.map((u) => (
           <UserMarker key={`user-${u.id}`} user={u} onPress={() => setSelectedUser(u)} />
         ))}
-        {Platform.OS !== 'web' && activeFilters.has('vets') && vets.map((vet) => (
+        {Platform.OS !== 'web' && places.map((place) => (
           <MapMarker
-            key={`vet-${vet.id}`}
-            isVet={true}
+            key={`place-${place.id}`}
+            isVet={place.type === 'vet'}
             pet={{
-              id: vet.id,
-              name: vet.name,
-              type: 'veterinaire' as any,
-              breed: vet.address,
+              id: place.id,
+              name: place.name,
+              type: place.type === 'vet' ? 'veterinaire' : 'magasin' as any,
+              breed: place.address,
               gender: 'male' as any,
-              location: vet.location,
+              location: place.location,
               mainPhoto: '',
             } as any}
             onPress={() => {
-              const phoneInfo = vet.phoneFormatted || vet.phone;
+              const phoneInfo = place.phoneFormatted || place.phone;
               showPopup({
                 type: 'info',
-                title: vet.name,
-                message: `${vet.address}${vet.rating ? `\n⭐ ${vet.rating}/5` : ''}`,
+                title: place.name,
+                message: `${place.address}${place.rating ? `\n⭐ ${place.rating}/5` : ''}`,
                 phone: phoneInfo,
               });
             }}
@@ -792,30 +772,32 @@ export default function MapScreen() {
               </TouchableOpacity>
             );
           })}
-          {activeFilters.has('vets') && vets.map((vet) => {
-            const pos = projectPoint(vet.location.latitude, vet.location.longitude);
+          {places.map((place) => {
+            const pos = projectPoint(place.location.latitude, place.location.longitude);
             const left = Math.max(24, Math.min(width - 24, pos.left));
             const top = Math.max(24, Math.min(height - 24, pos.top));
+            const placeColor = place.type === 'vet' ? '#10b981' : '#f59e0b';
+            const placeEmoji = place.type === 'vet' ? '🏥' : '🏪';
             return (
               <TouchableOpacity
-                key={`overlay-vet-${vet.id}`}
+                key={`overlay-place-${place.id}`}
                 onPress={() => {
-                  const phoneInfo = vet.phoneFormatted || vet.phone;
+                  const phoneInfo = place.phoneFormatted || place.phone;
                   showPopup({
                     type: 'info',
-                    title: vet.name,
-                    message: `${vet.address}${vet.rating ? `\n⭐ ${vet.rating}/5` : ''}`,
+                    title: place.name,
+                    message: `${place.address}${place.rating ? `\n⭐ ${place.rating}/5` : ''}`,
                     phone: phoneInfo,
                   });
                 }}
                 activeOpacity={0.8}
                 style={[styles.webPetMarker, { left, top }]}
-                testID={`vet-marker-${vet.id}`}
+                testID={`place-marker-${place.id}`}
               >
-                <View style={[styles.webPetMarkerCircle, { backgroundColor: '#10b981', borderColor: COLORS.white }]}>
-                  <Text style={styles.webPetEmoji}>🏥</Text>
+                <View style={[styles.webPetMarkerCircle, { backgroundColor: placeColor, borderColor: COLORS.white }]}>
+                  <Text style={styles.webPetEmoji}>{placeEmoji}</Text>
                 </View>
-                <View style={[styles.webPetTriangle, { borderTopColor: '#10b981' }]} />
+                <View style={[styles.webPetTriangle, { borderTopColor: placeColor }]} />
               </TouchableOpacity>
             );
           })}
@@ -843,40 +825,35 @@ export default function MapScreen() {
           activeOpacity={1}
           onPress={() => setShowFilterMenu(false)}
         >
-          <View style={[styles.filterMenu, SHADOWS.large]}>
-            <LinearGradient
-              colors={appGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.filterMenuGradient}
-            >
-              <View style={styles.filterMenuHeader}>
-                <Text style={styles.filterMenuTitle}>Filtrer la carte</Text>
-                <TouchableOpacity onPress={() => setShowFilterMenu(false)} style={styles.filterMenuClose}>
-                  <X size={24} color="#fff" />
-                </TouchableOpacity>
-              </View>
-            </LinearGradient>
+          <GlassCard
+            tint={primaryPet?.gender === 'female' ? 'female' : 'male'}
+            intensity={60}
+            noPadding
+            style={styles.filterMenu}
+          >
+            <View style={styles.filterMenuHeader}>
+              <Text style={styles.filterMenuTitle}>Filtrer la carte</Text>
+              <TouchableOpacity onPress={() => setShowFilterMenu(false)} style={styles.filterMenuClose}>
+                <X size={24} color={COLORS.black} />
+              </TouchableOpacity>
+            </View>
             <View style={styles.filterMenuContent}>
               {FILTERS.map(({ key, label, Icon, gradient }) => {
                 const isActive = activeFilters.has(key);
                 return (
-                  <TouchableOpacity
+                  <GlassCard
                     key={key}
+                    tint={isActive ? (primaryPet?.gender === 'female' ? 'female' : 'male') : 'neutral'}
+                    intensity={isActive ? 50 : 20}
+                    noPadding
                     onPress={() => handleFilterPress(key)}
                     style={styles.filterMenuItem}
                     testID={`filter-item-${key}`}
-                    activeOpacity={0.7}
                   >
-                    <LinearGradient
-                      colors={isActive ? gradient : ['#f8fafc', '#f1f5f9']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={[styles.filterMenuItemInner, isActive && SHADOWS.small]}
-                    >
+                    <View style={styles.filterMenuItemInner}>
                       <View style={styles.filterMenuItemLeft}>
-                        <View style={[styles.filterMenuItemIcon, isActive && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
-                          <Icon size={20} color={isActive ? '#fff' : COLORS.primary} />
+                        <View style={styles.filterMenuItemIcon}>
+                          <Icon size={22} color={isActive ? COLORS.primary : '#64748b'} />
                         </View>
                         <Text style={[styles.filterMenuItemText, isActive && styles.filterMenuItemTextActive]}>
                           {label}
@@ -887,12 +864,12 @@ export default function MapScreen() {
                           <Text style={styles.filterMenuItemCheckText}>✓</Text>
                         </View>
                       )}
-                    </LinearGradient>
-                  </TouchableOpacity>
+                    </View>
+                  </GlassCard>
                 );
               })}
             </View>
-          </View>
+          </GlassCard>
         </TouchableOpacity>
       </Modal>
 
@@ -1188,14 +1165,9 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   filterMenu: {
-    borderRadius: 28,
     width: '100%',
-    maxWidth: 400,
-    maxHeight: '80%',
-    overflow: 'hidden',
-  },
-  filterMenuGradient: {
-    flex: 1,
+    maxWidth: 420,
+    maxHeight: '85%',
   },
   filterMenuHeader: {
     flexDirection: 'row',
@@ -1204,43 +1176,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.3)',
+    borderBottomColor: 'rgba(15,23,42,0.08)',
   },
   filterMenuTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '700',
-    color: '#fff',
+    color: COLORS.black,
   },
   filterMenuClose: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  filterMenuContent: {
-    padding: 16,
-    gap: 12,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-  },
-  filterMenuItem: {
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  filterMenuItemInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  filterMenuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  filterMenuItemIcon: {
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -1248,19 +1191,47 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  filterMenuContent: {
+    padding: 20,
+    gap: 12,
+  },
+  filterMenuItem: {
+    marginBottom: 0,
+  },
+  filterMenuItemInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+  },
+  filterMenuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  filterMenuItemIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   filterMenuItemText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
     color: '#0f172a',
   },
   filterMenuItemTextActive: {
-    color: '#fff',
+    color: COLORS.primary,
+    fontWeight: '700',
   },
   filterMenuItemCheck: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
