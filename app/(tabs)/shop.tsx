@@ -5,12 +5,13 @@ import {
   View, 
   ScrollView, 
   TouchableOpacity,
-  FlatList,
   RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
+import GlassCard from '@/components/GlassCard';
+import AppBackground from '@/components/AppBackground';
 import ProductCard from '@/components/ProductCard';
 import { useShop } from '@/hooks/shop-store';
 import { useI18n } from '@/hooks/i18n-store';
@@ -46,24 +47,26 @@ export default function ShopScreen() {
   };
   
   return (
-    <View style={styles.container}>
+    <AppBackground>
       <StatusBar style="dark" />
       
-      <View style={styles.header}>
-        <Text style={styles.title}>Boutique</Text>
-        
-        <TouchableOpacity
-          style={styles.cartButton}
-          onPress={handleCartPress}
-        >
-          <ShoppingCart size={24} color={COLORS.black} />
-          {cart.length > 0 && (
-            <View style={styles.cartBadge}>
-              <Text style={styles.cartCount}>{cart.length}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
+      <GlassCard tint="neutral" style={styles.header} noPadding>
+        <View style={styles.headerInner}>
+          <Text style={styles.title}>Boutique</Text>
+          
+          <TouchableOpacity
+            style={styles.cartButton}
+            onPress={handleCartPress}
+          >
+            <ShoppingCart size={24} color={COLORS.black} />
+            {cart.length > 0 && (
+              <View style={styles.cartBadge}>
+                <Text style={styles.cartCount}>{cart.length}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+      </GlassCard>
       
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -79,14 +82,12 @@ export default function ShopScreen() {
           contentContainerStyle={styles.categoriesContainer}
         >
           {categories.map(category => (
-            <TouchableOpacity
+            <GlassCard
               key={category}
-              style={[
-                styles.categoryButton,
-                selectedCategory === category ? styles.selectedCategory : null,
-                SHADOWS.small,
-              ]}
+              tint={selectedCategory === category ? 'male' : 'neutral'}
+              style={styles.categoryButton}
               onPress={() => handleCategoryPress(category)}
+              noPadding
             >
               <Text
                 style={[
@@ -96,7 +97,7 @@ export default function ShopScreen() {
               >
                 {category}
               </Text>
-            </TouchableOpacity>
+            </GlassCard>
           ))}
         </ScrollView>
         
@@ -137,16 +138,16 @@ export default function ShopScreen() {
         
         {/* Empty State */}
         {filteredProducts.length === 0 && (
-          <View style={styles.emptyContainer}>
+          <GlassCard tint="neutral" style={styles.emptyContainer}>
             <ShoppingBag size={48} color={COLORS.darkGray} />
             <Text style={styles.emptyTitle}>Aucun produit trouvé</Text>
             <Text style={styles.emptyText}>
               Aucun produit dans cette catégorie
             </Text>
-          </View>
+          </GlassCard>
         )}
       </ScrollView>
-    </View>
+    </AppBackground>
   );
 }
 
@@ -156,13 +157,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   header: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  headerInner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.mediumGray,
   },
   title: {
     fontSize: 20,
@@ -203,15 +207,7 @@ const styles = StyleSheet.create({
   categoryButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: COLORS.white,
     marginRight: 8,
-    borderWidth: 1,
-    borderColor: COLORS.mediumGray,
-  },
-  selectedCategory: {
-    backgroundColor: COLORS.maleAccent,
-    borderColor: COLORS.maleAccent,
   },
   categoryText: {
     fontSize: 14,
@@ -248,7 +244,7 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     alignItems: 'center',
-    padding: 24,
+    marginHorizontal: 16,
     marginTop: 40,
   },
   emptyTitle: {

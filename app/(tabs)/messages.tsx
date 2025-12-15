@@ -12,6 +12,8 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
+import GlassCard from '@/components/GlassCard';
+import AppBackground from '@/components/AppBackground';
 import { useMessaging } from '@/hooks/messaging-store';
 import { useI18n } from '@/hooks/i18n-store';
 import { mockUsers } from '@/mocks/users';
@@ -90,8 +92,9 @@ export default function MessagesScreen() {
     const userPet = otherUser.pets[0];
     
     return (
-      <TouchableOpacity
-        style={[styles.conversationItem, SHADOWS.small]}
+      <GlassCard
+        tint="neutral"
+        style={styles.conversationItem}
         onPress={() => handleConversationPress(item.id)}
       >
         <View style={styles.avatarContainer}>
@@ -129,7 +132,7 @@ export default function MessagesScreen() {
             <Text style={styles.noMessages}>{t('messages.no_messages')}</Text>
           )}
         </View>
-      </TouchableOpacity>
+      </GlassCard>
     );
   };
   
@@ -137,7 +140,7 @@ export default function MessagesScreen() {
     const sender = mockUsers.find(user => user.id === item.senderId) ?? { id: item.senderId, pseudo: 'User', pets: [{ mainPhoto: undefined }] } as any;
     
     return (
-      <View style={[styles.requestItem, SHADOWS.small]}>
+      <GlassCard tint="neutral" style={styles.requestItem}>
         <View style={styles.requestHeader}>
           <View style={styles.avatarContainer}>
             <Image
@@ -189,80 +192,82 @@ export default function MessagesScreen() {
             <Text style={styles.rejectButtonText}>{t('common.no')}</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </GlassCard>
     );
   };
   
   return (
-    <View style={styles.container}>
+    <AppBackground>
       <StatusBar style="dark" />
       
-      <View style={styles.header}>
-        <View style={styles.searchRow}>
-          <TextInput
-            placeholder={t('common.search')}
-            placeholderTextColor={COLORS.darkGray}
-            value={search}
-            onChangeText={setSearch}
-            style={styles.searchInput}
-          />
-          <TouchableOpacity
-            onPress={() => setUnreadOnly(v => !v)}
-            style={[styles.unreadToggle, unreadOnly && styles.unreadToggleActive]}
-          >
-            <Text style={[styles.unreadToggleText, unreadOnly && styles.unreadToggleTextActive]}>Non-lus</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.tabs}>
-          <TouchableOpacity
-            style={[
-              styles.tab,
-              activeTab === 'messages' ? styles.activeTab : null,
-            ]}
-            onPress={() => setActiveTab('messages')}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === 'messages' ? styles.activeTabText : null,
-              ]}
+      <GlassCard tint="neutral" style={styles.header} noPadding>
+        <View style={styles.headerInner}>
+          <View style={styles.searchRow}>
+            <TextInput
+              placeholder={t('common.search')}
+              placeholderTextColor={COLORS.darkGray}
+              value={search}
+              onChangeText={setSearch}
+              style={styles.searchInput}
+            />
+            <TouchableOpacity
+              onPress={() => setUnreadOnly(v => !v)}
+              style={[styles.unreadToggle, unreadOnly && styles.unreadToggleActive]}
             >
-              {t('navigation.messages')}
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[
-              styles.tab,
-              activeTab === 'requests' ? styles.activeTab : null,
-            ]}
-            onPress={() => setActiveTab('requests')}
-          >
-            <View style={styles.tabTextContainer}>
+              <Text style={[styles.unreadToggleText, unreadOnly && styles.unreadToggleTextActive]}>Non-lus</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.tabs}>
+            <TouchableOpacity
+              style={[
+                styles.tab,
+                activeTab === 'messages' ? styles.activeTab : null,
+              ]}
+              onPress={() => setActiveTab('messages')}
+            >
               <Text
                 style={[
                   styles.tabText,
-                  activeTab === 'requests' ? styles.activeTabText : null,
+                  activeTab === 'messages' ? styles.activeTabText : null,
                 ]}
               >
-                Demandes
+                {t('navigation.messages')}
               </Text>
-              {pendingRequests.length > 0 && (
-                <View style={styles.requestBadge}>
-                  <Text style={styles.requestBadgeText}>{pendingRequests.length}</Text>
-                </View>
-              )}
-            </View>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.tab,
+                activeTab === 'requests' ? styles.activeTab : null,
+              ]}
+              onPress={() => setActiveTab('requests')}
+            >
+              <View style={styles.tabTextContainer}>
+                <Text
+                  style={[
+                    styles.tabText,
+                    activeTab === 'requests' ? styles.activeTabText : null,
+                  ]}
+                >
+                  Demandes
+                </Text>
+                {pendingRequests.length > 0 && (
+                  <View style={styles.requestBadge}>
+                    <Text style={styles.requestBadgeText}>{pendingRequests.length}</Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          </View>
+          
+          <TouchableOpacity
+            style={styles.newButton}
+            onPress={handleNewMessage}
+          >
+            <Edit size={20} color={COLORS.maleAccent} />
           </TouchableOpacity>
         </View>
-        
-        <TouchableOpacity
-          style={styles.newButton}
-          onPress={handleNewMessage}
-        >
-          <Edit size={20} color={COLORS.maleAccent} />
-        </TouchableOpacity>
-      </View>
+      </GlassCard>
       
       {activeTab === 'messages' ? (
         conversations.length > 0 ? (
@@ -313,7 +318,7 @@ export default function MessagesScreen() {
           </View>
         )
       )}
-    </View>
+    </AppBackground>
   );
 }
 
@@ -323,10 +328,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   header: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  headerInner: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.mediumGray,
   },
   searchRow: {
     flexDirection: 'row',
@@ -414,9 +422,6 @@ const styles = StyleSheet.create({
   },
   conversationItem: {
     flexDirection: 'row',
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 12,
     marginBottom: 12,
   },
   avatarContainer: {
@@ -479,9 +484,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   requestItem: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 12,
     marginBottom: 12,
   },
   requestHeader: {
@@ -546,7 +548,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.maleAccent,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 12,
+    borderRadius: 20,
   },
   startButtonText: {
     color: COLORS.white,

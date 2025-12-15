@@ -17,7 +17,8 @@ import { router } from 'expo-router';
 import { COLORS, SHADOWS, DIMENSIONS } from '@/constants/colors';
 import { useI18n } from '@/hooks/i18n-store';
 import { useSocial } from '@/hooks/social-store';
-import SurfaceCard from '@/components/SurfaceCard';
+import GlassCard from '@/components/GlassCard';
+import AppBackground from '@/components/AppBackground';
 import { Plus, Heart, MessageCircle, Share, MapPin, AlertTriangle, X, Send } from 'lucide-react-native';
 
 import ResponsiveModal from '@/components/ResponsiveModal';
@@ -169,7 +170,7 @@ export default function CommunityScreen() {
     const isUrgent = post.type === 'lost' || post.type === 'found';
     
     return (
-      <SurfaceCard key={post.id} style={[styles.postCard, isUrgent && styles.urgentPost]}>
+      <GlassCard key={post.id} tint="neutral" style={[styles.postCard, isUrgent && styles.urgentPost]}>
         {isUrgent && (
           <View style={styles.urgentBanner}>
             <AlertTriangle size={16} color={COLORS.white} />
@@ -278,15 +279,15 @@ export default function CommunityScreen() {
             </View>
           </View>
         )}
-      </SurfaceCard>
+      </GlassCard>
     );
   };
 
   return (
-    <View style={styles.container}>
+    <AppBackground>
 
-      <View style={styles.filterContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      <GlassCard tint="neutral" style={styles.filterContainer} noPadding>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
           {filters.map(filter => (
             <TouchableOpacity
               key={filter.key}
@@ -307,7 +308,7 @@ export default function CommunityScreen() {
             </TouchableOpacity>
           ))}
         </ScrollView>
-      </View>
+      </GlassCard>
 
       <ScrollView
         style={styles.feed}
@@ -356,7 +357,7 @@ export default function CommunityScreen() {
         <Plus size={28} color={COLORS.white} />
       </TouchableOpacity>
 
-    </View>
+    </AppBackground>
   );
 }
 
@@ -372,11 +373,13 @@ const styles = StyleSheet.create({
     padding: DIMENSIONS.SPACING.sm,
   },
   filterContainer: {
-    backgroundColor: COLORS.white,
+    marginHorizontal: DIMENSIONS.SPACING.md,
+    marginTop: DIMENSIONS.SPACING.sm,
+    marginBottom: DIMENSIONS.SPACING.sm,
+  },
+  filterScroll: {
     paddingVertical: DIMENSIONS.SPACING.sm,
     paddingHorizontal: DIMENSIONS.SPACING.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.mediumGray,
   },
   filterButton: {
     paddingHorizontal: 10,
@@ -402,6 +405,7 @@ const styles = StyleSheet.create({
   postCard: {
     marginHorizontal: DIMENSIONS.SPACING.md,
     marginVertical: DIMENSIONS.SPACING.sm,
+    borderRadius: 20,
   },
   urgentPost: {
     borderWidth: 2,

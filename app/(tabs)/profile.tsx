@@ -9,13 +9,14 @@ import {
   RefreshControl,
   Alert,
   Platform,
-  SafeAreaView,
   Switch,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Href, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
+import GlassCard from '@/components/GlassCard';
+import AppBackground from '@/components/AppBackground';
 import PetCard from '@/components/PetCard';
 import Badge from '@/components/Badge';
 import Button from '@/components/Button';
@@ -181,47 +182,52 @@ export default function ProfileScreen() {
     );
   }
   
+  const primaryPetGender = user.pets[0]?.gender;
+  const tint = primaryPetGender === 'male' ? 'male' : primaryPetGender === 'female' ? 'female' : 'neutral';
+
   return (
-    <SafeAreaView style={styles.container}>
+    <AppBackground variant={primaryPetGender === 'male' ? 'male' : primaryPetGender === 'female' ? 'female' : 'default'}>
       <StatusBar style="dark" />
       
       {/* Fixed Header */}
-      <View style={styles.fixedHeader}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.headerName}>@{user.pseudo}</Text>
-          <Text style={styles.friendsCount}>{mockFriends.length} amis</Text>
+      <GlassCard tint={tint as 'male' | 'female' | 'neutral'} style={styles.fixedHeader} noPadding>
+        <View style={styles.headerInner}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.headerName}>@{user.pseudo}</Text>
+            <Text style={styles.friendsCount}>{mockFriends.length} amis</Text>
+          </View>
+          
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={() => router.push(toHref('/cat-sitter'))}
+            >
+              <Heart size={20} color={COLORS.primary} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={() => router.push(toHref('/friends'))}
+            >
+              <Users size={20} color={COLORS.primary} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={handleEditProfile}
+            >
+              <Settings size={20} color={COLORS.primary} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={handleSignOut}
+            >
+              <LogOut size={20} color={COLORS.error} />
+            </TouchableOpacity>
+          </View>
         </View>
-        
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={[styles.headerButton, SHADOWS.small]}
-            onPress={() => router.push(toHref('/cat-sitter'))}
-          >
-            <Heart size={20} color={COLORS.primary} />
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.headerButton, SHADOWS.small]}
-            onPress={() => router.push(toHref('/friends'))}
-          >
-            <Users size={20} color={COLORS.primary} />
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.headerButton, SHADOWS.small]}
-            onPress={handleEditProfile}
-          >
-            <Settings size={20} color={COLORS.primary} />
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.headerButton, SHADOWS.small]}
-            onPress={handleSignOut}
-          >
-            <LogOut size={20} color={COLORS.error} />
-          </TouchableOpacity>
-        </View>
-      </View>
+      </GlassCard>
       
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -259,10 +265,10 @@ export default function ProfileScreen() {
         </View>
         
         {/* Membership Status */}
-        <TouchableOpacity 
-          style={[styles.membershipCard, SHADOWS.medium]}
+        <GlassCard 
+          tint={tint as 'male' | 'female' | 'neutral'}
+          style={styles.membershipCard}
           onPress={() => router.push(toHref('/premium'))}
-          activeOpacity={0.8}
         >
           <View style={styles.membershipInfo}>
             {isPremium ? (
@@ -294,7 +300,7 @@ export default function ProfileScreen() {
           ) : (
             <Text style={styles.managePremiumText}>Gérer</Text>
           )}
-        </TouchableOpacity>
+        </GlassCard>
         
         {/* Friends Section */}
         <View style={styles.sectionHeader}>
@@ -307,8 +313,9 @@ export default function ProfileScreen() {
         <FlatList
           data={mockFriends}
           renderItem={({ item }) => (
-            <TouchableOpacity 
-              style={[styles.friendItem, SHADOWS.small]}
+            <GlassCard 
+              tint={tint as 'male' | 'female' | 'neutral'}
+              style={styles.friendItem}
               onPress={() => router.push(toHref(`/messages/${item.id}`))}
             >
               <Image source={{ uri: item.avatar }} style={styles.friendAvatar} />
@@ -316,7 +323,7 @@ export default function ProfileScreen() {
                 <Text style={styles.friendName}>@{item.pseudo}</Text>
                 <Text style={styles.friendAction}>Envoyer un message</Text>
               </View>
-            </TouchableOpacity>
+            </GlassCard>
           )}
           keyExtractor={item => item.id}
           horizontal
@@ -359,7 +366,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
         
-        <View style={styles.challengesContainer}>
+        <GlassCard tint={tint as 'male' | 'female' | 'neutral'} style={styles.challengesContainer}>
           <View style={styles.challengesSummary}>
             <View style={styles.challengeStatItem}>
               <Trophy size={20} color={COLORS.accent} />
@@ -372,7 +379,7 @@ export default function ProfileScreen() {
               <Text style={styles.challengeStatLabel}>En cours</Text>
             </View>
           </View>
-        </View>
+        </GlassCard>
         
         {/* Badges Section */}
         {unlockedBadges.length > 0 && (
@@ -681,7 +688,7 @@ export default function ProfileScreen() {
           <Text style={styles.sectionTitle}>Informations du compte</Text>
         </View>
         
-        <View style={[styles.infoCard, SHADOWS.small]}>
+        <GlassCard tint={tint as 'male' | 'female' | 'neutral'} style={styles.infoCard}>
           <View style={styles.infoItem}>
             <UserIcon size={18} color={COLORS.darkGray} />
             <Text style={styles.infoLabel}>Email</Text>
@@ -705,9 +712,9 @@ export default function ProfileScreen() {
               {new Date(user.createdAt).toLocaleDateString('fr-FR')}
             </Text>
           </View>
-        </View>
+        </GlassCard>
       </ScrollView>
-    </SafeAreaView>
+    </AppBackground>
   );
 }
 
@@ -722,15 +729,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   fixedHeader: {
+    marginHorizontal: 16,
+    marginTop: Platform.OS === 'ios' ? 12 : 16,
+    marginBottom: 8,
+  },
+  headerInner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.mediumGray,
-    paddingTop: Platform.OS === 'ios' ? 12 : 16,
   },
   headerLeft: {
     flex: 1,
@@ -753,11 +761,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.mediumGray,
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -848,12 +854,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.mediumGray,
   },
   membershipCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 16,
     marginBottom: 24,
   },
   premiumIconContainer: {
@@ -928,9 +928,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   infoCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 16,
+    marginBottom: 24,
   },
   infoItem: {
     flexDirection: 'row',
@@ -959,9 +957,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   friendItem: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 12,
     alignItems: 'center',
     width: 120,
     marginRight: 12,
@@ -988,11 +983,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   challengesContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 16,
     marginBottom: 16,
-    ...SHADOWS.small,
   },
   challengesSummary: {
     flexDirection: 'row',

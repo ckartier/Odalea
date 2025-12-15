@@ -426,7 +426,7 @@ function SignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: 'transparent',
   },
   keyboardView: {
     flex: 1,
