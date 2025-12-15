@@ -43,6 +43,8 @@ export default function CreatePostScreen() {
     }
     
     try {
+      console.log('📝 Creating post with photos:', photos);
+      
       const postData = {
         content: content.trim(),
         images: photos.length > 0 ? photos : undefined,

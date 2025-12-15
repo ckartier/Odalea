@@ -5,6 +5,7 @@ import { databaseService, lostFoundService } from '@/services/database';
 import { Post, Comment, User } from '@/types';
 import { useFirebaseUser } from './firebase-user-store';
 import { useUser } from './user-store';
+import { StorageService } from '@/services/storage';
 
 export const [SocialContext, useSocial] = createContextHook(() => {
   const { user: firebaseUser } = useFirebaseUser();
@@ -113,8 +114,38 @@ export const [SocialContext, useSocial] = createContextHook(() => {
     }) => {
       if (!user) throw new Error('User not authenticated');
       
+      let uploadedImageUrls: string[] | undefined;
+      
+      if (postData.images && postData.images.length > 0) {
+        console.log('📤 Uploading post images...', postData.images);
+        
+        const tempPostId = `temp_${Date.now()}`;
+        
+        try {
+          uploadedImageUrls = await Promise.all(
+            postData.images.map(async (imageUri, index) => {
+              if (imageUri.startsWith('http://') || imageUri.startsWith('https://')) {
+                return imageUri;
+              }
+              
+              return await StorageService.uploadPostImage(
+                user.id,
+                tempPostId,
+                imageUri
+              );
+            })
+          );
+          
+          console.log('✅ Images uploaded:', uploadedImageUrls);
+        } catch (error) {
+          console.error('❌ Failed to upload images:', error);
+          throw new Error('Failed to upload images');
+        }
+      }
+      
       const post = {
         ...postData,
+        images: uploadedImageUrls,
         authorId: user.id,
         authorName: user.name,
         authorPhoto: user.photo,
