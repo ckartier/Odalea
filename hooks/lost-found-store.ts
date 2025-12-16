@@ -4,6 +4,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { databaseService } from '@/services/database';
 import { useUser } from './user-store';
+import { safeJsonParse } from '@/lib/safe-json';
 
 export interface LostPetReport {
   id: string;
@@ -133,7 +134,7 @@ export const [LostFoundContext, useLostFound] = createContextHook(() => {
         console.error('Error fetching lost pets from Firebase:', error);
         // Fallback to AsyncStorage
         const stored = await AsyncStorage.getItem('lostPets');
-        const reports: LostPetReport[] = stored ? JSON.parse(stored) : [];
+        const reports: LostPetReport[] = safeJsonParse(stored, []);
         
         // Apply filters
         let filtered = reports;
@@ -205,7 +206,7 @@ export const [LostFoundContext, useLostFound] = createContextHook(() => {
         console.error('Error creating report in Firebase:', error);
         // Fallback to AsyncStorage
         const stored = await AsyncStorage.getItem('lostPets');
-        const reports: LostPetReport[] = stored ? JSON.parse(stored) : [];
+        const reports: LostPetReport[] = safeJsonParse(stored, []);
         
         const newReport: LostPetReport = {
           ...report,
@@ -263,7 +264,7 @@ export const [LostFoundContext, useLostFound] = createContextHook(() => {
         console.error('Error responding to report in Firebase:', error);
         // Fallback to AsyncStorage
         const stored = await AsyncStorage.getItem('lostPets');
-        const reports: LostPetReport[] = stored ? JSON.parse(stored) : [];
+        const reports: LostPetReport[] = safeJsonParse(stored, []);
         
         const reportIndex = reports.findIndex(r => r.id === reportId);
         if (reportIndex === -1) throw new Error('Report not found');
@@ -331,7 +332,7 @@ export const [LostFoundContext, useLostFound] = createContextHook(() => {
         console.error('Error updating report status in Firebase:', error);
         // Fallback to AsyncStorage
         const stored = await AsyncStorage.getItem('lostPets');
-        const reports: LostPetReport[] = stored ? JSON.parse(stored) : [];
+        const reports: LostPetReport[] = safeJsonParse(stored, []);
         
         const reportIndex = reports.findIndex(r => r.id === reportId);
         if (reportIndex === -1) throw new Error('Report not found');

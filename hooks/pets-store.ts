@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Pet, User } from '@/types';
 import { collection, getDocs, limit, query, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/services/firebase';
+import { safeJsonParse } from '@/lib/safe-json';
 
 export const [PetsContext, usePets] = createContextHook(() => {
   const [nearbyPets, setNearbyPets] = useState<Pet[]>([]);
@@ -17,10 +18,8 @@ export const [PetsContext, usePets] = createContextHook(() => {
       try {
         setIsLoadingUserPets(true);
         const storedPets = await AsyncStorage.getItem('userPets');
-        if (storedPets) {
-          const parsed: Pet[] = JSON.parse(storedPets);
-          setUserPets(Array.isArray(parsed) ? parsed : []);
-        }
+        const parsed: Pet[] = safeJsonParse(storedPets, []);
+        setUserPets(Array.isArray(parsed) ? parsed : []);
       } catch (err) {
         setError('Failed to load pets data');
         console.error('Error loading pets:', err);

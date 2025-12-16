@@ -3,6 +3,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useEffect, useState } from 'react';
 import { Alert, Platform } from 'react-native';
 import { useAuth } from './user-store';
+import { safeJsonParse } from '@/lib/safe-json';
 
 export interface PremiumFeatures {
   unlimitedMessages: boolean;
@@ -106,12 +107,10 @@ export const [PremiumContext, usePremium] = createContextHook(() => {
     const loadUsageCounts = async () => {
       try {
         const counts = await AsyncStorage.getItem('usage_counts');
-        if (counts) {
-          const parsed = JSON.parse(counts);
-          setMessageCount(parsed.messageCount || 0);
-          setAnimalCount(parsed.animalCount || 0);
-          setActionCount(parsed.actionCount || 0);
-        }
+        const parsed = safeJsonParse(counts, { messageCount: 0, animalCount: 0, actionCount: 0 });
+        setMessageCount(parsed.messageCount || 0);
+        setAnimalCount(parsed.animalCount || 0);
+        setActionCount(parsed.actionCount || 0);
       } catch (error) {
         console.error('Error loading usage counts:', error);
       }

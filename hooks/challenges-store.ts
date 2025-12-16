@@ -4,6 +4,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { databaseService } from '@/services/database';
 import { useAuth } from '@/hooks/user-store';
+import { safeJsonParse } from '@/lib/safe-json';
 
 export interface Challenge {
   id: string;
@@ -187,7 +188,7 @@ export const [ChallengesContext, useChallenges] = createContextHook(() => {
     queryKey: ['communityFeed'],
     queryFn: async () => {
       const stored = await AsyncStorage.getItem('communityFeed');
-      const feed: CommunityFeedItem[] = stored ? JSON.parse(stored) : getDefaultCommunityFeed();
+      const feed: CommunityFeedItem[] = safeJsonParse(stored, getDefaultCommunityFeed());
       return feed.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     },
   });
@@ -287,7 +288,7 @@ export const [ChallengesContext, useChallenges] = createContextHook(() => {
       increment?: number;
     }) => {
       const stored = await AsyncStorage.getItem('userChallenges');
-      const userChallenges: UserChallenge[] = stored ? JSON.parse(stored) : [];
+      const userChallenges: UserChallenge[] = safeJsonParse(stored, []);
       
       const challengeIndex = userChallenges.findIndex(uc => uc.id === userChallengeId);
       if (challengeIndex === -1) throw new Error('User challenge not found');
