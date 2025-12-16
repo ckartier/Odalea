@@ -300,6 +300,82 @@ export const [FirebaseUserContext, useFirebaseUser] = createContextHook(() => {
     }
   };
 
+  const updatePrivacySettings = async (settings: Partial<User['privacySettings']>) => {
+    if (!authState.user) {
+      return { success: false, error: 'No user is signed in' } as const;
+    }
+
+    try {
+      const defaultSettings = {
+        showLocation: true,
+        showPhone: false,
+        showEmail: false,
+        allowMessages: true,
+        showOnlineStatus: true,
+        shareActivity: true,
+        allowPhotoTagging: true,
+        publicProfile: true,
+      };
+      const updatedSettings = { ...defaultSettings, ...authState.user.privacySettings, ...settings };
+      return await updateUser({ privacySettings: updatedSettings });
+    } catch (error) {
+      console.error('❌ Update privacy settings error:', error);
+      return { success: false, error: 'An error occurred while updating privacy settings' } as const;
+    }
+  };
+
+  const updateNotificationSettings = async (settings: Partial<User['notificationSettings']>) => {
+    if (!authState.user) {
+      return { success: false, error: 'No user is signed in' } as const;
+    }
+
+    try {
+      const defaultSettings = {
+        pushNotifications: true,
+        emailNotifications: false,
+        smsNotifications: false,
+        reminders: true,
+        socialActivity: true,
+        emergencyAlerts: true,
+        messageNotifications: true,
+        challengeUpdates: true,
+        shopOffers: false,
+        lostFoundAlerts: true,
+      };
+      const updatedSettings = { ...defaultSettings, ...authState.user.notificationSettings, ...settings };
+      return await updateUser({ notificationSettings: updatedSettings });
+    } catch (error) {
+      console.error('❌ Update notification settings error:', error);
+      return { success: false, error: 'An error occurred while updating notification settings' } as const;
+    }
+  };
+
+  const updateLanguage = async (language: 'en' | 'fr' | 'es' | 'de' | 'it') => {
+    if (!authState.user) {
+      return { success: false, error: 'No user is signed in' } as const;
+    }
+
+    try {
+      return await updateUser({ language });
+    } catch (error) {
+      console.error('❌ Update language error:', error);
+      return { success: false, error: 'An error occurred while updating language' } as const;
+    }
+  };
+
+  const updateTheme = async (theme: 'light' | 'dark' | 'system') => {
+    if (!authState.user) {
+      return { success: false, error: 'No user is signed in' } as const;
+    }
+
+    try {
+      return await updateUser({ theme });
+    } catch (error) {
+      console.error('❌ Update theme error:', error);
+      return { success: false, error: 'An error occurred while updating theme' } as const;
+    }
+  };
+
   const addPet = async (petData: Omit<Pet, 'id' | 'ownerId'>) => {
     if (!authState.user) {
       return { success: false, error: 'No user is signed in' } as const;
@@ -383,5 +459,9 @@ export const [FirebaseUserContext, useFirebaseUser] = createContextHook(() => {
     updateUser,
     addPet,
     updatePet,
+    updatePrivacySettings,
+    updateNotificationSettings,
+    updateLanguage,
+    updateTheme,
   };
 });

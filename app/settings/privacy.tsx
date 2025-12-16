@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -12,10 +12,14 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import { useI18n } from '@/hooks/i18n-store';
+import { useFirebaseUser } from '@/hooks/firebase-user-store';
+import { useTheme } from '@/hooks/theme-store';
 import { Shield, Eye, EyeOff, MapPin, Phone, Mail } from 'lucide-react-native';
 
 export default function PrivacySettingsScreen() {
   const { t } = useI18n();
+  const { user, updatePrivacySettings } = useFirebaseUser();
+  const { currentTheme, isDark } = useTheme();
   
   const [settings, setSettings] = useState({
     showLocation: true,
@@ -28,8 +32,21 @@ export default function PrivacySettingsScreen() {
     publicProfile: true,
   });
 
-  const updateSetting = (key: string, value: boolean) => {
+  useEffect(() => {
+    if (user?.privacySettings) {
+      setSettings(user.privacySettings);
+    }
+  }, [user]);
+
+  const updateSetting = async (key: string, value: boolean) => {
     setSettings(prev => ({ ...prev, [key]: value }));
+    
+    const result = await updatePrivacySettings({ [key]: value });
+    if (!result.success) {
+      console.error('Failed to update privacy setting:', result.error);
+      setSettings(prev => ({ ...prev, [key]: !value }));
+      Alert.alert('Erreur', 'Impossible de mettre à jour le paramètre de confidentialité');
+    }
   };
 
   const handleDataExport = () => {
@@ -95,35 +112,35 @@ export default function PrivacySettingsScreen() {
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
       <Stack.Screen
         options={{
           title: t('settings.privacy'),
-          headerStyle: { backgroundColor: COLORS.white },
-          headerTintColor: COLORS.black,
+          headerStyle: { backgroundColor: currentTheme.card },
+          headerTintColor: currentTheme.text,
         }}
       />
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionDescription}>
+          <Text style={[styles.sectionDescription, { color: currentTheme.text }]}>
             Contrôlez qui peut voir vos informations et comment elles sont utilisées.
           </Text>
           
           {privacyItems.map((item) => (
-            <View key={item.key} style={[styles.privacyItem, SHADOWS.small]}>
-              <View style={styles.privacyIcon}>
+            <View key={item.key} style={[styles.privacyItem, SHADOWS.small, { backgroundColor: currentTheme.card }]}>
+              <View style={[styles.privacyIcon, { backgroundColor: currentTheme.background }]}>
                 {item.icon}
               </View>
               <View style={styles.privacyContent}>
-                <Text style={styles.privacyTitle}>{item.title}</Text>
-                <Text style={styles.privacyDescription}>{item.description}</Text>
+                <Text style={[styles.privacyTitle, { color: currentTheme.text }]}>{item.title}</Text>
+                <Text style={[styles.privacyDescription, { color: currentTheme.text }]}>{item.description}</Text>
               </View>
               <Switch
                 value={settings[item.key as keyof typeof settings]}
                 onValueChange={(value) => updateSetting(item.key, value)}
-                trackColor={{ false: COLORS.mediumGray, true: COLORS.primary }}
+                trackColor={{ false: COLORS.mediumGray, true: currentTheme.accent }}
                 thumbColor={COLORS.white}
               />
             </View>
@@ -131,15 +148,15 @@ export default function PrivacySettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Données personnelles</Text>
+          <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>Données personnelles</Text>
           
           <TouchableOpacity
-            style={[styles.actionItem, SHADOWS.small]}
+            style={[styles.actionItem, SHADOWS.small, { backgroundColor: currentTheme.card }]}
             onPress={handleDataExport}
           >
             <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Exporter mes données</Text>
-              <Text style={styles.actionDescription}>
+              <Text style={[styles.actionTitle, { color: currentTheme.accent }]}>Exporter mes données</Text>
+              <Text style={[styles.actionDescription, { color: currentTheme.text }]}>
                 Télécharger une copie de toutes vos données
               </Text>
             </View>
@@ -153,7 +170,6 @@ export default function PrivacySettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
   },
   content: {
     flex: 1,

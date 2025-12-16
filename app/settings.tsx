@@ -12,7 +12,7 @@ import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import { useI18n } from '@/hooks/i18n-store';
-import { useAuth } from '@/hooks/auth-store';
+import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { useTheme } from '@/hooks/theme-store';
 // Removed FirebaseTest import
 
@@ -34,7 +34,7 @@ import {
 export default function SettingsScreen() {
   const router = useRouter();
   const { t, currentLocale, changeLanguage } = useI18n();
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useFirebaseUser();
   const { currentTheme, mode, setThemeMode, isDark } = useTheme();
 
   const handleLanguageChange = () => {
@@ -44,27 +44,52 @@ export default function SettingsScreen() {
       [
         {
           text: 'Français',
-          onPress: () => changeLanguage('fr'),
+          onPress: async () => {
+            await changeLanguage('fr');
+            if (user) {
+              await signOut();
+            }
+          },
           style: currentLocale === 'fr' ? 'default' : 'cancel',
         },
         {
           text: 'English',
-          onPress: () => changeLanguage('en'),
+          onPress: async () => {
+            await changeLanguage('en');
+            if (user) {
+              await signOut();
+            }
+          },
           style: currentLocale === 'en' ? 'default' : 'cancel',
         },
         {
           text: 'Español',
-          onPress: () => changeLanguage('es'),
+          onPress: async () => {
+            await changeLanguage('es');
+            if (user) {
+              await signOut();
+            }
+          },
           style: currentLocale === 'es' ? 'default' : 'cancel',
         },
         {
           text: 'Deutsch',
-          onPress: () => changeLanguage('de'),
+          onPress: async () => {
+            await changeLanguage('de');
+            if (user) {
+              await signOut();
+            }
+          },
           style: currentLocale === 'de' ? 'default' : 'cancel',
         },
         {
           text: 'Italiano',
-          onPress: () => changeLanguage('it'),
+          onPress: async () => {
+            await changeLanguage('it');
+            if (user) {
+              await signOut();
+            }
+          },
           style: currentLocale === 'it' ? 'default' : 'cancel',
         },
       ]
@@ -78,17 +103,32 @@ export default function SettingsScreen() {
       [
         {
           text: 'Clair',
-          onPress: () => setThemeMode('light'),
+          onPress: async () => {
+            await setThemeMode('light');
+            if (user) {
+              await signOut();
+            }
+          },
           style: mode === 'light' ? 'default' : 'cancel',
         },
         {
           text: 'Sombre',
-          onPress: () => setThemeMode('dark'),
+          onPress: async () => {
+            await setThemeMode('dark');
+            if (user) {
+              await signOut();
+            }
+          },
           style: mode === 'dark' ? 'default' : 'cancel',
         },
         {
           text: 'Système',
-          onPress: () => setThemeMode('system'),
+          onPress: async () => {
+            await setThemeMode('system');
+            if (user) {
+              await signOut();
+            }
+          },
           style: mode === 'system' ? 'default' : 'cancel',
         },
       ]

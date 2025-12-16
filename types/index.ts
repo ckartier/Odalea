@@ -1,5 +1,29 @@
 export type Gender = 'male' | 'female';
 
+export interface PrivacySettings {
+  showLocation: boolean;
+  showPhone: boolean;
+  showEmail: boolean;
+  allowMessages: boolean;
+  showOnlineStatus: boolean;
+  shareActivity: boolean;
+  allowPhotoTagging: boolean;
+  publicProfile: boolean;
+}
+
+export interface NotificationSettings {
+  pushNotifications: boolean;
+  emailNotifications: boolean;
+  smsNotifications: boolean;
+  reminders: boolean;
+  socialActivity: boolean;
+  emergencyAlerts: boolean;
+  messageNotifications: boolean;
+  challengeUpdates: boolean;
+  shopOffers: boolean;
+  lostFoundAlerts: boolean;
+}
+
 export interface User {
   id: string;
   firstName: string;
@@ -39,6 +63,10 @@ export interface User {
   isAdmin?: boolean;
   isSuperAdmin?: boolean;
   friends?: string[];
+  language?: 'en' | 'fr' | 'es' | 'de' | 'it';
+  theme?: 'light' | 'dark' | 'system';
+  privacySettings?: PrivacySettings;
+  notificationSettings?: NotificationSettings;
 }
 
 export type ProfessionalActivityType = 'vet' | 'shelter' | 'breeder' | 'boutique';

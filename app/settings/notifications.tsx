@@ -1,18 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
   View,
   ScrollView,
   Switch,
+  Alert,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import { useI18n } from '@/hooks/i18n-store';
+import { useFirebaseUser } from '@/hooks/firebase-user-store';
+import { useTheme } from '@/hooks/theme-store';
 
 export default function NotificationsSettingsScreen() {
   const { t } = useI18n();
+  const { user, updateNotificationSettings } = useFirebaseUser();
+  const { currentTheme, isDark } = useTheme();
   
   const [settings, setSettings] = useState({
     pushNotifications: true,
@@ -27,8 +32,21 @@ export default function NotificationsSettingsScreen() {
     lostFoundAlerts: true,
   });
 
-  const updateSetting = (key: string, value: boolean) => {
+  useEffect(() => {
+    if (user?.notificationSettings) {
+      setSettings(user.notificationSettings);
+    }
+  }, [user]);
+
+  const updateSetting = async (key: string, value: boolean) => {
     setSettings(prev => ({ ...prev, [key]: value }));
+    
+    const result = await updateNotificationSettings({ [key]: value });
+    if (!result.success) {
+      console.error('Failed to update notification setting:', result.error);
+      setSettings(prev => ({ ...prev, [key]: !value }));
+      Alert.alert('Erreur', 'Impossible de mettre à jour le paramètre de notification');
+    }
   };
 
   const notificationItems = [
@@ -85,32 +103,32 @@ export default function NotificationsSettingsScreen() {
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
       <Stack.Screen
         options={{
           title: t('settings.notifications'),
-          headerStyle: { backgroundColor: COLORS.white },
-          headerTintColor: COLORS.black,
+          headerStyle: { backgroundColor: currentTheme.card },
+          headerTintColor: currentTheme.text,
         }}
       />
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionDescription}>
+          <Text style={[styles.sectionDescription, { color: currentTheme.text }]}>
             Gérez vos préférences de notifications pour rester informé de ce qui vous intéresse.
           </Text>
           
           {notificationItems.map((item) => (
-            <View key={item.key} style={[styles.notificationItem, SHADOWS.small]}>
+            <View key={item.key} style={[styles.notificationItem, SHADOWS.small, { backgroundColor: currentTheme.card }]}>
               <View style={styles.notificationContent}>
-                <Text style={styles.notificationTitle}>{item.title}</Text>
-                <Text style={styles.notificationDescription}>{item.description}</Text>
+                <Text style={[styles.notificationTitle, { color: currentTheme.text }]}>{item.title}</Text>
+                <Text style={[styles.notificationDescription, { color: currentTheme.text }]}>{item.description}</Text>
               </View>
               <Switch
                 value={settings[item.key as keyof typeof settings]}
                 onValueChange={(value) => updateSetting(item.key, value)}
-                trackColor={{ false: COLORS.mediumGray, true: COLORS.primary }}
+                trackColor={{ false: COLORS.mediumGray, true: currentTheme.accent }}
                 thumbColor={COLORS.white}
               />
             </View>
@@ -124,7 +142,6 @@ export default function NotificationsSettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
   },
   content: {
     flex: 1,
