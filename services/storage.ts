@@ -9,7 +9,7 @@ import {
   StorageReference
 } from 'firebase/storage';
 import { Platform } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export interface UploadProgress {
   bytesTransferred: number;
