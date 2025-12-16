@@ -17,7 +17,7 @@ import AppBackground from '@/components/AppBackground';
 import { useMessaging } from '@/hooks/messaging-store';
 import { useI18n } from '@/hooks/i18n-store';
 import { mockUsers } from '@/mocks/users';
-import { Bell, Edit, UserCheck, UserPlus } from 'lucide-react-native';
+import { Bell, MessageCircle, UserCheck, UserPlus, Search, Filter } from 'lucide-react-native';
 
 export default function MessagesScreen() {
   const router = useRouter();
@@ -87,84 +87,85 @@ export default function MessagesScreen() {
   const renderConversationItem = ({ item }: { item: typeof conversations[0] }) => {
     const otherUser = getConversationUser(item.id);
     
-    if (!otherUser) return null;
+    if (!otherUser) {
+      console.log('[Messages] User not found for conversation:', item.id);
+      return null;
+    }
     
-    const userPet = otherUser.pets[0];
+    const userPet = otherUser.pets?.[0];
+    const avatarUri = userPet?.mainPhoto || otherUser.photo || 'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=500';
     
     return (
-      <GlassCard
-        tint="neutral"
+      <TouchableOpacity
         style={styles.conversationItem}
         onPress={() => handleConversationPress(item.id)}
+        activeOpacity={0.7}
       >
-        <View style={styles.avatarContainer}>
+        <View style={styles.avatarWrapper}>
           <Image
-            source={{ uri: userPet?.mainPhoto || 'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=500' }}
+            source={{ uri: avatarUri }}
             style={styles.avatar}
             contentFit="cover"
           />
-          {item.unreadCount > 0 && (
-            <View style={styles.unreadBadge}>
-              <Text style={styles.unreadCount}>{item.unreadCount}</Text>
-            </View>
-          )}
+          {item.unreadCount > 0 && <View style={styles.onlineIndicator} />}
         </View>
         
-        <View style={styles.conversationInfo}>
-          <View style={styles.conversationHeader}>
-            <Text style={styles.userName}>@{otherUser.pseudo}</Text>
+        <View style={styles.conversationContent}>
+          <View style={styles.conversationTop}>
+            <Text style={styles.userName} numberOfLines={1}>@{otherUser.pseudo}</Text>
             {item.lastMessage && (
               <Text style={styles.timestamp}>{formatTime(item.lastMessage.timestamp)}</Text>
             )}
           </View>
           
-          {item.lastMessage ? (
-            <Text 
-              style={[
-                styles.lastMessage,
-                item.unreadCount > 0 ? styles.unreadMessage : null,
-              ]}
-              numberOfLines={1}
-            >
-              {item.lastMessage.content}
-            </Text>
-          ) : (
-            <Text style={styles.noMessages}>{t('messages.no_messages')}</Text>
-          )}
+          <View style={styles.conversationBottom}>
+            {item.lastMessage ? (
+              <Text 
+                style={[
+                  styles.lastMessage,
+                  item.unreadCount > 0 && styles.unreadMessage,
+                ]}
+                numberOfLines={1}
+              >
+                {item.lastMessage.content}
+              </Text>
+            ) : (
+              <Text style={styles.noMessages}>Aucun message</Text>
+            )}
+            {item.unreadCount > 0 && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadCount}>{item.unreadCount}</Text>
+              </View>
+            )}
+          </View>
         </View>
-      </GlassCard>
+      </TouchableOpacity>
     );
   };
   
   const renderRequestItem = ({ item }: { item: typeof pendingRequests[0] }) => {
     const sender = mockUsers.find(user => user.id === item.senderId) ?? { id: item.senderId, pseudo: 'User', pets: [{ mainPhoto: undefined }] } as any;
+    const avatarUri = sender.pets?.[0]?.mainPhoto || sender.photo || 'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=500';
     
     return (
-      <GlassCard tint="neutral" style={styles.requestItem}>
-        <View style={styles.requestHeader}>
-          <View style={styles.avatarContainer}>
-            <Image
-              source={{ uri: sender.pets[0]?.mainPhoto || 'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=500' }}
-              style={styles.avatar}
-              contentFit="cover"
-            />
-          </View>
-          
+      <View style={styles.requestItem}>
+        <View style={styles.requestLeft}>
+          <Image
+            source={{ uri: avatarUri }}
+            style={styles.requestAvatar}
+            contentFit="cover"
+          />
           <View style={styles.requestInfo}>
-            <Text style={styles.userName}>@{sender.pseudo}</Text>
-            <Text style={styles.timestamp}>{formatTime(toMillis(item.timestamp))}</Text>
+            <Text style={styles.requestName}>@{sender.pseudo}</Text>
+            <Text style={styles.requestTime}>{formatTime(toMillis(item.timestamp))}</Text>
+            <Text style={styles.requestMessage}>Souhaite se connecter avec vous</Text>
           </View>
         </View>
-        
-        <Text style={styles.requestMessage}>
-          @{sender.pseudo} souhaite se connecter avec vous
-        </Text>
         
         <View style={styles.requestActions}>
           <TouchableOpacity
             testID="request-accept"
-            accessibilityRole="button"
-            style={[styles.requestButton, styles.acceptButton]}
+            style={styles.acceptButton}
             onPress={async () => {
               try {
                 await respondToFriendRequest.mutateAsync({ requestId: item.id, accept: true, senderId: item.senderId, receiverId: item.receiverId });
@@ -173,14 +174,12 @@ export default function MessagesScreen() {
               }
             }}
           >
-            <UserCheck size={16} color={COLORS.white} />
-            <Text style={styles.acceptButtonText}>{t('common.yes')}</Text>
+            <UserCheck size={18} color={COLORS.white} />
           </TouchableOpacity>
           
           <TouchableOpacity
             testID="request-reject"
-            accessibilityRole="button"
-            style={[styles.requestButton, styles.rejectButton]}
+            style={styles.rejectButton}
             onPress={async () => {
               try {
                 await respondToFriendRequest.mutateAsync({ requestId: item.id, accept: false, senderId: item.senderId, receiverId: item.receiverId });
@@ -189,10 +188,10 @@ export default function MessagesScreen() {
               }
             }}
           >
-            <Text style={styles.rejectButtonText}>{t('common.no')}</Text>
+            <Text style={styles.rejectButtonText}>✕</Text>
           </TouchableOpacity>
         </View>
-      </GlassCard>
+      </View>
     );
   };
   
@@ -200,74 +199,88 @@ export default function MessagesScreen() {
     <AppBackground>
       <StatusBar style="dark" />
       
-      <GlassCard tint="neutral" style={styles.header} noPadding>
-        <View style={styles.headerInner}>
-          <View style={styles.searchRow}>
-            <TextInput
-              placeholder={t('common.search')}
-              placeholderTextColor={COLORS.darkGray}
-              value={search}
-              onChangeText={setSearch}
-              style={styles.searchInput}
-            />
-            <TouchableOpacity
-              onPress={() => setUnreadOnly(v => !v)}
-              style={[styles.unreadToggle, unreadOnly && styles.unreadToggleActive]}
-            >
-              <Text style={[styles.unreadToggleText, unreadOnly && styles.unreadToggleTextActive]}>Non-lus</Text>
+      <View style={styles.header}>
+        <View style={styles.topBar}>
+          <Text style={styles.headerTitle}>Messages</Text>
+          <TouchableOpacity
+            style={styles.newMessageButton}
+            onPress={handleNewMessage}
+          >
+            <MessageCircle size={24} color={COLORS.maleAccent} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.searchContainer}>
+          <Search size={18} color={COLORS.darkGray} style={styles.searchIcon} />
+          <TextInput
+            placeholder="Rechercher une conversation..."
+            placeholderTextColor={COLORS.darkGray}
+            value={search}
+            onChangeText={setSearch}
+            style={styles.searchInput}
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')}>
+              <Text style={styles.clearButton}>✕</Text>
             </TouchableOpacity>
-          </View>
-          <View style={styles.tabs}>
-            <TouchableOpacity
+          )}
+        </View>
+
+        <View style={styles.tabs}>
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === 'messages' && styles.activeTab,
+            ]}
+            onPress={() => setActiveTab('messages')}
+          >
+            <Text
               style={[
-                styles.tab,
-                activeTab === 'messages' ? styles.activeTab : null,
+                styles.tabText,
+                activeTab === 'messages' && styles.activeTabText,
               ]}
-              onPress={() => setActiveTab('messages')}
             >
+              Messages
+            </Text>
+            {activeTab === 'messages' && <View style={styles.tabIndicator} />}
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === 'requests' && styles.activeTab,
+            ]}
+            onPress={() => setActiveTab('requests')}
+          >
+            <View style={styles.tabContent}>
               <Text
                 style={[
                   styles.tabText,
-                  activeTab === 'messages' ? styles.activeTabText : null,
+                  activeTab === 'requests' && styles.activeTabText,
                 ]}
               >
-                {t('navigation.messages')}
+                Demandes
               </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[
-                styles.tab,
-                activeTab === 'requests' ? styles.activeTab : null,
-              ]}
-              onPress={() => setActiveTab('requests')}
-            >
-              <View style={styles.tabTextContainer}>
-                <Text
-                  style={[
-                    styles.tabText,
-                    activeTab === 'requests' ? styles.activeTabText : null,
-                  ]}
-                >
-                  Demandes
-                </Text>
-                {pendingRequests.length > 0 && (
-                  <View style={styles.requestBadge}>
-                    <Text style={styles.requestBadgeText}>{pendingRequests.length}</Text>
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
-          </View>
-          
-          <TouchableOpacity
-            style={styles.newButton}
-            onPress={handleNewMessage}
-          >
-            <Edit size={20} color={COLORS.maleAccent} />
+              {pendingRequests.length > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{pendingRequests.length}</Text>
+                </View>
+              )}
+            </View>
+            {activeTab === 'requests' && <View style={styles.tabIndicator} />}
           </TouchableOpacity>
+
+          {activeTab === 'messages' && (
+            <TouchableOpacity
+              style={styles.filterButton}
+              onPress={() => setUnreadOnly(v => !v)}
+            >
+              <Filter size={16} color={unreadOnly ? COLORS.maleAccent : COLORS.darkGray} />
+              <Text style={[styles.filterText, unreadOnly && styles.filterTextActive]}>Non lus</Text>
+            </TouchableOpacity>
+          )}
         </View>
-      </GlassCard>
+      </View>
       
       {activeTab === 'messages' ? (
         conversations.length > 0 ? (
@@ -323,64 +336,69 @@ export default function MessagesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
   header: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  headerInner: {
+    backgroundColor: COLORS.white,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightGray,
   },
-  searchRow: {
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700' as const,
+    color: COLORS.black,
+  },
+  newMessageButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.lightGray,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  searchInput: {
-    flex: 1,
     backgroundColor: COLORS.lightGray,
     borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
     color: COLORS.black,
   },
-  unreadToggle: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.mediumGray,
-  },
-  unreadToggleActive: {
-    backgroundColor: COLORS.maleAccent,
-    borderColor: COLORS.maleAccent,
-  },
-  unreadToggleText: {
+  clearButton: {
+    fontSize: 18,
     color: COLORS.darkGray,
-    fontWeight: '600' as const,
-  },
-  unreadToggleTextActive: {
-    color: COLORS.white,
+    paddingHorizontal: 8,
   },
   tabs: {
     flexDirection: 'row',
-    flex: 1,
+    alignItems: 'center',
+    gap: 24,
   },
   tab: {
     paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginRight: 16,
+    position: 'relative',
   },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: COLORS.maleAccent,
+  activeTab: {},
+  tabContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   tabText: {
     fontSize: 16,
@@ -388,74 +406,87 @@ const styles = StyleSheet.create({
     color: COLORS.darkGray,
   },
   activeTabText: {
-    color: COLORS.maleAccent,
-    fontWeight: '600' as const,
+    color: COLORS.black,
+    fontWeight: '700' as const,
   },
-  tabTextContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  tabIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: COLORS.maleAccent,
+    borderRadius: 2,
   },
-  requestBadge: {
+  badge: {
     backgroundColor: COLORS.maleAccent,
     borderRadius: 10,
-    minWidth: 20,
-    height: 20,
+    minWidth: 18,
+    height: 18,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 6,
   },
-  requestBadgeText: {
+  badgeText: {
     color: COLORS.white,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700' as const,
   },
-  newButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
+  filterButton: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
+    marginLeft: 'auto',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: COLORS.lightGray,
+  },
+  filterText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: COLORS.darkGray,
+  },
+  filterTextActive: {
+    color: COLORS.maleAccent,
   },
   listContent: {
     padding: 16,
   },
   conversationItem: {
     flexDirection: 'row',
-    marginBottom: 12,
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightGray,
   },
-  avatarContainer: {
+  avatarWrapper: {
     position: 'relative',
     marginRight: 12,
   },
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.lightGray,
   },
-  unreadBadge: {
+  onlineIndicator: {
     position: 'absolute',
-    top: -4,
-    right: -4,
+    bottom: 2,
+    right: 2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: COLORS.maleAccent,
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
     borderWidth: 2,
     borderColor: COLORS.white,
   },
-  unreadCount: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: '700' as const,
-  },
-  conversationInfo: {
+  conversationContent: {
     flex: 1,
-    justifyContent: 'center',
   },
-  conversationHeader: {
+  conversationTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -465,94 +496,143 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
     color: COLORS.black,
+    flex: 1,
   },
   timestamp: {
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.darkGray,
+    marginLeft: 8,
+  },
+  conversationBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   lastMessage: {
     fontSize: 14,
     color: COLORS.darkGray,
+    flex: 1,
   },
   unreadMessage: {
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
     color: COLORS.black,
   },
   noMessages: {
     fontSize: 14,
-    color: COLORS.darkGray,
+    color: COLORS.mediumGray,
     fontStyle: 'italic',
   },
-  requestItem: {
-    marginBottom: 12,
+  unreadBadge: {
+    backgroundColor: COLORS.maleAccent,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    marginLeft: 8,
   },
-  requestHeader: {
+  unreadCount: {
+    color: COLORS.white,
+    fontSize: 11,
+    fontWeight: '700' as const,
+  },
+  requestItem: {
     flexDirection: 'row',
-    marginBottom: 8,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightGray,
+  },
+  requestLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  requestAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: COLORS.lightGray,
+    marginRight: 12,
   },
   requestInfo: {
     flex: 1,
-    justifyContent: 'center',
+  },
+  requestName: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: COLORS.black,
+    marginBottom: 2,
+  },
+  requestTime: {
+    fontSize: 12,
+    color: COLORS.darkGray,
+    marginBottom: 2,
   },
   requestMessage: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.darkGray,
-    marginBottom: 12,
   },
   requestActions: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
-  },
-  requestButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    gap: 8,
   },
   acceptButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: COLORS.maleAccent,
-  },
-  acceptButtonText: {
-    color: COLORS.white,
-    fontWeight: '500' as const,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   rejectButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: COLORS.lightGray,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   rejectButtonText: {
+    fontSize: 20,
     color: COLORS.darkGray,
+    fontWeight: '600' as const,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: 32,
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: '600' as const,
+    fontWeight: '700' as const,
     color: COLORS.black,
     marginTop: 16,
     marginBottom: 8,
+    textAlign: 'center',
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 15,
     color: COLORS.darkGray,
     textAlign: 'center',
+    lineHeight: 22,
     marginBottom: 24,
   },
   startButton: {
     backgroundColor: COLORS.maleAccent,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 24,
+    ...SHADOWS.small,
   },
   startButtonText: {
     color: COLORS.white,
     fontSize: 16,
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
   },
 });
