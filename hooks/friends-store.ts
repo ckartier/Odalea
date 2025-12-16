@@ -117,19 +117,37 @@ export const [FriendsContext, useFriends] = createContextHook(() => {
     mutationFn: async ({ requestId, accept, senderId }: { requestId: string; accept: boolean; senderId: string }) => {
       if (!user?.id) throw new Error('User not authenticated');
       
+      console.log('\ud83d\udd04 Responding to friend request:', { requestId, accept, senderId, receiverId: user.id });
+      
       await databaseService.friendRequest.respondToFriendRequest(requestId, accept);
       
       if (accept) {
+        // Add as friends in both user documents
         await databaseService.user.addFriend(user.id, senderId);
+        
+        // Create conversation for accepted friend request
+        try {
+          console.log('\ud83d\udcac Creating conversation between friends:', user.id, senderId);
+          const conversationId = await databaseService.messaging.createConversation([user.id, senderId]);
+          console.log('\u2705 Conversation created:', conversationId);
+          return { conversationId };
+        } catch (error) {
+          console.error('\u274c Error creating conversation:', error);
+          // Don't fail the friend request if conversation creation fails
+        }
       }
+      
+      return { conversationId: undefined };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['friendRequests', 'received', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['friendRequests', 'sent', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['friends', user?.id] });
-      console.log('✅ Friend request responded successfully');
+      queryClient.invalidateQueries({ queryKey: ['conversations', user?.id] });
+      console.log('\u2705 Friend request responded successfully, conversation:', result?.conversationId);
     },
     onError: (error) => {
-      console.error('❌ Error responding to friend request:', error);
+      console.error('\u274c Error responding to friend request:', error);
     }
   });
 

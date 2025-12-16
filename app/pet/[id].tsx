@@ -14,7 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import Button from '@/components/Button';
 import { usePets } from '@/hooks/pets-store';
-import { useMessaging } from '@/hooks/messaging-store';
+import { useFriends } from '@/hooks/friends-store';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { Pet, User } from '@/types';
 import { 
@@ -40,10 +40,11 @@ export default function PetProfileScreen() {
   const { getPet, getPetOwner } = usePets();
   const { user } = useFirebaseUser();
   const { 
-    areFriends, 
-    hasPendingRequest, 
-    sendFriendRequest 
-  } = useMessaging();
+    isFriend,
+    isRequestSent,
+    sendFriendRequest,
+    isSendingRequest
+  } = useFriends();
   
   const [pet, setPet] = useState<Pet | null>(null);
   const [petOwner, setPetOwner] = useState<User | null>(null);
@@ -76,22 +77,33 @@ export default function PetProfileScreen() {
   }, [id, getPet, getPetOwner, user]);
   
   const handleSendMessage = () => {
-    if (pet) {
-      router.push(`/messages/new?userId=${pet.ownerId}`);
+    if (!pet || !user) return;
+    
+    // Only allow messaging if users are friends
+    if (isFriend(pet.ownerId)) {
+      router.push(`/messages/${pet.ownerId}`);
+    } else {
+      Alert.alert('Non autorisé', 'Vous devez être amis pour envoyer un message');
     }
   };
   
   const handleAddFriend = async () => {
-    if (!pet) return;
+    if (!pet || !user) return;
+    
+    if (pet.ownerId === user.id) {
+      Alert.alert('Erreur', 'Vous ne pouvez pas vous ajouter vous-même');
+      return;
+    }
     
     setLoading(true);
     
     try {
-      await sendFriendRequest.mutateAsync(pet.ownerId);
-      Alert.alert('Success', 'Friend request sent');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to send friend request');
-      console.error(error);
+      console.log('📤 Sending friend request to:', pet.ownerId);
+      await sendFriendRequest(pet.ownerId);
+      Alert.alert('Succès', 'Demande d\'ami envoyée');
+    } catch (error: any) {
+      console.error('❌ Error sending friend request:', error);
+      Alert.alert('Erreur', error?.message || 'Impossible d\'envoyer la demande d\'ami');
     } finally {
       setLoading(false);
     }
@@ -277,7 +289,7 @@ export default function PetProfileScreen() {
             </TouchableOpacity>
           ) : (
             <View style={styles.actionButtons}>
-              {areFriends(pet.ownerId) ? (
+              {isFriend(pet.ownerId) ? (
                 <Button
                   title="Message"
                   onPress={handleSendMessage}
@@ -285,7 +297,7 @@ export default function PetProfileScreen() {
                   style={styles.actionButton}
                   testID="btn-message"
                 />
-              ) : hasPendingRequest(pet.ownerId) ? (
+              ) : isRequestSent(pet.ownerId) ? (
                 <Button
                   title="Demande envoyée"
                   onPress={() => {}}
@@ -298,7 +310,7 @@ export default function PetProfileScreen() {
                 <Button
                   title="Ajouter ami"
                   onPress={handleAddFriend}
-                  loading={loading}
+                  loading={loading || isSendingRequest}
                   icon={<UserPlus size={16} color={COLORS.white} />}
                   style={styles.actionButton}
                   testID="btn-add-friend"
