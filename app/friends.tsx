@@ -46,7 +46,8 @@ export default function FriendsScreen() {
     sentRequests, 
     removeFriend, 
     cancelFriendRequest,
-    isLoading 
+    isLoading,
+    isError 
   } = useFriends();
   const { createConversation } = useMessaging();
   
@@ -62,21 +63,27 @@ export default function FriendsScreen() {
         return;
       }
 
+      console.log('[Friends] Loading sent requests info for', sentRequests.length, 'requests');
       try {
         const requestsData = await Promise.all(
           sentRequests.map(async (request) => {
             try {
+              console.log('[Friends] Fetching receiver info for:', request.receiverId);
               const receiverInfo = await databaseService.user.getUser(request.receiverId);
+              if (!receiverInfo) {
+                console.warn('[Friends] No receiver info found for:', request.receiverId);
+              }
               return { ...request, receiverInfo: receiverInfo || undefined };
             } catch (error) {
-              console.error('Error loading receiver info:', error);
+              console.error('[Friends] Error loading receiver info for:', request.receiverId, error);
               return { ...request, receiverInfo: undefined };
             }
           })
         );
+        console.log('[Friends] Loaded sent requests info:', requestsData.length);
         setSentRequestsWithInfo(requestsData);
       } catch (error) {
-        console.error('Error loading sent requests info:', error);
+        console.error('[Friends] Error loading sent requests info:', error);
       }
     };
 
@@ -427,6 +434,13 @@ export default function FriendsScreen() {
       {isLoading ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyDescription}>Chargement...</Text>
+        </View>
+      ) : isError ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>Erreur de connexion</Text>
+          <Text style={styles.emptyDescription}>
+            Impossible de charger les données. Vérifiez votre connexion et réessayez.
+          </Text>
         </View>
       ) : (
         getTabContent()

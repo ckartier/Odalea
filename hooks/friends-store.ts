@@ -17,12 +17,27 @@ export const [FriendsContext, useFriends] = createContextHook(() => {
   const friendsQuery = useQuery({
     queryKey: ['friends', user?.id],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!user?.id) {
+        console.log('[FriendsStore] No user ID, returning empty friends list');
+        return [];
+      }
       
+      console.log('[FriendsStore] Fetching friends for user:', user.id);
       const userDoc = await databaseService.user.getUser(user.id);
-      if (!userDoc || !userDoc.friends || userDoc.friends.length === 0) return [];
       
+      if (!userDoc) {
+        console.warn('[FriendsStore] User document not found for:', user.id);
+        return [];
+      }
+      
+      if (!userDoc.friends || userDoc.friends.length === 0) {
+        console.log('[FriendsStore] User has no friends');
+        return [];
+      }
+      
+      console.log('[FriendsStore] Loading', userDoc.friends.length, 'friends');
       const friendsData = await databaseService.user.getUsers(userDoc.friends);
+      console.log('[FriendsStore] Loaded', friendsData.length, 'friends successfully');
       return friendsData;
     },
     enabled: !!user?.id,
@@ -33,8 +48,14 @@ export const [FriendsContext, useFriends] = createContextHook(() => {
   const receivedRequestsQuery = useQuery({
     queryKey: ['friendRequests', 'received', user?.id],
     queryFn: async () => {
-      if (!user?.id) return [];
-      return await databaseService.friendRequest.getFriendRequests(user.id);
+      if (!user?.id) {
+        console.log('[FriendsStore] No user ID, returning empty received requests');
+        return [];
+      }
+      console.log('[FriendsStore] Fetching received requests for:', user.id);
+      const requests = await databaseService.friendRequest.getFriendRequests(user.id);
+      console.log('[FriendsStore] Found', requests.length, 'received requests');
+      return requests;
     },
     enabled: !!user?.id,
     refetchInterval: 15000,
@@ -44,8 +65,14 @@ export const [FriendsContext, useFriends] = createContextHook(() => {
   const sentRequestsQuery = useQuery({
     queryKey: ['friendRequests', 'sent', user?.id],
     queryFn: async () => {
-      if (!user?.id) return [];
-      return await databaseService.friendRequest.getSentFriendRequests(user.id);
+      if (!user?.id) {
+        console.log('[FriendsStore] No user ID, returning empty sent requests');
+        return [];
+      }
+      console.log('[FriendsStore] Fetching sent requests for:', user.id);
+      const requests = await databaseService.friendRequest.getSentFriendRequests(user.id);
+      console.log('[FriendsStore] Found', requests.length, 'sent requests');
+      return requests;
     },
     enabled: !!user?.id,
     refetchInterval: 30000,
