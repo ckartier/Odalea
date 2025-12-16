@@ -652,7 +652,10 @@ export default function MapScreen() {
     isUserPet: true,
   })) || [];
 
-  const allPetsIncludingUser: AllPet[] = [...firebasePetsWithOwner, ...userPetsWithLocation];
+  // Deduplicate pets: don't add user pets if they're already in Firebase
+  const firebasePetIds = new Set(firebasePetsWithOwner.map(p => p.id.replace('user-', '')));
+  const uniqueUserPets = userPetsWithLocation.filter(p => !firebasePetIds.has(p.id.replace('user-', '')));
+  const allPetsIncludingUser: AllPet[] = [...firebasePetsWithOwner, ...uniqueUserPets];
 
   const filteredPets = allPetsIncludingUser.filter((pet: AllPet) => {
     if (activeFilters.size === 0) return false;
@@ -713,9 +716,9 @@ export default function MapScreen() {
         onRegionChangeComplete={Platform.OS !== 'web' ? handleRegionChange : undefined}
         testID="map-view"
       >
-        {Platform.OS !== 'web' && filteredPets.map((pet, index) => (
+        {Platform.OS !== 'web' && filteredPets.map((pet) => (
           <MapMarker 
-            key={`${pet.id}-${index}`} 
+            key={pet.id} 
             pet={pet} 
             onPress={() => handleMarkerPress(pet)} 
           />
@@ -762,7 +765,7 @@ export default function MapScreen() {
 
       {Platform.OS === 'web' && (
         <View pointerEvents="box-none" style={styles.webOverlay} testID="web-marker-layer">
-          {filteredPets.map((pet, idx) => {
+          {filteredPets.map((pet) => {
             if (!pet.location) return null;
             const blurred = getBlurredPetLocation(pet.id, pet.location);
             const pos = projectPoint(blurred.latitude, blurred.longitude);
@@ -771,7 +774,7 @@ export default function MapScreen() {
             const markerColor = pet.gender === 'male' ? COLORS.male : COLORS.female;
             return (
               <TouchableOpacity
-                key={`overlay-pet-${pet.id}-${idx}`}
+                key={`overlay-pet-${pet.id}`}
                 onPress={() => handleMarkerPress(pet)}
                 activeOpacity={0.8}
                 style={[styles.webPetMarker, { left, top }]}
@@ -797,7 +800,7 @@ export default function MapScreen() {
               </TouchableOpacity>
             );
           })}
-          {filteredUsers.map((u, idx) => {
+          {filteredUsers.map((u) => {
             const originalLoc = { latitude: u.location?.latitude ?? DEFAULT_LAT, longitude: u.location?.longitude ?? DEFAULT_LNG };
             const blurred = getBlurredUserLocation(u.id, originalLoc);
             const pos = projectPoint(blurred.latitude, blurred.longitude);
@@ -807,7 +810,7 @@ export default function MapScreen() {
             const markerColor = primaryPet?.gender === 'male' ? COLORS.male : primaryPet?.gender === 'female' ? COLORS.female : COLORS.primary;
             return (
               <TouchableOpacity
-                key={`overlay-user-${u.id}-${idx}`}
+                key={`overlay-user-${u.id}`}
                 onPress={() => setSelectedUser(u)}
                 activeOpacity={0.8}
                 style={[styles.webPetMarker, { left, top }]}
@@ -1126,21 +1129,22 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   selectedPetCard: {
-    borderRadius: 28,
+    borderRadius: 24,
     overflow: 'hidden',
     flexDirection: 'row',
     backgroundColor: COLORS.white,
     borderWidth: 1,
     borderColor: 'rgba(15,23,42,0.08)',
+    minHeight: 140,
   },
   adBannerTop: {
     marginBottom: 10,
   },
   petCardImageContainer: {
-    width: 130,
-    height: 160,
-    borderTopLeftRadius: 28,
-    borderBottomLeftRadius: 28,
+    width: 110,
+    minHeight: 140,
+    borderTopLeftRadius: 24,
+    borderBottomLeftRadius: 24,
     overflow: 'hidden',
     position: 'relative',
   },
@@ -1173,7 +1177,7 @@ const styles = StyleSheet.create({
   },
   petCardInfo: {
     flex: 1,
-    padding: 18,
+    padding: 16,
     justifyContent: 'space-between',
   },
   petCardHeader: {
@@ -1183,14 +1187,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   petCardName: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700',
     color: '#0f172a',
   },
   petCardBreed: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#475569',
-    marginTop: 4,
+    marginTop: 2,
   },
   ownerBadge: {
     flexDirection: 'row',
@@ -1210,7 +1214,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 18,
+    marginTop: 12,
   },
   petCardLocation: {
     fontSize: 13,
@@ -1274,7 +1278,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(15,23,42,0.08)',
   },
   filterMenuTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     color: COLORS.black,
   },
@@ -1314,7 +1318,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   filterMenuItemText: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '600',
     color: '#0f172a',
   },
