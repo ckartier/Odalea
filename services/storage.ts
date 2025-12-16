@@ -24,22 +24,8 @@ export interface UploadOptions {
 
 export class StorageService {
   private static async uriToBlob(uri: string): Promise<Blob> {
-    if (Platform.OS === 'web') {
-      const response = await fetch(uri);
-      return await response.blob();
-    }
-
-    const base64 = await FileSystem.readAsStringAsync(uri, {
-      encoding: 'base64' as any,
-    });
-
-    const byteCharacters = atob(base64);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    return new Blob([byteArray], { type: 'image/jpeg' });
+    const response = await fetch(uri);
+    return await response.blob();
   }
 
   static async uploadImage(
