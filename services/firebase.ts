@@ -6,13 +6,22 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Secure Firebase configuration using environment variables
+// Use platform-specific App ID
+const getAppId = () => {
+  if (Platform.OS === 'ios') {
+    return process.env.EXPO_PUBLIC_FIREBASE_IOS_APP_ID || process.env.EXPO_PUBLIC_FIREBASE_APP_ID || "";
+  }
+  // Web and Android use the main App ID (web by default)
+  return process.env.EXPO_PUBLIC_FIREBASE_APP_ID || "";
+};
+
 const rawConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY || "",
   authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || "",
   projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || "",
   storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || "",
   messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || "",
+  appId: getAppId(),
   measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID
 } as const;
 
@@ -28,9 +37,7 @@ if (getApps().length === 0) {
     app = initializeApp(firebaseConfig);
     console.log('🔥 Firebase initialized successfully');
     console.log('📊 Project ID:', firebaseConfig.projectId);
-    if (Platform.OS === 'web' && firebaseConfig.appId.includes(':ios:')) {
-      console.warn('⚠️ Using a non-web Firebase appId on web. Please set EXPO_PUBLIC_FIREBASE_APP_ID to your Web App ID.');
-    }
+    console.log('📱 Platform:', Platform.OS, '| App ID:', firebaseConfig.appId);
   } catch (error) {
     console.error('❌ Firebase initialization error:', error);
     app = initializeApp({
