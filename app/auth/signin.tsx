@@ -305,24 +305,42 @@ function SignInScreen() {
           )}
           {signInMethod !== 'email' && (
             <View>
-              <View id="recaptcha-container" style={{ height: 0 }} />
+              <View id="recaptcha-container" style={{ width: 1, height: 1, opacity: 0, position: 'absolute' }} />
               <Button
                 title="Envoyer le code SMS"
                 onPress={async () => {
-                  const { initWebRecaptcha, sendSmsCode } = await import('@/services/phone-auth');
-                  const init = initWebRecaptcha('recaptcha-container');
-                  if (!init.ok) {
-                    Alert.alert('Erreur', init.error);
-                    return;
+                  setLoading(true);
+                  try {
+                    const { initWebRecaptcha, sendSmsCode } = await import('@/services/phone-auth');
+                    const phone = phoneNumber.trim();
+                    if (!phone.startsWith('+')) {
+                      Alert.alert('Format invalide', 'Utilisez le format E.164, ex: +33612345678');
+                      setLoading(false);
+                      return;
+                    }
+                    console.log('[SignIn] Initializing reCAPTCHA');
+                    const init = initWebRecaptcha('recaptcha-container');
+                    if (!init.ok) {
+                      Alert.alert('Erreur', init.error);
+                      setLoading(false);
+                      return;
+                    }
+                    console.log('[SignIn] Sending SMS to:', phone);
+                    const res = await sendSmsCode(phone);
+                    if (!res.ok) {
+                      Alert.alert('Erreur', res.error);
+                    } else {
+                      Alert.alert('SMS envoyé', 'Code envoyé. Entrez-le sur l\'écran Vérification.');
+                      router.push('/auth/verify');
+                    }
+                  } catch (err) {
+                    console.error('[SignIn] Error:', err);
+                    Alert.alert('Erreur', 'Une erreur est survenue');
+                  } finally {
+                    setLoading(false);
                   }
-                  const phone = phoneNumber.trim();
-                  if (!phone.startsWith('+')) {
-                    Alert.alert('Format', 'Utilisez le format E.164, ex: +33612345678');
-                    return;
-                  }
-                  const res = await sendSmsCode(phone);
-                  if (!res.ok) Alert.alert('Erreur', res.error); else Alert.alert('SMS', 'Code envoyé. Entrez-le sur l\'écran Vérification.');
                 }}
+                loading={loading}
                 style={styles.button}
                 testID="send-sms"
               />

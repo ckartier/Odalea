@@ -61,7 +61,11 @@ class GoogleAuthService {
     console.log('[GoogleAuth] Using scheme:', scheme);
     console.log('[GoogleAuth] Redirect URI:', this.redirectUri);
     console.log('[GoogleAuth] Client ID present:', !!this.clientId);
+    console.log('[GoogleAuth] Client ID (first 20 chars):', this.clientId.slice(0, 20) + '...');
     console.log('[GoogleAuth] Platform:', Platform.OS);
+    console.log('[GoogleAuth] Web ID present:', !!web);
+    console.log('[GoogleAuth] iOS ID present:', !!ios);
+    console.log('[GoogleAuth] Android ID present:', !!android);
   }
 
   async signIn(): Promise<GoogleAuthResponse | null> {
