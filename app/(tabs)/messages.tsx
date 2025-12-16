@@ -12,6 +12,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
+import { TYPOGRAPHY } from '@/constants/typography';
 import GlassCard from '@/components/GlassCard';
 import AppBackground from '@/components/AppBackground';
 import { useMessaging } from '@/hooks/messaging-store';
@@ -351,8 +352,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: '700' as const,
+    ...TYPOGRAPHY.h2,
     color: COLORS.black,
   },
   newMessageButton: {
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    ...TYPOGRAPHY.body1,
     color: COLORS.black,
   },
   clearButton: {
@@ -401,13 +401,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tabText: {
-    fontSize: 16,
-    fontWeight: '500' as const,
+    ...TYPOGRAPHY.subtitle2,
     color: COLORS.darkGray,
   },
   activeTabText: {
+    ...TYPOGRAPHY.subtitle1,
+    fontSize: 14,
     color: COLORS.black,
-    fontWeight: '700' as const,
   },
   tabIndicator: {
     position: 'absolute',
@@ -428,9 +428,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   badgeText: {
+    ...TYPOGRAPHY.badge,
     color: COLORS.white,
-    fontSize: 11,
-    fontWeight: '700' as const,
   },
   filterButton: {
     flexDirection: 'row',
@@ -443,8 +442,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.lightGray,
   },
   filterText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
+    ...TYPOGRAPHY.labelSmall,
     color: COLORS.darkGray,
   },
   filterTextActive: {
@@ -493,13 +491,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   userName: {
-    fontSize: 16,
-    fontWeight: '600' as const,
+    ...TYPOGRAPHY.subtitle1,
     color: COLORS.black,
     flex: 1,
   },
   timestamp: {
-    fontSize: 13,
+    ...TYPOGRAPHY.caption,
     color: COLORS.darkGray,
     marginLeft: 8,
   },
@@ -509,7 +506,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   lastMessage: {
-    fontSize: 14,
+    ...TYPOGRAPHY.body2,
     color: COLORS.darkGray,
     flex: 1,
   },
@@ -533,9 +530,8 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   unreadCount: {
+    ...TYPOGRAPHY.badge,
     color: COLORS.white,
-    fontSize: 11,
-    fontWeight: '700' as const,
   },
   requestItem: {
     flexDirection: 'row',
@@ -563,18 +559,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   requestName: {
-    fontSize: 16,
-    fontWeight: '600' as const,
+    ...TYPOGRAPHY.subtitle1,
     color: COLORS.black,
     marginBottom: 2,
   },
   requestTime: {
-    fontSize: 12,
+    ...TYPOGRAPHY.caption,
     color: COLORS.darkGray,
     marginBottom: 2,
   },
   requestMessage: {
-    fontSize: 13,
+    ...TYPOGRAPHY.body3,
     color: COLORS.darkGray,
   },
   requestActions: {
@@ -609,18 +604,16 @@ const styles = StyleSheet.create({
     padding: 32,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700' as const,
+    ...TYPOGRAPHY.h4,
     color: COLORS.black,
     marginTop: 16,
     marginBottom: 8,
     textAlign: 'center',
   },
   emptyText: {
-    fontSize: 15,
+    ...TYPOGRAPHY.body2,
     color: COLORS.darkGray,
     textAlign: 'center',
-    lineHeight: 22,
     marginBottom: 24,
   },
   startButton: {
@@ -631,8 +624,7 @@ const styles = StyleSheet.create({
     ...SHADOWS.small,
   },
   startButtonText: {
+    ...TYPOGRAPHY.button,
     color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600' as const,
   },
 });

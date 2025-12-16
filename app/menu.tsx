@@ -12,6 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/colors';
+import { TYPOGRAPHY } from '@/constants/typography';
 import { useAuth } from '@/hooks/auth-store';
 import { usePets } from '@/hooks/pets-store';
 import {
@@ -387,13 +388,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   welcomeText: {
-    fontSize: 12,
+    ...TYPOGRAPHY.caption,
     color: 'rgba(255, 255, 255, 0.9)',
     marginBottom: 2,
   },
   appName: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...TYPOGRAPHY.h5,
     color: COLORS.white,
   },
   closeButton: {
@@ -412,11 +412,11 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...TYPOGRAPHY.overline,
     color: COLORS.white,
     marginBottom: 12,
-    marginTop: 8,
+    marginTop: 16,
+    letterSpacing: 1.2,
   },
   quickAccessGrid: {
     flexDirection: 'row',
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   quickAccessText: {
-    fontSize: 11,
+    ...TYPOGRAPHY.caption,
     fontWeight: '600',
     color: COLORS.white,
     textAlign: 'center',
@@ -478,8 +478,7 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     flex: 1,
-    fontSize: 15,
-    fontWeight: '500',
+    ...TYPOGRAPHY.body2,
     color: COLORS.white,
   },
   footer: {
@@ -488,7 +487,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   footerText: {
-    fontSize: 12,
+    ...TYPOGRAPHY.caption,
     color: 'rgba(255, 255, 255, 0.7)',
   },
 });

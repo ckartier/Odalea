@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { COLORS, SHADOWS, DIMENSIONS } from '@/constants/colors';
+import { TYPOGRAPHY } from '@/constants/typography';
 import { useI18n } from '@/hooks/i18n-store';
 import { useSocial } from '@/hooks/social-store';
 import GlassCard from '@/components/GlassCard';
@@ -392,8 +393,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   filterText: {
-    fontSize: DIMENSIONS.FONT_SIZES.sm,
-    fontWeight: '500' as const,
+    ...TYPOGRAPHY.labelSmall,
     color: COLORS.darkGray,
   },
   activeFilterText: {
@@ -424,9 +424,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: DIMENSIONS.SPACING.md,
   },
   urgentText: {
+    ...TYPOGRAPHY.overline,
     color: COLORS.white,
-    fontWeight: '700' as const,
-    fontSize: DIMENSIONS.FONT_SIZES.xs,
     marginLeft: DIMENSIONS.SPACING.xs + 2,
   },
   postHeader: {
@@ -444,8 +443,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   authorName: {
-    fontSize: DIMENSIONS.FONT_SIZES.md,
-    fontWeight: '600' as const,
+    ...TYPOGRAPHY.subtitle1,
     color: COLORS.black,
     marginBottom: DIMENSIONS.SPACING.xs / 2,
   },
@@ -454,22 +452,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timeAgo: {
-    fontSize: DIMENSIONS.FONT_SIZES.xs,
+    ...TYPOGRAPHY.caption,
     color: COLORS.darkGray,
   },
   metaSeparator: {
-    fontSize: DIMENSIONS.FONT_SIZES.xs,
+    ...TYPOGRAPHY.caption,
     color: COLORS.darkGray,
     marginHorizontal: DIMENSIONS.SPACING.xs + 2,
   },
   location: {
-    fontSize: DIMENSIONS.FONT_SIZES.xs,
+    ...TYPOGRAPHY.caption,
     color: COLORS.darkGray,
     marginLeft: DIMENSIONS.SPACING.xs,
   },
   postContent: {
-    fontSize: Math.max(14, DIMENSIONS.FONT_SIZES.md),
-    lineHeight: Math.max(14, DIMENSIONS.FONT_SIZES.md) * 1.4,
+    ...TYPOGRAPHY.body2,
     color: COLORS.black,
     marginBottom: DIMENSIONS.SPACING.sm,
   },
@@ -496,10 +493,10 @@ const styles = StyleSheet.create({
     borderRadius: DIMENSIONS.SPACING.sm,
   },
   actionText: {
-    fontSize: DIMENSIONS.FONT_SIZES.sm,
+    ...TYPOGRAPHY.body3,
+    fontWeight: '500' as const,
     color: COLORS.darkGray,
     marginLeft: DIMENSIONS.SPACING.xs + 2,
-    fontWeight: '500' as const,
   },
   likedText: {
     color: COLORS.error,
@@ -509,7 +506,7 @@ const styles = StyleSheet.create({
     paddingVertical: DIMENSIONS.SPACING.xl,
   },
   endOfFeedText: {
-    fontSize: DIMENSIONS.FONT_SIZES.sm,
+    ...TYPOGRAPHY.body3,
     color: COLORS.darkGray,
   },
   inlineCommentsContainer: {
@@ -538,14 +535,13 @@ const styles = StyleSheet.create({
     maxWidth: '90%',
   },
   commentAuthor: {
-    fontWeight: '600' as const,
-    fontSize: 12,
+    ...TYPOGRAPHY.labelSmall,
     marginBottom: 2,
     color: COLORS.black,
   },
   commentText: {
+    ...TYPOGRAPHY.body2,
     color: COLORS.darkGray,
-    fontSize: 14,
   },
   commentInputRow: {
     flexDirection: 'row',
@@ -553,13 +549,13 @@ const styles = StyleSheet.create({
   },
   commentInput: {
     flex: 1,
+    ...TYPOGRAPHY.body2,
     backgroundColor: COLORS.lightGray,
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 8,
     marginRight: 8,
     color: COLORS.black,
-    fontSize: 14,
   },
   commentSendBtn: {
     width: 36,
@@ -589,7 +585,7 @@ const styles = StyleSheet.create({
     paddingVertical: DIMENSIONS.SPACING.xl * 2,
   },
   loadingText: {
-    fontSize: DIMENSIONS.FONT_SIZES.md,
+    ...TYPOGRAPHY.body2,
     color: COLORS.darkGray,
     marginTop: DIMENSIONS.SPACING.md,
   },
@@ -600,7 +596,7 @@ const styles = StyleSheet.create({
     paddingVertical: DIMENSIONS.SPACING.xl * 2,
   },
   errorText: {
-    fontSize: DIMENSIONS.FONT_SIZES.md,
+    ...TYPOGRAPHY.body2,
     color: COLORS.error,
     marginBottom: DIMENSIONS.SPACING.md,
   },
@@ -611,8 +607,8 @@ const styles = StyleSheet.create({
     borderRadius: DIMENSIONS.SPACING.sm,
   },
   retryText: {
+    ...TYPOGRAPHY.button,
     color: COLORS.white,
-    fontWeight: '600' as const,
   },
   emptyContainer: {
     flex: 1,
@@ -621,13 +617,12 @@ const styles = StyleSheet.create({
     paddingVertical: DIMENSIONS.SPACING.xl * 2,
   },
   emptyText: {
-    fontSize: DIMENSIONS.FONT_SIZES.lg,
-    fontWeight: '600' as const,
+    ...TYPOGRAPHY.h5,
     color: COLORS.darkGray,
     marginBottom: DIMENSIONS.SPACING.sm,
   },
   emptySubtext: {
-    fontSize: DIMENSIONS.FONT_SIZES.md,
+    ...TYPOGRAPHY.body2,
     color: COLORS.mediumGray,
     textAlign: 'center',
   },
