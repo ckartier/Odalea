@@ -46,7 +46,6 @@ export default function TabLayout() {
           <Tabs.Screen name="shop" options={{ title: "Boutique" }} />
           <Tabs.Screen name="challenges" options={{ title: "Défis" }} />
           <Tabs.Screen name="messages" options={{ title: "Messages" }} />
-          <Tabs.Screen name="cat-sitter" options={{ title: "Cat Sitter" }} />
           <Tabs.Screen name="profile" options={{ title: "Profil" }} />
           <Tabs.Screen name="lost-found" options={{ href: null }} />
         </Tabs>
