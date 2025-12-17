@@ -14,7 +14,6 @@ import { COLORS, SHADOWS } from '@/constants/colors';
 import { useI18n } from '@/hooks/i18n-store';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { useTheme } from '@/hooks/theme-store';
-// Removed FirebaseTest import
 
 import {
   Settings as SettingsIcon,
@@ -293,9 +292,6 @@ export default function SettingsScreen() {
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-{/* Removed FirebaseTest usage */}
-
-        
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>Général</Text>
           {settingsItems.map(renderSettingItem)}

@@ -97,16 +97,6 @@ const RootLayoutNav = React.memo(() => {
       <Stack.Screen name="badges" options={{ headerShown: true }} />
       <Stack.Screen name="friends" options={{ headerShown: true }} />
       <Stack.Screen name="search" options={{ headerShown: true }} />
-      <Stack.Screen name="settings" options={{ headerShown: true }} />
-      <Stack.Screen name="settings/notifications" options={{ headerShown: true }} />
-      <Stack.Screen name="settings/privacy" options={{ headerShown: true }} />
-      <Stack.Screen name="settings/blocked-users" options={{ headerShown: true }} />
-      <Stack.Screen name="settings/faq" options={{ headerShown: true }} />
-      <Stack.Screen name="settings/help" options={{ headerShown: true }} />
-      <Stack.Screen name="settings/support" options={{ headerShown: true }} />
-      <Stack.Screen name="settings/privacy-policy" options={{ headerShown: true }} />
-      <Stack.Screen name="settings/terms" options={{ headerShown: true }} />
-      <Stack.Screen name="settings/rgpd" options={{ headerShown: true }} />
       <Stack.Screen name="legal/terms" options={{ headerShown: true }} />
       <Stack.Screen name="legal/privacy" options={{ headerShown: true }} />
       <Stack.Screen name="(pro)" options={{ headerShown: false }} />
