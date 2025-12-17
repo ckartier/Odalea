@@ -1,2 +1,2 @@
-import CatSitterScreen from '@/app/cat-sitter';
+import CatSitterScreen from "@/components/screens/CatSitterScreen";
 export default CatSitterScreen;
