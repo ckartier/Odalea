@@ -99,7 +99,6 @@ const RootLayoutNav = React.memo(() => {
       <Stack.Screen name="search" options={{ headerShown: true }} />
       <Stack.Screen name="legal/terms" options={{ headerShown: true }} />
       <Stack.Screen name="legal/privacy" options={{ headerShown: true }} />
-      <Stack.Screen name="settings" options={{ headerShown: false }} />
       <Stack.Screen name="(pro)" options={{ headerShown: false }} />
       <Stack.Screen name="users" options={{ headerShown: true }} />
       <Stack.Screen name="firestore-collections" options={{ headerShown: true }} />
