@@ -1,2 +1,3 @@
-import CatSitterScreen from '@/app/cat-sitter';
-export default CatSitterScreen;
+export default function CatSitterScreen() {
+  return null; // ou ton UI existante
+}
