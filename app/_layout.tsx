@@ -73,10 +73,7 @@ const RootLayoutNav = React.memo(() => {
       <Stack.Screen name="auth/verify" options={{ headerShown: true }} />
       <Stack.Screen name="menu" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="cat-sitter" options={{ headerShown: false }} />
       <Stack.Screen name="cat-sitter/[id]" options={{ headerShown: true }} />
-      <Stack.Screen name="cat-sitter-dashboard" options={{ headerShown: true }} />
-      <Stack.Screen name="cat-sitter-settings" options={{ headerShown: true }} />
       <Stack.Screen name="pet/[id]" options={{ headerShown: true }} />
       <Stack.Screen name="pet/add" options={{ headerShown: true }} />
       <Stack.Screen name="pet/edit/[id]" options={{ headerShown: true }} />
