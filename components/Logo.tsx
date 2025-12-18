@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
-import { StyleSheet, Text, View, ViewStyle, Image, Animated, useColorScheme } from 'react-native';
+import { StyleSheet, Text, View, ViewStyle, Animated, useColorScheme } from 'react-native';
+import { Image } from 'expo-image';
 import { COLORS, SHADOWS } from '@/constants/colors';
 
 interface LogoProps {
@@ -87,7 +88,7 @@ const Logo: React.FC<LogoProps> = ({
         pulseAnimation.stop();
       };
     }
-  }, [animated]);
+  }, [animated, bounceAnim, pulseAnim, rotateAnim]);
 
   const spin = rotateAnim.interpolate({
     inputRange: [0, 1],
@@ -117,7 +118,8 @@ const Logo: React.FC<LogoProps> = ({
             styles.iconImage,
             { width: pawSize * 2.5, height: pawSize * 2.5 }
           ]}
-          resizeMode="contain"
+          contentFit="contain"
+          transition={200}
         />
       </Animated.View>
       

@@ -5,12 +5,12 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
-  Image,
   RefreshControl,
   ActivityIndicator,
   Platform,
   TextInput,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
@@ -20,9 +20,7 @@ import { useI18n } from '@/hooks/i18n-store';
 import { useSocial } from '@/hooks/social-store';
 import GlassCard from '@/components/GlassCard';
 import AppBackground from '@/components/AppBackground';
-import { Plus, Heart, MessageCircle, Share, MapPin, AlertTriangle, X, Send } from 'lucide-react-native';
-
-import ResponsiveModal from '@/components/ResponsiveModal';
+import { Plus, Heart, MessageCircle, Share, MapPin, AlertTriangle, Send } from 'lucide-react-native';
 import { realtimeService } from '@/services/database';
 
 interface LocalComment {
@@ -45,7 +43,6 @@ export default function CommunityScreen() {
     isPostLiked,
     refreshPosts,
     isTogglingLike,
-    getComments,
     addComment,
     isAddingComment,
   } = useSocial();
@@ -184,7 +181,9 @@ export default function CommunityScreen() {
             source={{ 
               uri: post.authorPhoto || 'https://images.unsplash.com/photo-1494790108755-2616b9e0e4b0?w=100&h=100&fit=crop&crop=face' 
             }} 
-            style={styles.avatar} 
+            style={styles.avatar}
+            contentFit="cover"
+            transition={200}
           />
           <View style={styles.authorInfo}>
             <Text style={styles.authorName}>{post.authorName || 'Anonyme'}</Text>
@@ -204,7 +203,12 @@ export default function CommunityScreen() {
         <Text style={styles.postContent}>{post.content}</Text>
 
         {post.images && post.images.length > 0 && (
-          <Image source={{ uri: post.images[0] }} style={styles.postImage} />
+          <Image 
+            source={{ uri: post.images[0] }} 
+            style={styles.postImage}
+            contentFit="cover"
+            transition={200}
+          />
         )}
 
         <View style={styles.postActions}>
