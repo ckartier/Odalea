@@ -3,9 +3,7 @@ import {
   StyleSheet,
   Text,
   View,
-  TouchableOpacity,
   FlatList,
-  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';

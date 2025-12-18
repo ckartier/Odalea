@@ -4,7 +4,6 @@ import { View, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IS_TABLET, RESPONSIVE_LAYOUT } from "@/constants/colors";
 import TopBar, { useTopBarHeight } from "@/components/TopBar";
-import FloatingMenu from "@/components/FloatingMenu";
 
 export default function TabLayout() {
   const router = useRouter();
@@ -47,6 +46,7 @@ export default function TabLayout() {
           <Tabs.Screen name="challenges" options={{ title: "Défis" }} />
           <Tabs.Screen name="messages" options={{ title: "Messages" }} />
           <Tabs.Screen name="profile" options={{ title: "Profil" }} />
+          <Tabs.Screen name="cat-sitter" options={{ title: "Cat Sitter" }} />
           <Tabs.Screen name="lost-found" options={{ href: null }} />
         </Tabs>
       </View>

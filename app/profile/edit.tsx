@@ -16,7 +16,6 @@ import Button from '@/components/Button';
 import Input from '@/components/Input';
 import PhotoUploader from '@/components/PhotoUploader';
 import CountryCodePicker from '@/components/CountryCodePicker';
-import DropdownSelector from '@/components/DropdownSelector';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { isPseudoTaken, isEmailTaken } from '@/services/user-validation';
 import { trpc } from '@/lib/trpc';
@@ -381,7 +380,7 @@ export default function EditProfileScreen() {
           {user?.isCatSitter && (
             <TouchableOpacity
               style={styles.catSitterButton}
-              onPress={() => router.push('/cat-sitter-dashboard')}
+              onPress={() => router.push('/(pro)/dashboard')}
             >
               <View style={styles.catSitterButtonContent}>
                 <Heart size={24} color={COLORS.catSitter} />
