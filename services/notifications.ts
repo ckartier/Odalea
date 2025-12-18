@@ -9,10 +9,11 @@ const resolveProjectId = (): string => {
   const projectId =
     Constants.expoConfig?.extra?.eas?.projectId ??
     Constants.easConfig?.projectId ??
+    process.env.EXPO_PUBLIC_PROJECT_ID ??
     process.env.EXPO_PUBLIC_APP_ID;
 
   if (!projectId) {
-    throw new Error('Project ID not found. Please set EXPO_PUBLIC_APP_ID in your environment.');
+    throw new Error('Project ID not found. Please set EXPO_PUBLIC_PROJECT_ID in your environment.');
   }
 
   return projectId;
