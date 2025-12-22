@@ -102,7 +102,7 @@ export default function MenuScreen() {
       id: 'cat-sitter',
       title: 'Cat Sitters',
       icon: <Cat size={24} color={COLORS.primary} />,
-      route: '/cat-sitter',
+      route: isCatSitter ? '/(pro)/cat-sitter-dashboard' : '/(tabs)/cat-sitter',
     },
     {
       id: 'challenges',

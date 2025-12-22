@@ -173,7 +173,8 @@ export default function ProfileScreen() {
           <View style={styles.headerActions}>
             <TouchableOpacity
               style={styles.headerButton}
-              onPress={() => router.push(toHref('/cat-sitter'))}
+              onPress={() => router.push(toHref(user?.isCatSitter ? '/(pro)/cat-sitter-dashboard' : '/(tabs)/cat-sitter'))}
+              testID="profile-cat-sitter-button"
             >
               <Heart size={20} color={COLORS.primary} />
             </TouchableOpacity>

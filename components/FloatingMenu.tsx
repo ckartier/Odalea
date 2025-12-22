@@ -5,11 +5,9 @@ import {
   Text,
   TouchableOpacity,
   Animated,
-  Dimensions,
   Platform,
   ScrollView,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, usePathname } from 'expo-router';
 import { COLORS, DIMENSIONS } from '@/constants/colors';
 import { useI18n } from '@/hooks/i18n-store';
@@ -32,22 +30,6 @@ import {
   FileText,
 } from 'lucide-react-native';
 
-const { width } = Dimensions.get('window');
-const MENU_WIDTH = Math.min(width * 0.85, 320);
-
-// Pre-calculate animation values for better performance
-const ANIMATION_CONFIG = {
-  duration: 250,
-  closeDuration: 220,
-  springConfig: {
-    tension: 50,
-    friction: 8,
-    useNativeDriver: false,
-  },
-  timingConfig: {
-    useNativeDriver: false,
-  },
-};
 
 interface MenuItem {
   id: string;
@@ -58,7 +40,7 @@ interface MenuItem {
 }
 
 // Memoize menu items to prevent re-creation
-const getMenuItems = (isProfessional: boolean): MenuItem[] => {
+const getMenuItems = (isProfessional: boolean, isCatSitter: boolean): MenuItem[] => {
   const standardItems: MenuItem[] = [
     {
       id: 'map',
@@ -83,7 +65,7 @@ const getMenuItems = (isProfessional: boolean): MenuItem[] => {
       id: 'cat-sitter',
       titleKey: 'sitters.book_cat_sitter',
       iconName: 'Search',
-      route: '/cat-sitter',
+      route: '/(tabs)/cat-sitter',
     },
     {
       id: 'shop',
@@ -123,38 +105,46 @@ const getMenuItems = (isProfessional: boolean): MenuItem[] => {
     },
   ];
 
-  if (isProfessional) {
+  if (isProfessional || isCatSitter) {
     const proItems: MenuItem[] = [
-      {
-        id: 'dashboard',
-        titleKey: 'pro.dashboard',
-        iconName: 'BarChart',
-        route: '/(pro)/dashboard',
-      },
-      {
-        id: 'cat-sitter-dashboard',
-        titleKey: 'Tableau de bord Cat Sitter',
-        iconName: 'User',
-        route: '/(pro)/cat-sitter-dashboard',
-        isSpecial: true,
-      },
-      {
-        id: 'pro-shop',
-        titleKey: 'Ma Boutique Pro',
-        iconName: 'ShoppingBag',
-        route: '/(pro)/shop',
-        isSpecial: true,
-      },
-      {
-        id: 'pro-profile',
-        titleKey: 'Mon Profil Pro',
-        iconName: 'User',
-        route: '/(pro)/profile',
-        isSpecial: true,
-      },
+      ...(isProfessional
+        ? [
+            {
+              id: 'dashboard',
+              titleKey: 'pro.dashboard',
+              iconName: 'BarChart',
+              route: '/(pro)/dashboard',
+            },
+            {
+              id: 'pro-shop',
+              titleKey: 'Ma Boutique Pro',
+              iconName: 'ShoppingBag',
+              route: '/(pro)/shop',
+              isSpecial: true,
+            },
+            {
+              id: 'pro-profile',
+              titleKey: 'Mon Profil Pro',
+              iconName: 'User',
+              route: '/(pro)/profile',
+              isSpecial: true,
+            },
+          ]
+        : []),
+      ...(isCatSitter
+        ? [
+            {
+              id: 'cat-sitter-dashboard',
+              titleKey: 'Tableau de bord Cat Sitter',
+              iconName: 'User',
+              route: '/(pro)/cat-sitter-dashboard',
+              isSpecial: true,
+            },
+          ]
+        : []),
     ];
     
-    // Combine Pro items at the top, followed by standard items
+    // Combine pro/cat-sitter items at the top, followed by standard items
     return [...proItems, ...standardItems];
   }
 
@@ -174,23 +164,25 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
   const { conversations } = useMessaging();
   const { getUserPendingChallenges, communityFeed } = useChallenges();
   const { user } = useAuth();
-  const insets = useSafeAreaInsets();
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
   const slideAnim = useRef(new Animated.Value(500)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Initialize animation values to closed state
+  // Keep animation values in sync with the open/closed state
   useEffect(() => {
     if (!isOpen) {
       slideAnim.setValue(500);
       fadeAnim.setValue(0);
     }
-  }, []);
+  }, [fadeAnim, isOpen, slideAnim]);
 
   const menuItems = useMemo(() => {
-    return getMenuItems(isProfessional || user?.isProfessional || false);
-  }, [isProfessional, user?.isProfessional]);
+    return getMenuItems(
+      isProfessional || user?.isProfessional || false,
+      Boolean(user?.isCatSitter),
+    );
+  }, [isProfessional, user?.isProfessional, user?.isCatSitter]);
 
   const openMenu = useCallback(() => {
     if (externalIsOpen === undefined) {
@@ -247,7 +239,7 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
         }
       });
     }
-  }, [onToggle, slideAnim, fadeAnim]);
+  }, [externalIsOpen, onToggle, slideAnim, fadeAnim]);
 
   // Memoize calculations to prevent unnecessary re-computations
   const totalUnreadMessages = useMemo(() => {
@@ -267,12 +259,16 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
   }, [communityFeed]);
 
   const handleMenuItemPress = useCallback((route: string) => {
-    console.log('FloatingMenu: handleMenuItemPress called', { route });
+    const resolvedRoute = (route === '/(tabs)/cat-sitter' && user?.isCatSitter)
+      ? '/(pro)/cat-sitter-dashboard'
+      : route;
+
+    console.log('FloatingMenu: handleMenuItemPress called', { route, resolvedRoute });
     closeMenu();
     setTimeout(() => {
-      router.push(route as any);
+      router.push(resolvedRoute as any);
     }, 100);
-  }, [closeMenu, router]);
+  }, [closeMenu, router, user?.isCatSitter]);
 
   const isActiveRoute = useCallback((route: string) => {
     return pathname === route || pathname.startsWith(route);
@@ -282,14 +278,13 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
     if (isActiveRoute(item.route)) {
       return COLORS.primary;
     }
-    
-    // All icons use dark gray for consistency
+
     return COLORS.darkGray;
   }, [isActiveRoute]);
 
   const renderIcon = useCallback((iconName: string, item: MenuItem) => {
     const iconColor = getIconColor(iconName, item);
-    const iconProps = { size: DIMENSIONS.COMPONENT_SIZES.ICON_MEDIUM, color: iconColor };
+    const iconProps = { size: 20, color: iconColor };
 
     switch (iconName) {
       case 'Map':
@@ -424,9 +419,12 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
               <View
                 style={[
                   styles.menuItemButton,
-                  isActiveRoute(item.route) ? styles.menuItemButtonActive : styles.menuItemButtonInactive
+                  isActiveRoute(item.route) ? styles.menuItemButtonActive : styles.menuItemButtonInactive,
                 ]}
               >
+                <View style={styles.menuItemIcon}>
+                  {renderIcon(item.iconName, item)}
+                </View>
                 <Text
                   style={[
                     styles.menuItemText,
@@ -571,6 +569,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
     minHeight: 56,
+  },
+  menuItemIcon: {
+    position: 'absolute',
+    left: DIMENSIONS.SPACING.lg,
+    top: '50%',
+    transform: [{ translateY: -10 }],
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   menuItemButtonActive: {
     backgroundColor: '#E0F7FA',

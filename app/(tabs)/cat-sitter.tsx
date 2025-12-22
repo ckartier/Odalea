@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -110,6 +110,13 @@ export default function CatSitterScreen() {
   const router = useRouter();
   const { t } = useI18n();
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (user?.isCatSitter) {
+      console.log('🐱 CatSitterScreen: user is cat sitter, redirecting to dashboard');
+      router.replace('/(pro)/cat-sitter-dashboard' as any);
+    }
+  }, [router, user?.isCatSitter]);
   const [isMenuVisible, setIsMenuVisible] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<'distance' | 'popularity'>('popularity');
   const [showOnlyAvailable, setShowOnlyAvailable] = useState<boolean>(false);

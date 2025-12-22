@@ -16,9 +16,10 @@ export default function ProLayout() {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  // Only redirect if user is logged in but not professional
+  // Only redirect if user is logged in but not allowed in the pro area.
+  // Cat-sitter dashboard lives under /(pro), so allow cat sitters too.
   // Allow access for non-logged in users (they might want to register as pro)
-  if (user && !user.isProfessional) {
+  if (user && !user.isProfessional && !user.isCatSitter) {
     return <Redirect href="/(tabs)/community" />;
   }
 
