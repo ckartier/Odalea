@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback } from 'react';
-import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Text, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, usePathname } from 'expo-router';
 import { COLORS, DIMENSIONS } from '@/constants/colors';
@@ -7,7 +7,7 @@ import { Menu } from 'lucide-react-native';
 import { usePets } from '@/hooks/pets-store';
 import { useAuth } from '@/hooks/auth-store';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Image } from 'expo-image';
+
 
 interface TopBarProps {
   title?: string;
@@ -74,8 +74,7 @@ const TopBar = React.memo(({ rightAction, onMenuPress, onBackPress }: TopBarProp
         <Image
           source={{ uri: photoUri }}
           style={styles.avatarImage}
-          contentFit="cover"
-          transition={250}
+          resizeMode="cover"
         />
       ) : (
         <View style={styles.avatarFallback}>

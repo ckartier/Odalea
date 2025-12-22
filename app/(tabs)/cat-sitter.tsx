@@ -4,6 +4,7 @@ import {
   Text,
   View,
   FlatList,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -144,13 +145,22 @@ export default function CatSitterScreen() {
       <View style={styles.sitterCardInner}>
       <View style={styles.sitterHeader}>
         <View style={styles.avatarContainer}>
-          <View style={[styles.avatar, { backgroundColor: COLORS.catSitter }]}
-            testID={`sitter-avatar-${item.id}`}
-          >
-            <Text style={styles.avatarText}>
-              {item.name.split(' ').map(n => n[0]).join('')}
-            </Text>
-          </View>
+          {item.avatar ? (
+            <Image
+              source={{ uri: item.avatar }}
+              style={styles.avatar}
+              resizeMode="cover"
+              testID={`sitter-avatar-${item.id}`}
+            />
+          ) : (
+            <View style={[styles.avatar, { backgroundColor: COLORS.catSitter }]}
+              testID={`sitter-avatar-${item.id}`}
+            >
+              <Text style={styles.avatarText}>
+                {item.name.split(' ').map(n => n[0]).join('')}
+              </Text>
+            </View>
+          )}
           {item.isPremium && (
             <View style={styles.premiumBadge}>
               <Heart size={12} color={COLORS.premium} />

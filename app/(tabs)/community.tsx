@@ -9,8 +9,9 @@ import {
   ActivityIndicator,
   Platform,
   TextInput,
+  Image,
 } from 'react-native';
-import { Image } from 'expo-image';
+
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
@@ -182,8 +183,7 @@ export default function CommunityScreen() {
               uri: post.authorPhoto || 'https://images.unsplash.com/photo-1494790108755-2616b9e0e4b0?w=100&h=100&fit=crop&crop=face' 
             }} 
             style={styles.avatar}
-            contentFit="cover"
-            transition={200}
+            resizeMode="cover"
           />
           <View style={styles.authorInfo}>
             <Text style={styles.authorName}>{post.authorName || 'Anonyme'}</Text>
@@ -206,8 +206,7 @@ export default function CommunityScreen() {
           <Image 
             source={{ uri: post.images[0] }} 
             style={styles.postImage}
-            contentFit="cover"
-            transition={200}
+            resizeMode="cover"
           />
         )}
 

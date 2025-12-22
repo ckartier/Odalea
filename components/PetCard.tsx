@@ -4,9 +4,10 @@ import {
   Text, 
   View, 
   TouchableOpacity, 
-  ViewStyle 
+  ViewStyle,
+  Image
 } from 'react-native';
-import { Image } from 'expo-image';
+
 import { useRouter } from 'expo-router';
 import { COLORS, SHADOWS, RESPONSIVE_FONT_SIZES, moderateScale } from '@/constants/colors';
 import { Pet } from '@/types';
@@ -97,8 +98,7 @@ const PetCard: React.FC<PetCardProps> = ({
         <Image
           source={{ uri: mainPhotoUri }}
           style={styles.image}
-          contentFit="cover"
-          transition={300}
+          resizeMode="cover"
         />
         
         <View style={styles.infoContainer}>
