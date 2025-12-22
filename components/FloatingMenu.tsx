@@ -132,6 +132,13 @@ const getMenuItems = (isProfessional: boolean): MenuItem[] => {
         route: '/(pro)/dashboard',
       },
       {
+        id: 'cat-sitter-dashboard',
+        titleKey: 'Tableau de bord Cat Sitter',
+        iconName: 'User',
+        route: '/(pro)/cat-sitter-dashboard',
+        isSpecial: true,
+      },
+      {
         id: 'pro-shop',
         titleKey: 'Ma Boutique Pro',
         iconName: 'ShoppingBag',
