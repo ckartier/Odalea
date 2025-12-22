@@ -5,8 +5,8 @@ import {
   View, 
   TouchableOpacity, 
   ViewStyle,
-  Image
 } from 'react-native';
+import { Image } from 'expo-image';
 
 import { useRouter } from 'expo-router';
 import { COLORS, SHADOWS, RESPONSIVE_FONT_SIZES, RESPONSIVE_COMPONENT_SIZES, moderateScale } from '@/constants/colors';
@@ -67,7 +67,8 @@ const UserCard: React.FC<UserCardProps> = ({
           <Image
             source={{ uri: getMainPetPhoto() }}
             style={styles.image}
-            resizeMode="cover"
+            contentFit="cover"
+            transition={200}
           />
         </View>
         

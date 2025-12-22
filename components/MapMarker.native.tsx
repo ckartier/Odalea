@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, View, Text, Image } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
+import { Image } from 'expo-image';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import { Pet } from '@/types';
 import { Marker } from 'react-native-maps';
@@ -42,7 +43,8 @@ const MapMarker: React.FC<MapMarkerProps> = ({ pet, onPress, isVet = false }) =>
           <Image
             source={{ uri: pet.mainPhoto }}
             style={styles.image}
-            resizeMode="cover"
+            contentFit="cover"
+            transition={200}
           />
         ) : (
           <Text style={styles.placeholderText}>🐱</Text>
