@@ -160,6 +160,31 @@ export const [CatSitterContext, useCatSitter] = createContextHook(() => {
       if (firebaseProfile) {
         console.log('✅ Cat sitter profile loaded from Firebase');
         setProfile(firebaseProfile as CatSitterProfile);
+        
+        // Load bookings for this sitter
+        console.log('🔄 Loading bookings for cat sitter:', userId);
+        const firebaseBookings = await petSitterService.listBookingsForSitter(userId);
+        
+        const mappedBookings: BookingRequest[] = firebaseBookings.map((b: any) => ({
+          id: b.id,
+          clientId: b.userId || b.clientId || '',
+          clientName: b.clientName || 'Client',
+          clientAvatar: b.clientAvatar,
+          petName: b.petName || 'Animal',
+          petType: b.petType || 'Chat',
+          startDate: b.startDate || b.date || '',
+          endDate: b.endDate || b.date || '',
+          totalHours: b.totalHours || b.duration || 2,
+          totalPrice: b.totalPrice || 0,
+          message: b.message || '',
+          status: b.status || 'pending',
+          services: b.services || [],
+          createdAt: b.createdAt?.toMillis?.() || Date.now(),
+        }));
+        
+        console.log(`✅ Loaded ${mappedBookings.length} bookings from Firebase`);
+        setBookingRequests(mappedBookings);
+        
         return firebaseProfile;
       } else {
         console.log('ℹ️ No cat sitter profile found in Firebase');
@@ -315,7 +340,8 @@ export const [CatSitterContext, useCatSitter] = createContextHook(() => {
       }
       
       return { success: true };
-    } catch (error) {
+    } catch (err) {
+      console.error('❌ Failed to respond to booking:', err);
       return { success: false, error: 'Failed to respond to booking' };
     } finally {
       setLoading(false);
