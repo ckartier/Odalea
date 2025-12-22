@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 20,
-    background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
+    backgroundColor: 'rgba(0,0,0,0.6)',
   },
   petInfo: {
     gap: 8,
