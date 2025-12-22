@@ -107,7 +107,7 @@ export default function SupportScreen() {
         { text: 'Annuler', style: 'cancel' },
         {
           text: 'Email',
-          onPress: () => Linking.openURL('mailto:support@coppet.app'),
+          onPress: () => Linking.openURL('mailto:support@odalea.app'),
         },
         {
           text: 'Téléphone',
@@ -125,7 +125,7 @@ export default function SupportScreen() {
         { text: 'Annuler', style: 'cancel' },
         {
           text: 'Envoyer par email',
-          onPress: () => Linking.openURL('mailto:bugs@coppet.app?subject=Bug Report'),
+          onPress: () => Linking.openURL('mailto:bugs@odalea.app?subject=Bug Report'),
         },
       ]
     );
@@ -134,12 +134,12 @@ export default function SupportScreen() {
   const handleFeatureRequest = () => {
     Alert.alert(
       'Suggérer une fonctionnalité',
-      'Avez-vous une idée pour améliorer Coppet ? Nous serions ravis de l\'entendre !',
+      'Avez-vous une idée pour améliorer Odalea ? Nous serions ravis de l\'entendre !',
       [
         { text: 'Annuler', style: 'cancel' },
         {
           text: 'Envoyer par email',
-          onPress: () => Linking.openURL('mailto:feedback@coppet.app?subject=Feature Request'),
+          onPress: () => Linking.openURL('mailto:feedback@odalea.app?subject=Feature Request'),
         },
       ]
     );
@@ -149,9 +149,9 @@ export default function SupportScreen() {
     {
       id: 'email',
       title: 'Email',
-      description: 'support@coppet.app',
+      description: 'support@odalea.app',
       icon: <Mail size={24} color={COLORS.primary} />,
-      onPress: () => Linking.openURL('mailto:support@coppet.app'),
+      onPress: () => Linking.openURL('mailto:support@odalea.app'),
     },
     {
       id: 'phone',
@@ -268,7 +268,7 @@ export default function SupportScreen() {
           <View style={[styles.infoCard, SHADOWS.small]}>
             <View style={styles.infoRow}>
               <Mail size={20} color={COLORS.primary} />
-              <Text style={styles.infoText}>support@coppet.app</Text>
+              <Text style={styles.infoText}>support@odalea.app</Text>
             </View>
             
             <View style={styles.infoRow}>

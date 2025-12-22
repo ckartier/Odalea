@@ -196,7 +196,7 @@ export default function SplashScreen() {
           testID="splash-title"
           style={[styles.titleContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim.interpolate({ inputRange: [0, 100], outputRange: [0, 50] }) }] }]}
         >
-          <Animated.Text style={styles.appTitle}>Coppet</Animated.Text>
+          <Animated.Text style={styles.appTitle}>Odalea</Animated.Text>
 
         </Animated.View>
       </Animated.View>

@@ -17,7 +17,7 @@ export interface EmailData {
 
 class EmailService {
   private apiKey: string = '';
-  private fromEmail: string = 'noreply@coppet.com';
+  private fromEmail: string = 'noreply@odalea.com';
 
   constructor() {
     // In a real app, get API key from environment variables
@@ -26,7 +26,7 @@ class EmailService {
 
   // Professional account verification email
   generateVerificationEmail(userEmail: string, verificationCode: string): EmailTemplate {
-    const subject = 'Vérification de votre compte professionnel Coppet';
+    const subject = 'Vérification de votre compte professionnel Odalea';
     
     const html = `
       <!DOCTYPE html>
@@ -38,14 +38,14 @@ class EmailService {
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
           <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="text-align: center; margin-bottom: 30px;">
-              <h1 style="color: #2563eb;">Coppet</h1>
+              <h1 style="color: #2563eb;">Odalea</h1>
             </div>
             
             <h2>Vérification de votre compte professionnel</h2>
             
             <p>Bonjour,</p>
             
-            <p>Merci d'avoir créé un compte professionnel sur Coppet. Pour finaliser votre inscription, veuillez utiliser le code de vérification suivant :</p>
+            <p>Merci d'avoir créé un compte professionnel sur Odalea. Pour finaliser votre inscription, veuillez utiliser le code de vérification suivant :</p>
             
             <div style="background-color: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
               <h3 style="font-size: 24px; letter-spacing: 4px; margin: 0; color: #2563eb;">${verificationCode}</h3>
@@ -55,7 +55,7 @@ class EmailService {
             
             <p>Une fois votre compte vérifié, vous pourrez :</p>
             <ul>
-              <li>Vendre vos produits sur la boutique Coppet</li>
+              <li>Vendre vos produits sur la boutique Odalea</li>
               <li>Accéder à votre tableau de bord professionnel</li>
               <li>Gérer vos commandes et analytics</li>
               <li>Recevoir des paiements sécurisés</li>
@@ -64,7 +64,7 @@ class EmailService {
             <p>Si vous n'avez pas créé ce compte, vous pouvez ignorer cet email.</p>
             
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 14px;">
-              <p>Coppet - L'application pour les propriétaires d'animaux</p>
+              <p>Odalea - L'application pour les propriétaires d'animaux</p>
               <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
             </div>
           </div>
@@ -73,21 +73,21 @@ class EmailService {
     `;
 
     const text = `
-      Vérification de votre compte professionnel Coppet
+      Vérification de votre compte professionnel Odalea
       
       Bonjour,
       
-      Merci d'avoir créé un compte professionnel sur Coppet. Pour finaliser votre inscription, veuillez utiliser le code de vérification suivant :
+      Merci d'avoir créé un compte professionnel sur Odalea. Pour finaliser votre inscription, veuillez utiliser le code de vérification suivant :
       
       ${verificationCode}
       
       Ce code est valide pendant 10 minutes.
       
-      Une fois votre compte vérifié, vous pourrez vendre vos produits sur la boutique Coppet et accéder à votre tableau de bord professionnel.
+      Une fois votre compte vérifié, vous pourrez vendre vos produits sur la boutique Odalea et accéder à votre tableau de bord professionnel.
       
       Si vous n'avez pas créé ce compte, vous pouvez ignorer cet email.
       
-      Coppet - L'application pour les propriétaires d'animaux
+      Odalea - L'application pour les propriétaires d'animaux
     `;
 
     return { subject, html, text };
@@ -109,7 +109,7 @@ class EmailService {
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
           <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="text-align: center; margin-bottom: 30px;">
-              <h1 style="color: #2563eb;">Coppet</h1>
+              <h1 style="color: #2563eb;">Odalea</h1>
             </div>
             
             <h2>${subject}</h2>
@@ -121,7 +121,7 @@ class EmailService {
                 <p style="color: #16a34a; margin: 0;"><strong>✅ Félicitations ! Votre produit a été approuvé.</strong></p>
               </div>
               
-              <p>Votre produit "<strong>${productName}</strong>" est maintenant visible sur la boutique Coppet et peut être acheté par les utilisateurs.</p>
+              <p>Votre produit "<strong>${productName}</strong>" est maintenant visible sur la boutique Odalea et peut être acheté par les utilisateurs.</p>
               
               <p>Vous pouvez suivre les ventes et analytics de ce produit depuis votre tableau de bord professionnel.</p>
             ` : `
@@ -139,13 +139,13 @@ class EmailService {
             `}
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="https://coppet.com/pro/dashboard" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
+              <a href="https://odalea.com/pro/dashboard" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
                 Accéder au tableau de bord
               </a>
             </div>
             
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 14px;">
-              <p>Coppet - L'application pour les propriétaires d'animaux</p>
+              <p>Odalea - L'application pour les propriétaires d'animaux</p>
               <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
             </div>
           </div>
@@ -159,13 +159,13 @@ class EmailService {
       Bonjour,
       
       ${isApproved 
-        ? `Félicitations ! Votre produit "${productName}" a été approuvé et est maintenant visible sur la boutique Coppet.`
+        ? `Félicitations ! Votre produit "${productName}" a été approuvé et est maintenant visible sur la boutique Odalea.`
         : `Votre produit "${productName}" n'a pas pu être approuvé pour la raison suivante : ${rejectionReason}`
       }
       
-      Vous pouvez accéder à votre tableau de bord professionnel sur https://coppet.com/pro/dashboard
+      Vous pouvez accéder à votre tableau de bord professionnel sur https://odalea.com/pro/dashboard
       
-      Coppet - L'application pour les propriétaires d'animaux
+      Odalea - L'application pour les propriétaires d'animaux
     `;
 
     return { subject, html, text };
@@ -185,14 +185,14 @@ class EmailService {
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
           <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="text-align: center; margin-bottom: 30px;">
-              <h1 style="color: #2563eb;">Coppet</h1>
+              <h1 style="color: #2563eb;">Odalea</h1>
             </div>
             
             <h2>Nouvelle commande reçue</h2>
             
             <p>Bonjour,</p>
             
-            <p>Vous avez reçu une nouvelle commande sur votre boutique Coppet :</p>
+            <p>Vous avez reçu une nouvelle commande sur votre boutique Odalea :</p>
             
             <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <h3 style="margin-top: 0;">Commande #${orderData.id.slice(-6)}</h3>
@@ -210,7 +210,7 @@ class EmailService {
             </ul>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="https://coppet.com/pro/orders" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
+              <a href="https://odalea.com/pro/orders" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
                 Gérer la commande
               </a>
             </div>
@@ -224,7 +224,7 @@ class EmailService {
             </ol>
             
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 14px;">
-              <p>Coppet - L'application pour les propriétaires d'animaux</p>
+              <p>Odalea - L'application pour les propriétaires d'animaux</p>
               <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
             </div>
           </div>
@@ -237,7 +237,7 @@ class EmailService {
       
       Bonjour,
       
-      Vous avez reçu une nouvelle commande sur votre boutique Coppet :
+      Vous avez reçu une nouvelle commande sur votre boutique Odalea :
       
       Commande #${orderData.id.slice(-6)}
       Client : ${orderData.customerName}
@@ -247,9 +247,9 @@ class EmailService {
       Articles commandés :
       ${orderData.items.map((item: any) => `- ${item.productName} - Quantité: ${item.quantity} - ${item.totalPrice.toFixed(2)}€`).join('\n')}
       
-      Gérez cette commande sur https://coppet.com/pro/orders
+      Gérez cette commande sur https://odalea.com/pro/orders
       
-      Coppet - L'application pour les propriétaires d'animaux
+      Odalea - L'application pour les propriétaires d'animaux
     `;
 
     return { subject, html, text };

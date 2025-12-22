@@ -387,7 +387,7 @@ const FloatingMenu = React.memo(({ isProfessional, isOpen: externalIsOpen, onTog
           ]}
         >
           <View style={styles.menuHeader}>
-          <Text style={styles.menuTitle}>Coppet</Text>
+          <Text style={styles.menuTitle}>Odalea</Text>
           <TouchableOpacity 
             onPress={closeMenu} 
             style={styles.closeButton}

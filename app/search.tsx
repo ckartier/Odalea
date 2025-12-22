@@ -171,7 +171,7 @@ export default function SearchScreen() {
       return (
         <View style={styles.emptyState}>
           <Search size={48} color={COLORS.mediumGray} />
-          <Text style={styles.emptyTitle}>Search Coppet</Text>
+          <Text style={styles.emptyTitle}>Search Odalea</Text>
           <Text style={styles.emptySubtitle}>
             Find pets, owners, and cat sitters in your area
           </Text>

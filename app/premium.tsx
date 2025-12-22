@@ -99,7 +99,7 @@ const getPremiumFeatures = (t: (key: string) => string): PremiumFeature[] => [
     id: 'ads',
     icon: <X size={24} color={COLORS.premium} />,
     title: 'Expérience Sans Pub',
-    description: 'Profitez de Coppet sans aucune publicité',
+    description: 'Profitez de Odalea sans aucune publicité',
     premiumLimit: 'Aucune pub',
   },
 ];
@@ -166,7 +166,7 @@ export default function PremiumScreen() {
         
         Alert.alert(
           'Bienvenue dans Premium ! 🎉',
-          'Vous avez maintenant accès à toutes les fonctionnalités premium. Profitez de votre expérience Coppet améliorée !',
+          'Vous avez maintenant accès à toutes les fonctionnalités premium. Profitez de votre expérience Odalea améliorée !',
           [
             {
               text: 'Commencer l\'exploration',
@@ -270,7 +270,7 @@ export default function PremiumScreen() {
           <Crown size={80} color={COLORS.premium} />
           <Text style={styles.alreadyPremiumTitle}>Vous êtes Premium ! 🎉</Text>
           <Text style={styles.alreadyPremiumSubtitle}>
-            Vous avez accès à toutes les fonctionnalités premium. Merci de soutenir Coppet !
+            Vous avez accès à toutes les fonctionnalités premium. Merci de soutenir Odalea !
           </Text>
           
           <TouchableOpacity
@@ -305,7 +305,7 @@ export default function PremiumScreen() {
           <Crown size={60} color={COLORS.premium} />
           <Text style={styles.headerTitle}>Passer à Premium</Text>
           <Text style={styles.headerSubtitle}>
-            Débloquez toutes les fonctionnalités et tirez le meilleur parti de Coppet
+            Débloquez toutes les fonctionnalités et tirez le meilleur parti de Odalea
           </Text>
         </View>
 

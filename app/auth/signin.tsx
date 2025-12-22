@@ -157,7 +157,7 @@ function SignInScreen() {
       await AsyncStorage.setItem(`passwordReset:${resetEmail.toLowerCase()}`, JSON.stringify({ code, ts: Date.now() }));
       await emailService.sendEmail({
         to: resetEmail,
-        from: 'noreply@coppet.com',
+        from: 'noreply@odalea.com',
         subject: 'Réinitialisation du mot de passe',
         html: `<p>Voici votre code de réinitialisation: <strong>${code}</strong></p><p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>`,
         text: `Code de réinitialisation: ${code}`,
@@ -244,7 +244,7 @@ function SignInScreen() {
         <Animated.Text style={[styles.welcomeText, dynamicStyles.title, {
           opacity: fadeAnim,
           transform: [{ translateY: slideAnim }],
-        }]}>Bienvenue sur Coppet</Animated.Text>
+        }]}>Bienvenue sur Odalea</Animated.Text>
         <Animated.Text style={[styles.subtitle, dynamicStyles.subtitle, {
           opacity: fadeAnim,
           transform: [{ translateY: slideAnim }],

@@ -84,7 +84,7 @@ export default function PrivacyScreen() {
         <GlassView style={styles.section} liquidGlass tint="neutral" intensity={20}>
           <Text style={styles.sectionTitle}>1. Introduction</Text>
           <Text style={styles.text}>
-            Coppet s&apos;engage à protéger votre vie privée et vos données personnelles. 
+            Odalea s&apos;engage à protéger votre vie privée et vos données personnelles. 
             Cette politique explique comment nous collectons, utilisons et protégeons vos informations 
             conformément au Règlement Général sur la Protection des Données (RGPD).
           </Text>
@@ -98,7 +98,7 @@ export default function PrivacyScreen() {
         <GlassView style={styles.section} liquidGlass tint="neutral" intensity={20}>
           <Text style={styles.sectionTitle}>2. Responsable du traitement</Text>
           <Text style={styles.text}>
-            Coppet SAS, société par actions simplifiée au capital de 10 000 euros, 
+            Odalea SAS, société par actions simplifiée au capital de 10 000 euros, 
             immatriculée au RCS de Paris sous le numéro 123 456 789, 
             dont le siège social est situé au 123 Rue de la Paix, 75001 Paris, France.
           </Text>
@@ -260,8 +260,8 @@ export default function PrivacyScreen() {
           <Text style={styles.text}>
             Pour exercer vos droits ou pour toute question relative à cette politique :
           </Text>
-          <Text style={styles.bulletText}>• Email : privacy@coppet.com</Text>
-          <Text style={styles.bulletText}>• Courrier : Coppet SAS - DPO, 123 Rue de la Paix, 75001 Paris</Text>
+          <Text style={styles.bulletText}>• Email : privacy@odalea.com</Text>
+          <Text style={styles.bulletText}>• Courrier : Odalea SAS - DPO, 123 Rue de la Paix, 75001 Paris</Text>
           <Text style={styles.text}>
             Vous avez également le droit de déposer une réclamation auprès de la CNIL 
             (Commission Nationale de l&apos;Informatique et des Libertés).

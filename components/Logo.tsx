@@ -129,7 +129,7 @@ const Logo: React.FC<LogoProps> = ({
           { fontSize },
           { color: colorScheme === 'dark' ? COLORS.white : COLORS.black }
         ]}>
-          Coppet
+          Odalea
         </Text>
       )}
     </View>

@@ -549,7 +549,7 @@ export default function ProRegisterScreen() {
         </Animated.View>
         <Text style={styles.stepText}>Étape 1 sur 3</Text>
         <Text style={styles.title}>Compte Professionnel</Text>
-        <Text style={styles.subtitle}>Créez votre compte professionnel pour vendre sur Coppet</Text>
+        <Text style={styles.subtitle}>Créez votre compte professionnel pour vendre sur Odalea</Text>
       </Animated.View>
 
       <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>

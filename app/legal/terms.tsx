@@ -86,7 +86,7 @@ export default function TermsScreen() {
         <GlassView style={styles.section} liquidGlass tint="neutral" intensity={isDark ? 10 : 20}>
           <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>1. Acceptation des conditions</Text>
           <Text style={[styles.paragraph, { color: currentTheme.text }]}>
-            Bienvenue sur Coppet. En utilisant cette application, vous acceptez les présentes conditions générales d&apos;utilisation. Si vous n&apos;acceptez pas ces conditions, veuillez ne pas utiliser l&apos;application.
+            Bienvenue sur Odalea. En utilisant cette application, vous acceptez les présentes conditions générales d&apos;utilisation. Si vous n&apos;acceptez pas ces conditions, veuillez ne pas utiliser l&apos;application.
           </Text>
         </GlassView>
         </Animated.View>
@@ -98,7 +98,7 @@ export default function TermsScreen() {
         <GlassView style={styles.section} liquidGlass tint="neutral" intensity={isDark ? 10 : 20}>
           <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>2. Objet de l&apos;application</Text>
           <Text style={[styles.paragraph, { color: currentTheme.text }]}>
-            Coppet est une application sociale dédiée aux propriétaires d&apos;animaux de compagnie. Elle permet de créer un profil pour vous et vos animaux, de rencontrer d&apos;autres propriétaires, de partager des moments, de trouver des services (cat-sitters, vétérinaires, boutiques), et de participer à des défis et événements.
+            Odalea est une application sociale dédiée aux propriétaires d&apos;animaux de compagnie. Elle permet de créer un profil pour vous et vos animaux, de rencontrer d&apos;autres propriétaires, de partager des moments, de trouver des services (cat-sitters, vétérinaires, boutiques), et de participer à des défis et événements.
           </Text>
         </GlassView>
         </Animated.View>
@@ -110,7 +110,7 @@ export default function TermsScreen() {
         <GlassView style={styles.section} liquidGlass tint="neutral" intensity={20}>
           <Text style={styles.sectionTitle}>3. Inscription et compte utilisateur</Text>
           <Text style={styles.paragraph}>
-            Pour utiliser Coppet, vous devez créer un compte en fournissant des informations exactes et à jour. Vous êtes responsable de la confidentialité de vos identifiants et de toutes les activités effectuées sous votre compte.
+            Pour utiliser Odalea, vous devez créer un compte en fournissant des informations exactes et à jour. Vous êtes responsable de la confidentialité de vos identifiants et de toutes les activités effectuées sous votre compte.
           </Text>
           <Text style={styles.bulletText}>• Vous devez avoir au moins 18 ans pour créer un compte</Text>
           <Text style={styles.bulletText}>• Vous ne pouvez créer qu&apos;un seul compte par personne</Text>
@@ -142,7 +142,7 @@ export default function TermsScreen() {
         <GlassView style={styles.section} liquidGlass tint="neutral" intensity={20}>
           <Text style={styles.sectionTitle}>5. Contenus publiés</Text>
           <Text style={styles.paragraph}>
-            Vous conservez la propriété des contenus que vous publiez (photos, textes, vidéos). En publiant du contenu, vous accordez à Coppet une licence mondiale, non exclusive, pour utiliser, reproduire et diffuser ce contenu dans le cadre de l&apos;application.
+            Vous conservez la propriété des contenus que vous publiez (photos, textes, vidéos). En publiant du contenu, vous accordez à Odalea une licence mondiale, non exclusive, pour utiliser, reproduire et diffuser ce contenu dans le cadre de l&apos;application.
           </Text>
           <Text style={styles.paragraph}>
             Vous garantissez que vous disposez de tous les droits nécessaires sur les contenus publiés et que ceux-ci ne violent aucun droit de tiers.
@@ -172,10 +172,10 @@ export default function TermsScreen() {
         <GlassView style={styles.section} liquidGlass tint="neutral" intensity={20}>
           <Text style={styles.sectionTitle}>7. Responsabilité</Text>
           <Text style={styles.paragraph}>
-            Coppet met tout en œuvre pour assurer la disponibilité et la sécurité de l&apos;application, mais ne peut garantir un fonctionnement sans interruption ni erreur.
+            Odalea met tout en œuvre pour assurer la disponibilité et la sécurité de l&apos;application, mais ne peut garantir un fonctionnement sans interruption ni erreur.
           </Text>
           <Text style={styles.paragraph}>
-            Coppet n&apos;est pas responsable des interactions entre utilisateurs, des rencontres organisées via l&apos;application, ni des services fournis par des tiers (cat-sitters, professionnels).
+            Odalea n&apos;est pas responsable des interactions entre utilisateurs, des rencontres organisées via l&apos;application, ni des services fournis par des tiers (cat-sitters, professionnels).
           </Text>
         </GlassView>
         </Animated.View>
@@ -187,7 +187,7 @@ export default function TermsScreen() {
         <GlassView style={styles.section} liquidGlass tint="neutral" intensity={20}>
           <Text style={styles.sectionTitle}>8. Suspension et résiliation</Text>
           <Text style={styles.paragraph}>
-            Coppet se réserve le droit de suspendre ou supprimer votre compte en cas de non-respect des présentes conditions, sans préavis ni indemnité.
+            Odalea se réserve le droit de suspendre ou supprimer votre compte en cas de non-respect des présentes conditions, sans préavis ni indemnité.
           </Text>
           <Text style={styles.paragraph}>
             Vous pouvez supprimer votre compte à tout moment depuis les paramètres de l&apos;application.
@@ -202,7 +202,7 @@ export default function TermsScreen() {
         <GlassView style={styles.section} liquidGlass tint="neutral" intensity={20}>
           <Text style={styles.sectionTitle}>9. Modification des CGU</Text>
           <Text style={styles.paragraph}>
-            Coppet se réserve le droit de modifier les présentes conditions à tout moment. Les utilisateurs seront informés des modifications importantes par notification.
+            Odalea se réserve le droit de modifier les présentes conditions à tout moment. Les utilisateurs seront informés des modifications importantes par notification.
           </Text>
         </GlassView>
         </Animated.View>
@@ -228,8 +228,8 @@ export default function TermsScreen() {
           <Text style={styles.paragraph}>
             Pour toute question concernant ces conditions :
           </Text>
-          <Text style={styles.bulletText}>• Email : support@coppet.com</Text>
-          <Text style={styles.bulletText}>• Adresse : Coppet SAS, 123 Rue de la Paix, 75001 Paris</Text>
+          <Text style={styles.bulletText}>• Email : support@odalea.com</Text>
+          <Text style={styles.bulletText}>• Adresse : Odalea SAS, 123 Rue de la Paix, 75001 Paris</Text>
         </GlassView>
         </Animated.View>
         </ScrollView>

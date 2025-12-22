@@ -60,7 +60,7 @@ export default function HelpScreen() {
       description: 'Obtenez de l\'aide personnalisée',
       icon: <MessageSquare size={24} color={COLORS.primary} />,
       onPress: () => {
-        Alert.alert('Support', 'Vous pouvez nous contacter à support@coppet.com ou utiliser le formulaire ci-dessous.');
+        Alert.alert('Support', 'Vous pouvez nous contacter à support@odalea.com ou utiliser le formulaire ci-dessous.');
       },
     },
     {
@@ -68,7 +68,7 @@ export default function HelpScreen() {
       title: 'Site web',
       description: 'Visitez notre site pour plus d\'informations',
       icon: <ExternalLink size={24} color={COLORS.primary} />,
-      onPress: () => Linking.openURL('https://coppet.com'),
+      onPress: () => Linking.openURL('https://odalea.com'),
     },
   ];
 
@@ -110,7 +110,7 @@ export default function HelpScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{"Centre d'aide"}</Text>
           <Text style={styles.sectionDescription}>
-            {"Trouvez de l'aide et des réponses à vos questions sur l'utilisation de Coppet."}
+            {"Trouvez de l'aide et des réponses à vos questions sur l'utilisation de Odalea."}
           </Text>
           
           {helpItems.map((item) => (
@@ -172,7 +172,7 @@ export default function HelpScreen() {
                   'Choisissez votre méthode de contact préférée :',
                   [
                     { text: 'Annuler', style: 'cancel' },
-                    { text: 'Email', onPress: () => Linking.openURL('mailto:support@coppet.com') },
+                    { text: 'Email', onPress: () => Linking.openURL('mailto:support@odalea.com') },
                     { text: 'Chat en direct', onPress: () => Alert.alert('Chat', 'Le chat en direct sera bientôt disponible.') },
                   ]
                 );
