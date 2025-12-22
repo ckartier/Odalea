@@ -183,7 +183,7 @@ export default function MenuScreen() {
       id: 'cat-sitter-dashboard',
       title: 'Gestion Cat-Sitter',
       icon: <Cat size={24} color="#FF6B9D" />,
-      route: '/cat-sitter-dashboard',
+      route: '/(pro)/cat-sitter-dashboard',
       color: '#FF6B9D',
     },
   ] : [];
