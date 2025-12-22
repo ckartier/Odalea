@@ -984,57 +984,58 @@ export default function MapScreen() {
       {selectedPet && (
         <View style={styles.selectedPetCardContainer} testID="selected-pet-card">
           <AdBanner size="banner" style={styles.adBannerTop} />
-          <TouchableOpacity
-            style={[styles.selectedPetCard, SHADOWS.large]}
+          <GlassCard
+            tint={selectedPet.gender === 'female' ? 'female' : 'male'}
+            intensity={70}
+            noPadding
             onPress={handlePetCardPress}
-            activeOpacity={0.95}
+            style={styles.selectedPetCard}
           >
-            <LinearGradient
-              colors={selectedPet.gender === 'female' ? ['#fbcfe8', '#f472b6'] : ['#dbeafe', '#60a5fa']}
-              style={styles.petCardImageContainer}
-            >
-              {selectedPet.mainPhoto ? (
-                <Image
-                  source={{ uri: selectedPet.mainPhoto }}
-                  style={styles.petCardImage}
-                  contentFit="cover"
-                />
-              ) : (
-                <View style={styles.petCardImagePlaceholder}>
-                  <Text style={styles.petCardImageEmoji}>🐾</Text>
-                </View>
-              )}
-              <View style={styles.petGenderBadge}>
-                <Text style={styles.petGenderText}>{selectedPet.gender === 'female' ? '♀' : '♂'}</Text>
-              </View>
-            </LinearGradient>
-
-            <View style={styles.petCardInfo}>
-              <View style={styles.petCardHeader}>
-                <View>
-                  <Text style={styles.petCardName}>{selectedPet.name}</Text>
-                  <Text style={styles.petCardBreed}>
-                    {selectedPet.breed} • {selectedPet.type}
-                  </Text>
-                </View>
-                <TouchableOpacity onPress={handleUserPress} style={styles.ownerBadge}>
-                  <Text style={styles.ownerBadgeText}>@{selectedUser?.pseudo ?? ''}</Text>
-                  {selectedUser?.isPremium && <ShieldCheck size={14} color={COLORS.primary} />}
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.petCardFooter}>
-                <Text style={styles.petCardLocation}>
-                  📍 {selectedUser?.city ?? ''}{selectedUser?.zipCode ? `, ${selectedUser.zipCode}` : ''}
-                </Text>
-                {(selectedUser?.isCatSitter || selectedUser?.isProfessional) && (
-                  <View style={styles.sitterBadge}>
-                    <Text style={styles.sitterBadgeText}>Gardien</Text>
+            <View style={styles.petCardContentWrapper}>
+              <View style={styles.petCardImageContainer}>
+                {selectedPet.mainPhoto ? (
+                  <Image
+                    source={{ uri: selectedPet.mainPhoto }}
+                    style={styles.petCardImage}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View style={styles.petCardImagePlaceholder}>
+                    <Text style={styles.petCardImageEmoji}>🐾</Text>
                   </View>
                 )}
+                <View style={styles.petGenderBadge}>
+                  <Text style={styles.petGenderText}>{selectedPet.gender === 'female' ? '♀' : '♂'}</Text>
+                </View>
+              </View>
+
+              <View style={styles.petCardInfo}>
+                <View style={styles.petCardHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.petCardName}>{selectedPet.name}</Text>
+                    <Text style={styles.petCardBreed}>
+                      {selectedPet.breed} • {selectedPet.type}
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={handleUserPress} style={styles.ownerBadge}>
+                    <Text style={styles.ownerBadgeText}>@{selectedUser?.pseudo ?? ''}</Text>
+                    {selectedUser?.isPremium && <ShieldCheck size={14} color={COLORS.primary} />}
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.petCardFooter}>
+                  <Text style={styles.petCardLocation}>
+                    📍 {selectedUser?.city ?? ''}{selectedUser?.zipCode ? `, ${selectedUser.zipCode}` : ''}
+                  </Text>
+                  {(selectedUser?.isCatSitter || selectedUser?.isProfessional) && (
+                    <View style={styles.sitterBadge}>
+                      <Text style={styles.sitterBadgeText}>Gardien</Text>
+                    </View>
+                  )}
+                </View>
               </View>
             </View>
-          </TouchableOpacity>
+          </GlassCard>
         </View>
       )}
 
@@ -1129,24 +1130,23 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   selectedPetCard: {
-    borderRadius: 24,
-    overflow: 'hidden',
-    flexDirection: 'row',
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: 'rgba(15,23,42,0.08)',
     minHeight: 140,
+  },
+  petCardContentWrapper: {
+    flexDirection: 'row',
+    padding: 12,
+    gap: 12,
   },
   adBannerTop: {
     marginBottom: 10,
   },
   petCardImageContainer: {
-    width: 110,
-    minHeight: 140,
-    borderTopLeftRadius: 24,
-    borderBottomLeftRadius: 24,
+    width: 100,
+    height: 120,
+    borderRadius: 16,
     overflow: 'hidden',
     position: 'relative',
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
   petCardImage: {
     width: '100%',
@@ -1177,7 +1177,6 @@ const styles = StyleSheet.create({
   },
   petCardInfo: {
     flex: 1,
-    padding: 16,
     justifyContent: 'space-between',
   },
   petCardHeader: {
@@ -1200,10 +1199,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: 'rgba(15,23,42,0.06)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.3)',
   },
   ownerBadgeText: {
     fontSize: 12,
@@ -1222,10 +1221,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sitterBadge: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    backgroundColor: 'rgba(109, 40, 217, 0.9)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
   },
   sitterBadgeText: {
     color: '#fff',

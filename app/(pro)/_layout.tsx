@@ -50,8 +50,11 @@ export default function ProLayout() {
           }}
         >
           <Stack.Screen name="dashboard" />
+          <Stack.Screen name="cat-sitter-dashboard" />
           <Stack.Screen name="shop" />
           <Stack.Screen name="profile" />
+          <Stack.Screen name="edit-profile" />
+          <Stack.Screen name="services" />
         </Stack>
       </View>
     </>
