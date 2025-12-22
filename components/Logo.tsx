@@ -95,8 +95,8 @@ const Logo: React.FC<LogoProps> = ({
     outputRange: ['0deg', '360deg'],
   });
 
-  // Use the new dark mode dog logo
-  const logoSource = { uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/rgm7wtrf87gkgu9vbob7g' };
+  // Use the new Odalea logo (cat and dog forming a heart)
+  const logoSource = { uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/swqhd67xcl389m8z8l1iy' };
   
   return (
     <View style={[styles.container, style]}>
