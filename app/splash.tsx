@@ -202,7 +202,7 @@ export default function SplashScreen() {
           ]}
         >
           <Animated.Image
-            source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/rgm7wtrf87gkgu9vbob7g' }}
+            source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/qg65dezpx8zrcqopuuggc' }}
             style={[
               styles.logoImage,
               {
