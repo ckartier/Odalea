@@ -21,11 +21,11 @@ export const COLORS = {
   
   male: '#6BB6FF',
   maleVivid: '#4A9FFF',
-  female: '#C084FC',
-  femaleVivid: '#A855F7',
+  female: '#D884FC', // Updated to a more distinct Mauve
+  femaleVivid: '#C055F7',
   default: '#06B6D4',
   maleAccent: '#4A9FFF',
-  femaleAccent: '#A855F7',
+  femaleAccent: '#D884FC',
   neutralLight: '#E0F2FE',
   neutralVivid: '#BAE6FD',
   

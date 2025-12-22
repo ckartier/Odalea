@@ -10,10 +10,12 @@ const resolveProjectId = (): string => {
     Constants.expoConfig?.extra?.eas?.projectId ??
     Constants.easConfig?.projectId ??
     process.env.EXPO_PUBLIC_PROJECT_ID ??
-    process.env.EXPO_PUBLIC_APP_ID;
+    process.env.EXPO_PUBLIC_APP_ID ??
+    'w652a3hp1zy769f2om526'; // Fallback to known Project ID
 
   if (!projectId) {
-    throw new Error('Project ID not found. Please set EXPO_PUBLIC_PROJECT_ID in your environment.');
+    console.warn('Project ID not found. Push notifications may not work.');
+    return 'w652a3hp1zy769f2om526';
   }
 
   return projectId;

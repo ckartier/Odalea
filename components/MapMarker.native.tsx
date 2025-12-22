@@ -31,6 +31,7 @@ const MapMarker: React.FC<MapMarkerProps> = ({ pet, onPress, isVet = false }) =>
         longitude: blurredLocation.longitude,
       }}
       onPress={onPress}
+      tracksViewChanges={false} // Performance optimization
     >
       <View style={[
         styles.markerContainer,
@@ -45,6 +46,7 @@ const MapMarker: React.FC<MapMarkerProps> = ({ pet, onPress, isVet = false }) =>
             style={styles.image}
             contentFit="cover"
             transition={200}
+            cachePolicy="memory-disk"
           />
         ) : (
           <Text style={styles.placeholderText}>🐱</Text>

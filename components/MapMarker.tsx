@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Text, Image as RNImage, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import { Pet } from '@/types';
@@ -20,6 +20,7 @@ const MapMarker: React.FC<MapMarkerProps> = ({ pet, onPress, isVet = false }) =>
   if (!pet.location || !blurredLocation) return null;
 
   const markerColor = pet.gender === 'male' ? COLORS.male : COLORS.female;
+  const ImageComponent = Platform.OS === 'web' ? RNImage : Image;
 
   return (
     <View style={styles.container}>
@@ -34,10 +35,11 @@ const MapMarker: React.FC<MapMarkerProps> = ({ pet, onPress, isVet = false }) =>
           SHADOWS.medium,
         ]}>
           {pet.mainPhoto ? (
-            <Image
+            <ImageComponent
               source={{ uri: pet.mainPhoto }}
-              style={styles.image}
+              style={styles.image as any}
               contentFit="cover"
+              resizeMode="cover"
             />
           ) : (
             <View style={styles.placeholder}>

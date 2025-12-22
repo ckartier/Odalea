@@ -32,6 +32,7 @@ const UserMarker: React.FC<UserMarkerProps> = ({ user, isCatSitter = false, onPr
         longitude: blurredLocation.longitude,
       }}
       onPress={onPress}
+      tracksViewChanges={false}
     >
       <View style={[styles.markerContainer, { backgroundColor: markerColor }, SHADOWS.medium]}>
         {primaryPet?.mainPhoto ? (
@@ -39,12 +40,14 @@ const UserMarker: React.FC<UserMarkerProps> = ({ user, isCatSitter = false, onPr
             source={{ uri: primaryPet.mainPhoto }}
             style={styles.image}
             contentFit="cover"
+            cachePolicy="memory-disk"
           />
         ) : user.animalPhoto ? (
           <Image
             source={{ uri: user.animalPhoto }}
             style={styles.image}
             contentFit="cover"
+            cachePolicy="memory-disk"
           />
         ) : (
           <Text style={styles.petEmoji}>🐾</Text>

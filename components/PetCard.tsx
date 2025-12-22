@@ -5,6 +5,8 @@ import {
   View, 
   TouchableOpacity, 
   ViewStyle,
+  Platform,
+  Image as RNImage
 } from 'react-native';
 import { Image } from 'expo-image';
 
@@ -29,18 +31,12 @@ const PetCard: React.FC<PetCardProps> = ({
 }) => {
   const router = useRouter();
 
-  console.log('[PetCard] render', { petId: pet?.id });
-
   const rawCharacter: unknown = (pet as unknown as { character?: unknown })?.character;
   const characterList: string[] = Array.isArray(rawCharacter)
     ? (rawCharacter as string[])
     : (typeof rawCharacter === 'string' && rawCharacter.trim()
         ? (rawCharacter as string).split(/[;,]/).map((s: string) => s.trim()).filter(Boolean)
         : []);
-
-  if (!Array.isArray(rawCharacter) && rawCharacter) {
-    console.log('[PetCard] normalized character to array', characterList);
-  }
 
   const mainPhotoUri: string = (pet.mainPhoto ?? '').trim().length > 0
     ? pet.mainPhoto
@@ -59,6 +55,7 @@ const PetCard: React.FC<PetCardProps> = ({
   };
   
   const getAge = () => {
+    if (!pet.dateOfBirth) return '';
     const birthDate = new Date(pet.dateOfBirth);
     const today = new Date();
     
@@ -77,6 +74,9 @@ const PetCard: React.FC<PetCardProps> = ({
     
     return `${age} year${age !== 1 ? 's' : ''}`;
   };
+
+  // Use RNImage for Web to ensure compatibility if expo-image has issues
+  const ImageComponent = Platform.OS === 'web' ? RNImage : Image;
   
   return (
     <TouchableOpacity
@@ -95,10 +95,11 @@ const PetCard: React.FC<PetCardProps> = ({
           pet.gender === 'male' ? SHADOWS.liquidGlass : SHADOWS.liquidGlassFemale,
         ]}
       >
-        <Image
+        <ImageComponent
           source={{ uri: mainPhotoUri }}
-          style={styles.image}
+          style={styles.image as any}
           contentFit="cover"
+          resizeMode="cover"
           transition={200}
         />
         
