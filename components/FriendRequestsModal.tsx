@@ -14,6 +14,7 @@ import { User, FriendRequest } from '@/types';
 import { X, Check, XCircle } from 'lucide-react-native';
 import { useFriends } from '@/hooks/friends-store';
 import { databaseService } from '@/services/database';
+import GlassView from '@/components/GlassView';
 
 interface FriendRequestItem extends FriendRequest {
   senderInfo?: User;
@@ -144,7 +145,7 @@ export default function FriendRequestsModal({ visible, onClose }: FriendRequests
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
+        <GlassView intensity={95} liquidGlass tint="light" style={styles.modalContainer}>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>
               Demandes d&apos;amis ({pendingRequests.length})
@@ -174,7 +175,7 @@ export default function FriendRequestsModal({ visible, onClose }: FriendRequests
               <Text style={styles.emptyText}>Aucune nouvelle demande d&apos;ami</Text>
             </View>
           )}
-        </View>
+        </GlassView>
       </View>
     </Modal>
   );
@@ -183,15 +184,14 @@ export default function FriendRequestsModal({ visible, onClose }: FriendRequests
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(168, 85, 247, 0.2)',
     justifyContent: 'flex-end',
   },
   modalContainer: {
-    backgroundColor: COLORS.white,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '80%',
-    ...SHADOWS.large,
+    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.lightGray,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   headerTitle: {
     fontSize: 20,
@@ -216,10 +216,12 @@ const styles = StyleSheet.create({
   requestItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   avatar: {
     width: 50,

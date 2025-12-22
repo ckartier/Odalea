@@ -9,8 +9,9 @@ import {
   Alert,
   TextInput,
 } from 'react-native';
-import { COLORS, SHADOWS } from '@/constants/colors';
+import { COLORS } from '@/constants/colors';
 import Button from '@/components/Button';
+import GlassView from '@/components/GlassView';
 import { X, CreditCard, Smartphone, Wallet } from 'lucide-react-native';
 
 interface PaymentModalProps {
@@ -153,10 +154,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="pageSheet"
+      transparent
       onRequestClose={handleClose}
     >
-      <View style={styles.container}>
+      <View style={styles.overlay}>
+        <GlassView intensity={95} liquidGlass tint="light" style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>Payment</Text>
           <TouchableOpacity
@@ -304,15 +306,24 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             testID="pay-continue"
           />
         </View>
+        </GlassView>
       </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  overlay: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: 'rgba(168, 85, 247, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  container: {
+    width: '90%',
+    maxHeight: '85%',
+    borderRadius: 24,
+    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
@@ -322,7 +333,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.mediumGray,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   title: {
     fontSize: 20,
@@ -333,7 +344,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -342,11 +353,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   summaryContainer: {
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
     borderRadius: 12,
     padding: 16,
     marginTop: 20,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   summaryTitle: {
     fontSize: 16,
@@ -383,13 +396,13 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   input: {
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: COLORS.mediumGray,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
     color: COLORS.black,
   },
   inputError: {
@@ -422,23 +435,22 @@ const styles = StyleSheet.create({
   paymentMethod: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 2,
-    borderColor: COLORS.mediumGray,
-    ...SHADOWS.small,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   selectedPaymentMethod: {
-    borderColor: COLORS.maleAccent,
-    backgroundColor: COLORS.lightGray,
+    borderColor: '#A855F7',
+    backgroundColor: 'rgba(168, 85, 247, 0.2)',
   },
   methodIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -473,8 +485,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 32,
     borderTopWidth: 1,
-    borderTopColor: COLORS.mediumGray,
-    ...SHADOWS.large,
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
   },
   payButton: {
     marginTop: 8,

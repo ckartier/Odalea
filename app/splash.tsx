@@ -1,10 +1,9 @@
 import React, { useEffect, useRef } from 'react';
-import { StyleSheet, View, Animated, Dimensions } from 'react-native';
+import { StyleSheet, View, Animated, Dimensions, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { DIMENSIONS } from '@/constants/colors';
-import Logo from '@/components/Logo';
 import { useAuth } from '@/hooks/auth-store';
 import { useI18n } from '@/hooks/i18n-store';
 
@@ -124,8 +123,9 @@ export default function SplashScreen() {
   const particle2Y = particle2.interpolate({ inputRange: [0, 1], outputRange: [height * 0.3, height] });
   const particle3Y = particle3.interpolate({ inputRange: [0, 1], outputRange: [height * 0.8, -50] });
 
-  const COLOR_A = '#C8D8E8' as const;
-  const COLOR_B = '#E8C8D8' as const;
+  const COLOR_A = '#FFB3E6' as const;
+  const COLOR_B = '#A855F7' as const;
+  const COLOR_C = '#60A5FA' as const;
   const topOpacity = gradientAnim;
   const bottomOpacity = gradientAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
 
@@ -135,7 +135,7 @@ export default function SplashScreen() {
 
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: bottomOpacity }]}>
         <LinearGradient
-          colors={[COLOR_A, COLOR_B]}
+          colors={[COLOR_A, COLOR_B, COLOR_C]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
@@ -143,7 +143,7 @@ export default function SplashScreen() {
       </Animated.View>
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: topOpacity }]}>
         <LinearGradient
-          colors={[COLOR_B, COLOR_A]}
+          colors={[COLOR_C, COLOR_B, COLOR_A]}
           start={{ x: 1, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={StyleSheet.absoluteFill}
@@ -185,7 +185,11 @@ export default function SplashScreen() {
         style={[styles.content, { opacity: fadeAnim, transform: [{ scale: Animated.multiply(scaleAnim, pulseAnim) }, { translateY: slideAnim }] }]}
       >
         <Animated.View testID="splash-logo" style={[styles.logoContainer, { transform: [{ scale: pulseAnim }] }]}>
-          <Logo size="large" animated={false} showText={false} />
+          <Image
+            source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/a2k5bslyqhaly2a9nocjw' }}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
         </Animated.View>
 
         <Animated.View
@@ -293,18 +297,26 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   logoContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    borderRadius: 50,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 60,
     padding: DIMENSIONS.SPACING.xl,
     backdropFilter: 'blur(30px)',
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
-    shadowColor: 'rgba(0, 0, 0, 0.2)',
-    shadowOffset: { width: 0, height: 15 },
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: 'rgba(138, 43, 226, 0.3)',
+    shadowOffset: { width: 0, height: 20 },
     shadowOpacity: 1,
-    shadowRadius: 30,
-    elevation: 15,
+    shadowRadius: 40,
+    elevation: 20,
     marginBottom: DIMENSIONS.SPACING.lg,
+    width: 200,
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoImage: {
+    width: 140,
+    height: 140,
   },
   titleContainer: {
     alignItems: 'center',
