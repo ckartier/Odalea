@@ -60,7 +60,8 @@
     "react-native-web": "^0.21.0",
     "superjson": "^2.2.2",
     "zod": "^4.0.5",
-    "zustand": "^5.0.2"
+    "zustand": "^5.0.2",
+    "@rork-ai/toolkit-sdk": "0.2.51"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
