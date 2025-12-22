@@ -1,9 +1,8 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator, setPersistence, browserLocalPersistence } from 'firebase/auth';
-import { initializeFirestore, connectFirestoreEmulator, enableNetwork, disableNetwork, setLogLevel, persistentLocalCache } from 'firebase/firestore';
+import { initializeFirestore, connectFirestoreEmulator, enableNetwork, disableNetwork, setLogLevel, persistentLocalCache, type Firestore } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Secure Firebase configuration using environment variables
 // Use platform-specific App ID
@@ -64,28 +63,27 @@ if (Platform.OS === 'web') {
   } catch (e) {
     console.warn('⚠️ setPersistence threw (web):', (e as any)?.message ?? String(e));
   }
-} else {
-  try {
-    const rnAuth = require('firebase/auth/react-native');
-    const getReactNativePersistence: ((storage: typeof AsyncStorage) => any) | undefined = rnAuth?.getReactNativePersistence;
-    if (getReactNativePersistence) {
-      setPersistence(auth, getReactNativePersistence(AsyncStorage))
-        .then(() => console.log('🔐 Auth persistence set to React Native AsyncStorage'))
-        .catch((e: unknown) => console.warn('⚠️ Failed to set native auth persistence:', (e as any)?.message ?? String(e)));
-    } else {
-      console.warn('⚠️ getReactNativePersistence not available, using in-memory persistence');
-    }
-  } catch (e) {
-    console.warn('⚠️ setPersistence threw (native):', (e as any)?.message ?? String(e));
-  }
 }
-const db = initializeFirestore(
-  app,
-  {
-    ignoreUndefinedProperties: true,
-    localCache: persistentLocalCache(),
-  },
-);
+let db: Firestore;
+try {
+  db = initializeFirestore(
+    app,
+    {
+      ignoreUndefinedProperties: true,
+      localCache: persistentLocalCache(),
+    },
+  );
+  console.log('🔥 Firestore initialized with persistent cache');
+} catch (error: any) {
+  console.warn('⚠️ Failed to initialize Firestore with persistent cache:', error?.message);
+  db = initializeFirestore(
+    app,
+    {
+      ignoreUndefinedProperties: true,
+    },
+  );
+  console.log('🔥 Firestore initialized without persistent cache');
+}
 // Persistence configured via persistentLocalCache above to avoid runtime conflicts
 const storage = getStorage(app);
 
