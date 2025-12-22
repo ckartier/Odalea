@@ -9,15 +9,15 @@ import {
 } from './responsive';
 
 export const COLORS = {
-  primary: '#000000',
-  primaryDark: '#1F2937',
-  primaryLight: '#6B7280',
-  secondary: '#EC4899',
-  secondaryDark: '#DB2777',
-  secondaryLight: '#F9A8D4',
-  accent: '#1EAAD6',
-  accentDark: '#1583A2',
-  accentLight: '#7DD4EE',
+  primary: '#A855F7',
+  primaryDark: '#9333EA',
+  primaryLight: '#C084FC',
+  secondary: '#FFB3E6',
+  secondaryDark: '#EC4899',
+  secondaryLight: '#FDE2F3',
+  accent: '#60A5FA',
+  accentDark: '#3B82F6',
+  accentLight: '#DBEAFE',
   
   male: '#6BB6FF',
   maleVivid: '#4A9FFF',
@@ -55,8 +55,8 @@ export const COLORS = {
   found: '#059669',
   available: '#10B981',
   busy: '#F59E0B',
-  premium: '#000000',
-  catSitter: '#EC4899',
+  premium: '#A855F7',
+  catSitter: '#FFB3E6',
   
   transparent: 'transparent',
   shadow: 'rgba(15, 23, 42, 0.08)',
@@ -162,21 +162,21 @@ export const SHADOWS = {
 };
 
 export const GRADIENTS = {
-  primary: ['#000000', '#1F2937'] as const,
+  primary: ['#FFB3E6', '#A855F7', '#60A5FA'] as const,
   secondary: ['#EC4899', '#F97316'] as const,
-  accent: ['#06B6D4', '#3B82F6'] as const,
+  accent: ['#60A5FA', '#3B82F6'] as const,
   success: ['#10B981', '#059669'] as const,
-  premium: ['#000000', '#374151'] as const,
+  premium: ['#A855F7', '#9333EA'] as const,
   sunset: ['#F59E0B', '#EF4444'] as const,
-  ocean: ['#06B6D4', '#0891B2'] as const,
+  ocean: ['#60A5FA', '#3B82F6'] as const,
   forest: ['#059669', '#047857'] as const,
   liquidMale: ['#6BB6FF', '#4A9FFF'] as const,
-  liquidFemale: ['#C084FC', '#A855F7'] as const,
+  liquidFemale: ['#FFB3E6', '#C084FC', '#A855F7'] as const,
   liquidNeutral: ['#E0F2FE', '#BAE6FD'] as const,
-  onboarding: ['#E8B4D4', '#C8A2C8', '#A8B4D8'] as const,
-  appBackground: ['#E8B4D4', '#C8A2C8', '#A8B4D8'] as const,
+  onboarding: ['#FFB3E6', '#C084FC', '#A855F7', '#60A5FA'] as const,
+  appBackground: ['#FFB3E6', '#C084FC', '#A855F7', '#60A5FA'] as const,
   maleBackground: ['#A8D5FF', '#6BB6FF', '#4A9FFF'] as const,
-  femaleBackground: ['#E8B4D4', '#C8A2C8', '#A8B4D8'] as const,
+  femaleBackground: ['#FFB3E6', '#C084FC', '#A855F7'] as const,
 };
 
 export const DIMENSIONS = {

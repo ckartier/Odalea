@@ -96,7 +96,7 @@ const Logo: React.FC<LogoProps> = ({
   });
 
   // Use the new dark mode dog logo
-  const logoSource = { uri: 'https://r2-pub.rork.com/attachments/70gsljtqqh31y212zvjny' };
+  const logoSource = { uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/rgm7wtrf87gkgu9vbob7g' };
   
   return (
     <View style={[styles.container, style]}>
@@ -141,14 +141,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoContainer: {
-    backgroundColor: COLORS.white,
+    backgroundColor: 'transparent',
     borderRadius: 999,
     marginBottom: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
   iconImage: {
-    borderRadius: 999,
+    borderRadius: 0,
   },
   text: {
     fontWeight: '700' as const,

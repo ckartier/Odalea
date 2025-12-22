@@ -18,7 +18,7 @@ export default function AppBackground({ children, variant }: AppBackgroundProps)
     return userPets.find(pet => pet.isPrimary) || userPets[0];
   }, [userPets]);
   
-  const getGradientColors = (): readonly [string, string, string] => {
+  const getGradientColors = (): readonly string[] => {
     if (isDark) {
       return [currentTheme.background, currentTheme.card, currentTheme.background] as const;
     }
@@ -38,7 +38,7 @@ export default function AppBackground({ children, variant }: AppBackgroundProps)
   return (
     <View style={styles.root}>
       <LinearGradient
-        colors={getGradientColors()}
+        colors={getGradientColors() as any}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}

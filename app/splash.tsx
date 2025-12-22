@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { StyleSheet, View, Animated, Dimensions, Image } from 'react-native';
+import { StyleSheet, View, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -7,7 +7,7 @@ import { DIMENSIONS } from '@/constants/colors';
 import { useAuth } from '@/hooks/auth-store';
 import { useI18n } from '@/hooks/i18n-store';
 
-const { width, height } = Dimensions.get('window');
+
 
 export default function SplashScreen() {
   const router = useRouter();
@@ -25,10 +25,6 @@ export default function SplashScreen() {
   const float3 = useRef(new Animated.Value(0)).current;
   const float4 = useRef(new Animated.Value(0)).current;
   const float5 = useRef(new Animated.Value(0)).current;
-
-  const particle1 = useRef(new Animated.Value(0)).current;
-  const particle2 = useRef(new Animated.Value(0)).current;
-  const particle3 = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const logoAnimation = Animated.sequence([
@@ -68,11 +64,7 @@ export default function SplashScreen() {
       ])),
     ];
 
-    const particleAnimations = [
-      Animated.loop(Animated.timing(particle1, { toValue: 1, duration: 6000, useNativeDriver: true })),
-      Animated.loop(Animated.timing(particle2, { toValue: 1, duration: 8000, useNativeDriver: true })),
-      Animated.loop(Animated.timing(particle3, { toValue: 1, duration: 7000, useNativeDriver: true })),
-    ];
+
 
     const gradientLoop = Animated.loop(
       Animated.sequence([
@@ -83,7 +75,6 @@ export default function SplashScreen() {
 
     logoAnimation.start();
     floatingAnimations.forEach((anim) => anim.start());
-    particleAnimations.forEach((anim) => anim.start());
     gradientLoop.start();
 
     const timer = setTimeout(() => {
@@ -104,10 +95,9 @@ export default function SplashScreen() {
       clearTimeout(timer);
       logoAnimation.stop();
       floatingAnimations.forEach((anim) => anim.stop());
-      particleAnimations.forEach((anim) => anim.stop());
       gradientLoop.stop();
     };
-  }, [user, i18nLoading, fadeAnim, scaleAnim, slideAnim, pulseAnim, float1, float2, float3, float4, float5, particle1, particle2, particle3, router, gradientAnim]);
+  }, [user, i18nLoading, fadeAnim, scaleAnim, slideAnim, pulseAnim, float1, float2, float3, float4, float5, router, gradientAnim]);
 
   const float1Y = float1.interpolate({ inputRange: [0, 1], outputRange: [0, -30] });
   const float2Y = float2.interpolate({ inputRange: [0, 1], outputRange: [0, 20] });
@@ -115,17 +105,10 @@ export default function SplashScreen() {
   const float4Y = float4.interpolate({ inputRange: [0, 1], outputRange: [0, 25] });
   const float5Y = float5.interpolate({ inputRange: [0, 1], outputRange: [0, -20] });
 
-  const particle1X = particle1.interpolate({ inputRange: [0, 1], outputRange: [0, width] });
-  const particle2X = particle2.interpolate({ inputRange: [0, 1], outputRange: [width, -50] });
-  const particle3X = particle3.interpolate({ inputRange: [0, 1], outputRange: [0, width * 0.8] });
-
-  const particle1Y = particle1.interpolate({ inputRange: [0, 1], outputRange: [height, -50] });
-  const particle2Y = particle2.interpolate({ inputRange: [0, 1], outputRange: [height * 0.3, height] });
-  const particle3Y = particle3.interpolate({ inputRange: [0, 1], outputRange: [height * 0.8, -50] });
-
   const COLOR_A = '#FFB3E6' as const;
-  const COLOR_B = '#A855F7' as const;
-  const COLOR_C = '#60A5FA' as const;
+  const COLOR_B = '#C084FC' as const;
+  const COLOR_C = '#A855F7' as const;
+  const COLOR_D = '#60A5FA' as const;
   const topOpacity = gradientAnim;
   const bottomOpacity = gradientAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
 
@@ -135,31 +118,48 @@ export default function SplashScreen() {
 
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: bottomOpacity }]}>
         <LinearGradient
-          colors={[COLOR_A, COLOR_B, COLOR_C]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          colors={[COLOR_A, COLOR_B, COLOR_C, COLOR_D]}
+          locations={[0, 0.35, 0.65, 1]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
       </Animated.View>
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: topOpacity }]}>
         <LinearGradient
-          colors={[COLOR_C, COLOR_B, COLOR_A]}
-          start={{ x: 1, y: 0 }}
-          end={{ x: 0, y: 1 }}
+          colors={[COLOR_C, COLOR_B, COLOR_A, COLOR_D]}
+          locations={[0, 0.35, 0.65, 1]}
+          start={{ x: 0.5, y: 1 }}
+          end={{ x: 0.5, y: 0 }}
           style={StyleSheet.absoluteFill}
         />
       </Animated.View>
 
       <View style={styles.particleContainer}>
-        <Animated.View
-          style={[styles.particle, styles.particle1, { transform: [{ translateX: particle1X }, { translateY: particle1Y }, { rotate: '45deg' }] }]}
-        />
-        <Animated.View
-          style={[styles.particle, styles.particle2, { transform: [{ translateX: particle2X }, { translateY: particle2Y }, { rotate: '-30deg' }] }]}
-        />
-        <Animated.View
-          style={[styles.particle, styles.particle3, { transform: [{ translateX: particle3X }, { translateY: particle3Y }, { rotate: '60deg' }] }]}
-        />
+        {[...Array(20)].map((_, i) => (
+          <Animated.View
+            key={i}
+            style={[
+              styles.sparkle,
+              {
+                left: `${(i * 17 + 10) % 90}%`,
+                top: `${(i * 23 + 15) % 85}%`,
+                opacity: fadeAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, (0.3 + (i % 5) * 0.15)],
+                }),
+                transform: [
+                  {
+                    scale: pulseAnim.interpolate({
+                      inputRange: [1, 1.1],
+                      outputRange: [0.5 + (i % 4) * 0.25, 1 + (i % 4) * 0.25],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          />
+        ))}
       </View>
 
       <View style={styles.backgroundPattern}>
@@ -184,10 +184,38 @@ export default function SplashScreen() {
         testID="splash-content"
         style={[styles.content, { opacity: fadeAnim, transform: [{ scale: Animated.multiply(scaleAnim, pulseAnim) }, { translateY: slideAnim }] }]}
       >
-        <Animated.View testID="splash-logo" style={[styles.logoContainer, { transform: [{ scale: pulseAnim }] }]}>
-          <Image
-            source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/a2k5bslyqhaly2a9nocjw' }}
-            style={styles.logoImage}
+        <Animated.View 
+          testID="splash-logo" 
+          style={[
+            styles.logoContainer, 
+            { 
+              transform: [
+                { scale: pulseAnim },
+                { 
+                  rotateY: pulseAnim.interpolate({
+                    inputRange: [1, 1.05, 1.1],
+                    outputRange: ['0deg', '5deg', '0deg'],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <Animated.Image
+            source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/rgm7wtrf87gkgu9vbob7g' }}
+            style={[
+              styles.logoImage,
+              {
+                transform: [
+                  {
+                    scale: pulseAnim.interpolate({
+                      inputRange: [1, 1.1],
+                      outputRange: [1, 1.05],
+                    }),
+                  },
+                ],
+              },
+            ]}
             resizeMode="contain"
           />
         </Animated.View>
@@ -219,28 +247,16 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 0,
   },
-  particle: {
+  sparkle: {
     position: 'absolute',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 4,
-  },
-  particle1: {
-    width: 8,
-    height: 8,
-    left: -50,
-    top: height + 50,
-  },
-  particle2: {
-    width: 6,
-    height: 6,
-    right: -50,
-    top: height * 0.3,
-  },
-  particle3: {
-    width: 10,
-    height: 10,
-    left: -50,
-    top: height * 0.8,
+    width: 4,
+    height: 4,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 2,
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
   },
   backgroundPattern: {
     position: 'absolute',
@@ -252,10 +268,9 @@ const styles = StyleSheet.create({
   },
   floatingElement: {
     position: 'absolute',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    backdropFilter: 'blur(20px)',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   element1: {
     width: 120,
@@ -297,40 +312,39 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   logoContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 80,
     padding: DIMENSIONS.SPACING.xl,
-    backdropFilter: 'blur(30px)',
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    shadowColor: 'rgba(138, 43, 226, 0.3)',
-    shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 1,
-    shadowRadius: 40,
-    elevation: 20,
-    marginBottom: DIMENSIONS.SPACING.lg,
-    width: 200,
-    height: 200,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+    shadowColor: '#A855F7',
+    shadowOffset: { width: 0, height: 30 },
+    shadowOpacity: 0.4,
+    shadowRadius: 50,
+    elevation: 25,
+    marginBottom: DIMENSIONS.SPACING.xl,
+    width: 280,
+    height: 280,
     justifyContent: 'center',
     alignItems: 'center',
   },
   logoImage: {
-    width: 140,
-    height: 140,
+    width: 220,
+    height: 220,
   },
   titleContainer: {
     alignItems: 'center',
     marginTop: DIMENSIONS.SPACING.sm,
   },
   appTitle: {
-    fontSize: 42,
-    fontWeight: '800' as const,
-    letterSpacing: 2,
+    fontSize: 56,
+    fontWeight: '700' as const,
+    letterSpacing: 3,
     textAlign: 'center',
     color: '#ffffff',
-    textShadowColor: 'rgba(0, 0, 0, 0.25)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
+    textShadowColor: 'rgba(168, 85, 247, 0.5)',
+    textShadowOffset: { width: 0, height: 4 },
+    textShadowRadius: 12,
     marginBottom: DIMENSIONS.SPACING.xs,
   },
 
