@@ -67,6 +67,8 @@ export interface User {
   theme?: 'light' | 'dark' | 'system';
   privacySettings?: PrivacySettings;
   notificationSettings?: NotificationSettings;
+  pushToken?: string;
+  pushTokenUpdatedAt?: string;
 }
 
 export type ProfessionalActivityType = 'vet' | 'shelter' | 'breeder' | 'boutique';

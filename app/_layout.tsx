@@ -22,6 +22,7 @@ import { UnifiedMessagingContext } from "@/hooks/unified-messaging-store";
 import { FirebaseUserContext } from "@/hooks/firebase-user-store";
 import { SocialContext } from "@/hooks/social-store";
 import { FriendsContext } from "@/hooks/friends-store";
+import { MatchingContext } from "@/hooks/matching-store";
 import { trpc, trpcClient } from "@/lib/trpc";
 import AppBackground from "@/components/AppBackground";
 import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
@@ -100,6 +101,7 @@ const RootLayoutNav = React.memo(() => {
       <Stack.Screen name="users" options={{ headerShown: true }} />
       <Stack.Screen name="firestore-collections" options={{ headerShown: true }} />
       <Stack.Screen name="firebase-seed-challenges" options={{ headerShown: true }} />
+      <Stack.Screen name="matching" options={{ headerShown: false }} />
     </Stack>
   );
 });
@@ -114,31 +116,33 @@ const AppProviders = React.memo(({ children }: { children: React.ReactNode }) =>
         <NotificationsProvider>
           <EmergencyContext>
             <PetsContext>
-              <ThemeContext>
-                <LostFoundContext>
-                  <BookingContext>
-                    <ChallengesContext>
-                      <PremiumContext>
-                        <CatSitterContext>
-                          <MessagingContext>
-                            <UnifiedMessagingContext>
-                              <SocialContext>
-                                <FriendsContext>
-                                  <ShopContext>
-                                    <BadgesContext>
-                                      {children}
-                                    </BadgesContext>
-                                  </ShopContext>
-                                </FriendsContext>
-                              </SocialContext>
-                            </UnifiedMessagingContext>
-                          </MessagingContext>
-                        </CatSitterContext>
-                      </PremiumContext>
-                    </ChallengesContext>
-                  </BookingContext>
-                </LostFoundContext>
-              </ThemeContext>
+              <MatchingContext>
+                <ThemeContext>
+                  <LostFoundContext>
+                    <BookingContext>
+                      <ChallengesContext>
+                        <PremiumContext>
+                          <CatSitterContext>
+                            <MessagingContext>
+                              <UnifiedMessagingContext>
+                                <SocialContext>
+                                  <FriendsContext>
+                                    <ShopContext>
+                                      <BadgesContext>
+                                        {children}
+                                      </BadgesContext>
+                                    </ShopContext>
+                                  </FriendsContext>
+                                </SocialContext>
+                              </UnifiedMessagingContext>
+                            </MessagingContext>
+                          </CatSitterContext>
+                        </PremiumContext>
+                      </ChallengesContext>
+                    </BookingContext>
+                  </LostFoundContext>
+                </ThemeContext>
+              </MatchingContext>
             </PetsContext>
           </EmergencyContext>
         </NotificationsProvider>

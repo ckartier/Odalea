@@ -17,9 +17,6 @@ import {
   arrayRemove,
   serverTimestamp,
   onSnapshot,
-  DocumentSnapshot,
-  QuerySnapshot,
-  Timestamp,
   runTransaction
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -85,7 +82,12 @@ const COLLECTIONS = {
   ANIMAL_SPECIES: 'animalSpecies',
   ANIMAL_BREEDS: 'animalBreeds',
   // Cat-sitting
-  PET_SITTER_PROFILES: 'petSitterProfiles'
+  PET_SITTER_PROFILES: 'petSitterProfiles',
+  
+  // Pet Matching
+  PET_LIKES: 'petLikes',
+  PET_MATCHES: 'petMatches',
+  PET_PASSES: 'petPasses'
 } as const;
 
 // User Management
@@ -361,7 +363,7 @@ const mockDataHelpers = {
 const isFirebaseAvailable = () => {
   try {
     return !!db && !!storage;
-  } catch (error) {
+  } catch {
     return false;
   }
 };
@@ -1241,7 +1243,6 @@ export const lostFoundService = {
       const reportRef = doc(db, COLLECTIONS.LOST_FOUND_REPORTS, reportId);
       const reportSnap = await getDoc(reportRef);
       if (!reportSnap.exists()) throw new Error('Report not found');
-      const current = reportSnap.data() as any;
       const newResponse = { ...response, id: `${Date.now()}`, createdAt: new Date().toISOString(), reportId };
       await updateDoc(reportRef, {
         responses: arrayUnion(newResponse),
@@ -1927,7 +1928,7 @@ export const challengeService = {
   },
 
   // Build leaderboard from userChallenges
-  async getLeaderboard(): Promise<Array<{ userId: string; totalPoints: number }>> {
+  async getLeaderboard(): Promise<{ userId: string; totalPoints: number }[]> {
     try {
       const refCol = collection(db, COLLECTIONS.USER_CHALLENGES);
       const qs = await getDocs(refCol);
@@ -1944,7 +1945,7 @@ export const challengeService = {
     } catch (e) {
       if (isPermissionDenied(e)) {
         console.warn('🔒 getLeaderboard permission-denied; returning empty leaderboard');
-        return [] as Array<{ userId: string; totalPoints: number }>;
+        return [] as { userId: string; totalPoints: number }[];
       }
       console.error('❌ Error building leaderboard (unexpected):', e);
       throw e;
@@ -2424,6 +2425,175 @@ export const emergencyService = {
   }
 };
 
+// Pet Matching Service
+export const petMatchingService = {
+  // Like a pet
+  async likePet(fromPetId: string, toPetId: string, userId: string): Promise<{ matched: boolean; matchId?: string }> {
+    try {
+      const likeRef = doc(db, COLLECTIONS.PET_LIKES, `${fromPetId}_${toPetId}`);
+      await setDoc(likeRef, {
+        fromPetId,
+        toPetId,
+        userId,
+        createdAt: serverTimestamp()
+      });
+
+      // Check if the other pet already liked this pet
+      const reverseLikeRef = doc(db, COLLECTIONS.PET_LIKES, `${toPetId}_${fromPetId}`);
+      const reverseLikeSnap = await getDoc(reverseLikeRef);
+
+      if (reverseLikeSnap.exists()) {
+        // It's a match!
+        const matchId = [fromPetId, toPetId].sort().join('_');
+        const matchRef = doc(db, COLLECTIONS.PET_MATCHES, matchId);
+        
+        await setDoc(matchRef, {
+          petIds: [fromPetId, toPetId],
+          createdAt: serverTimestamp(),
+          lastMessageAt: null,
+          messageCount: 0
+        });
+
+        console.log('🎉 Pet match created!');
+        return { matched: true, matchId };
+      }
+
+      return { matched: false };
+    } catch (error) {
+      console.error('❌ Error liking pet:', error);
+      throw error;
+    }
+  },
+
+  // Pass a pet
+  async passPet(fromPetId: string, toPetId: string): Promise<void> {
+    try {
+      const passRef = doc(db, COLLECTIONS.PET_PASSES, `${fromPetId}_${toPetId}`);
+      await setDoc(passRef, {
+        fromPetId,
+        toPetId,
+        createdAt: serverTimestamp()
+      });
+      console.log('✅ Pet passed');
+    } catch (error) {
+      console.error('❌ Error passing pet:', error);
+      throw error;
+    }
+  },
+
+  // Get matches for a pet
+  async getPetMatches(petId: string): Promise<any[]> {
+    try {
+      const matchesRef = collection(db, COLLECTIONS.PET_MATCHES);
+      const q = query(
+        matchesRef,
+        where('petIds', 'array-contains', petId),
+        orderBy('createdAt', 'desc')
+      );
+      
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    } catch (error) {
+      console.error('❌ Error getting pet matches:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty matches due to permission rules');
+        return [];
+      }
+      throw error;
+    }
+  },
+
+  // Get discovery pets (exclude already liked/passed)
+  async getDiscoveryPets(petId: string, limitCount = 20): Promise<any[]> {
+    try {
+      // Get all pets
+      const petsRef = collection(db, COLLECTIONS.PETS);
+      const q = query(petsRef, limit(limitCount + 50));
+      const querySnapshot = await getDocs(q);
+      const allPets = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      // Get already liked pets
+      const likesRef = collection(db, COLLECTIONS.PET_LIKES);
+      const likesQuery = query(
+        likesRef,
+        where('fromPetId', '==', petId)
+      );
+      const likesSnapshot = await getDocs(likesQuery);
+      const likedPetIds = new Set(likesSnapshot.docs.map(doc => doc.data().toPetId));
+
+      // Get already passed pets
+      const passesRef = collection(db, COLLECTIONS.PET_PASSES);
+      const passesQuery = query(
+        passesRef,
+        where('fromPetId', '==', petId)
+      );
+      const passesSnapshot = await getDocs(passesQuery);
+      const passedPetIds = new Set(passesSnapshot.docs.map(doc => doc.data().toPetId));
+
+      // Filter out current pet, liked, and passed pets
+      const discoveryPets = allPets
+        .filter(pet => 
+          pet.id !== petId && 
+          !likedPetIds.has(pet.id) && 
+          !passedPetIds.has(pet.id)
+        )
+        .slice(0, limitCount);
+
+      return discoveryPets;
+    } catch (error) {
+      console.error('❌ Error getting discovery pets:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty discovery pets due to permission rules');
+        return [];
+      }
+      throw error;
+    }
+  },
+
+  // Unmatch pets
+  async unmatchPets(matchId: string): Promise<void> {
+    try {
+      const matchRef = doc(db, COLLECTIONS.PET_MATCHES, matchId);
+      await deleteDoc(matchRef);
+      console.log('✅ Pets unmatched');
+    } catch (error) {
+      console.error('❌ Error unmatching pets:', error);
+      throw error;
+    }
+  },
+
+  // Get likes for a pet
+  async getPetLikes(petId: string): Promise<any[]> {
+    try {
+      const likesRef = collection(db, COLLECTIONS.PET_LIKES);
+      const q = query(
+        likesRef,
+        where('toPetId', '==', petId),
+        orderBy('createdAt', 'desc')
+      );
+      
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    } catch (error) {
+      console.error('❌ Error getting pet likes:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty likes due to permission rules');
+        return [];
+      }
+      throw error;
+    }
+  }
+};
+
 // Export all services
 export const databaseService = {
   user: userService,
@@ -2448,6 +2618,7 @@ export const databaseService = {
   health: healthService,
   review: reviewService,
   emergency: emergencyService,
+  petMatching: petMatchingService,
 };
 
 export default databaseService;
