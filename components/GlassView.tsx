@@ -66,7 +66,7 @@ export default function GlassView({
               left: 0,
               right: 0,
               bottom: 0,
-              background: `linear-gradient(135deg, ${webGradient[0]}, ${webGradient[1]})`,
+              backgroundImage: `linear-gradient(135deg, ${webGradient[0]}, ${webGradient[1]})`,
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
               borderRadius: 20,

@@ -78,7 +78,7 @@ export default function GlassCard({
               left: 0,
               right: 0,
               bottom: 0,
-              background: `linear-gradient(135deg, ${gradientColors[0]}, ${gradientColors[1]})`,
+              backgroundImage: `linear-gradient(135deg, ${gradientColors[0]}, ${gradientColors[1]})`,
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
             }}
