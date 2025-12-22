@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ViewStyle,
   Animated,
-  Easing,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SHADOWS } from '@/constants/colors';
@@ -21,8 +20,8 @@ interface GenderSelectorProps {
   style?: ViewStyle;
 }
 
-const MALE_GRADIENT_COLORS = ['#A3D5FF', '#6BA3D8'] as const;
-const FEMALE_GRADIENT_COLORS = ['#FFB6D9', '#FF8DC7'] as const;
+const MALE_GRADIENT_COLORS = ['#6BB6FF', '#4A9FFF'] as const;
+const FEMALE_GRADIENT_COLORS = ['#C084FC', '#A855F7'] as const;
 const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
 
@@ -65,7 +64,7 @@ const GenderSelector: React.FC<GenderSelectorProps> = ({
         }),
       ]).start();
     }
-  }, [value]);
+  }, [value, maleScale, femaleScale]);
 
   return (
     <View style={[styles.container, containerStyle, style]}>
