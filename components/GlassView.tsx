@@ -55,33 +55,49 @@ export default function GlassView({
           style={[
             styles.webLiquidGlass,
             liquidGlass && getShadow(),
-            {
+            { borderRadius: 20 },
+            style
+          ]}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
               background: `linear-gradient(135deg, ${webGradient[0]}, ${webGradient[1]})`,
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
               borderRadius: 20,
-            } as any,
-            style
-          ]}
-        >
-          {children}
+            }}
+          />
+          <View style={styles.webContent}>
+            {children}
+          </View>
         </View>
       );
     }
     return (
       <View 
         {...rest} 
-        style={[
-          styles.webGlass,
-          {
+        style={[styles.webGlass, { borderRadius: 16 }, style]}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             backdropFilter: 'blur(10px)',
             WebkitBackdropFilter: 'blur(10px)',
             borderRadius: 16,
-          } as any,
-          style
-        ]}
-      >
-        {children}
+          }}
+        />
+        <View style={styles.webContent}>
+          {children}
+        </View>
       </View>
     );
   }
@@ -130,11 +146,17 @@ const styles = StyleSheet.create({
     borderColor: COLORS.liquidGlassBorder,
     borderWidth: 1,
     overflow: 'hidden',
+    position: 'relative',
   },
   webLiquidGlass: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderColor: COLORS.liquidGlassBorder,
     borderWidth: 1,
     overflow: 'hidden',
+    position: 'relative',
+  },
+  webContent: {
+    position: 'relative',
+    zIndex: 1,
   },
 });
