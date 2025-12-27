@@ -9,7 +9,6 @@ import {
   StorageReference
 } from 'firebase/storage';
 import { Platform } from 'react-native';
-import * as FileSystem from 'expo-file-system/legacy';
 
 export interface UploadProgress {
   bytesTransferred: number;
@@ -24,8 +23,39 @@ export interface UploadOptions {
 
 export class StorageService {
   private static async uriToBlob(uri: string): Promise<Blob> {
+    console.log('📦 Converting URI to blob:', uri.substring(0, 50) + '...');
+    
+    if (Platform.OS !== 'web' && (uri.startsWith('file://') || uri.startsWith('content://'))) {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.onload = function () {
+          if (xhr.status === 200) {
+            console.log('✅ Blob created via XHR, size:', xhr.response?.size || 0);
+            resolve(xhr.response as Blob);
+          } else {
+            console.error('❌ XHR failed with status:', xhr.status);
+            reject(new Error(`XHR failed with status ${xhr.status}`));
+          }
+        };
+        xhr.onerror = function (e) {
+          console.error('❌ XHR error:', e);
+          reject(new Error('XHR network error'));
+        };
+        xhr.responseType = 'blob';
+        xhr.open('GET', uri, true);
+        xhr.send();
+      });
+    }
+    
+    console.log('📦 Using fetch for web/https URI');
     const response = await fetch(uri);
-    return await response.blob();
+    if (!response.ok) {
+      console.error('❌ Fetch failed:', response.status, response.statusText);
+      throw new Error(`Fetch failed: ${response.status} ${response.statusText}`);
+    }
+    const blob = await response.blob();
+    console.log('✅ Blob created via fetch, size:', blob.size);
+    return blob;
   }
 
   static async uploadImage(
@@ -34,10 +64,15 @@ export class StorageService {
     options?: UploadOptions
   ): Promise<string> {
     try {
-      console.log('📤 Uploading image to:', path);
+      console.log('📤 [UPLOAD START] Path:', path);
+      console.log('📤 [UPLOAD START] URI:', uri.substring(0, 100));
+      console.log('📤 [UPLOAD START] Platform:', Platform.OS);
       
       const blob = await this.uriToBlob(uri);
+      console.log('📤 [UPLOAD] Blob ready, size:', blob.size, 'type:', blob.type);
+      
       const storageRef = ref(storage, path);
+      console.log('📤 [UPLOAD] Storage ref created:', path);
 
       if (options?.onProgress) {
         const uploadTask = uploadBytesResumable(storageRef, blob, {
@@ -62,21 +97,42 @@ export class StorageService {
             },
             async () => {
               const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-              console.log('✅ Upload complete:', downloadURL);
+              console.log('✅ [UPLOAD SUCCESS] Download URL:', downloadURL);
+              if (!downloadURL.startsWith('https://')) {
+                console.warn('⚠️ [UPLOAD] URL is not https:', downloadURL);
+              }
               resolve(downloadURL);
             }
           );
         });
       } else {
+        console.log('📤 [UPLOAD] Starting uploadBytes...');
         const snapshot = await uploadBytes(storageRef, blob, {
           contentType: options?.contentType || 'image/jpeg',
         });
+        console.log('📤 [UPLOAD] uploadBytes complete, getting URL...');
         const downloadURL = await getDownloadURL(snapshot.ref);
-        console.log('✅ Upload complete:', downloadURL);
+        console.log('✅ [UPLOAD SUCCESS] Download URL:', downloadURL);
+        if (!downloadURL.startsWith('https://')) {
+          console.warn('⚠️ [UPLOAD] URL is not https:', downloadURL);
+        }
         return downloadURL;
       }
-    } catch (error) {
-      console.error('❌ Failed to upload image:', error);
+    } catch (error: any) {
+      console.error('❌ [UPLOAD FAILED] Error details:');
+      console.error('  - Message:', error?.message || 'Unknown error');
+      console.error('  - Code:', error?.code || 'N/A');
+      console.error('  - ServerResponse:', error?.serverResponse || 'N/A');
+      console.error('  - Stack:', error?.stack?.substring(0, 200));
+      
+      if (error?.code === 'storage/unauthorized') {
+        throw new Error('Accès refusé. Vérifiez les règles Firebase Storage.');
+      } else if (error?.code === 'storage/canceled') {
+        throw new Error('Upload annulé.');
+      } else if (error?.code === 'storage/unknown') {
+        throw new Error('Erreur inconnue. Vérifiez votre connexion et réessayez.');
+      }
+      
       throw error;
     }
   }

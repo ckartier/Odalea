@@ -29,6 +29,7 @@ import MapMarker from '@/components/MapMarker';
 import UserMarker from '@/components/UserMarker';
 import AdBanner from '@/components/AdBanner';
 import { Image } from 'expo-image';
+import { getPetImageUrl, DEFAULT_PET_PLACEHOLDER } from '@/lib/image-helpers';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { usePremium } from '@/hooks/premium-store';
 import { useI18n } from '@/hooks/i18n-store';
@@ -819,6 +820,7 @@ export default function MapScreen() {
             const left = Math.max(24, Math.min(width - 24, pos.left));
             const top = Math.max(24, Math.min(height - 24, pos.top));
             const markerColor = pet.gender === 'male' ? COLORS.male : COLORS.female;
+            const petImageUrl = getPetImageUrl(pet);
             return (
               <TouchableOpacity
                 key={`overlay-pet-${pet.id}`}
@@ -828,9 +830,9 @@ export default function MapScreen() {
                 testID={`pet-marker-${pet.id}`}
               >
                 <View style={[styles.webPetMarkerCircle, { backgroundColor: markerColor, borderColor: COLORS.white }]}>
-                  {pet.mainPhoto ? (
+                  {petImageUrl ? (
                     <img
-                      src={pet.mainPhoto}
+                      src={petImageUrl}
                       alt={pet.name}
                       style={{
                         width: 40,
@@ -1040,17 +1042,12 @@ export default function MapScreen() {
           >
             <View style={styles.petCardContentWrapper}>
               <View style={styles.petCardImageContainer}>
-                {selectedPet.mainPhoto ? (
-                  <Image
-                    source={{ uri: selectedPet.mainPhoto }}
-                    style={styles.petCardImage}
-                    contentFit="cover"
-                  />
-                ) : (
-                  <View style={styles.petCardImagePlaceholder}>
-                    <Text style={styles.petCardImageEmoji}>🐾</Text>
-                  </View>
-                )}
+                <Image
+                  source={{ uri: getPetImageUrl(selectedPet) || DEFAULT_PET_PLACEHOLDER }}
+                  style={styles.petCardImage}
+                  contentFit="cover"
+                  placeholder={require('@/assets/images/icon.png')}
+                />
                 <View style={[styles.petGenderBadge, { backgroundColor: selectedPet.gender === 'female' ? COLORS.female : COLORS.male }]}>
                   <Text style={styles.petGenderText}>{selectedPet.gender === 'female' ? '♀' : '♂'}</Text>
                 </View>

@@ -7,6 +7,7 @@ import { Menu } from 'lucide-react-native';
 import { usePets } from '@/hooks/pets-store';
 import { useAuth } from '@/hooks/auth-store';
 import { LinearGradient } from 'expo-linear-gradient';
+import { getPetImageUrl, getUserAvatarUrl } from '@/lib/image-helpers';
 
 
 interface TopBarProps {
@@ -59,8 +60,7 @@ const TopBar = React.memo(({ rightAction, onMenuPress, onBackPress }: TopBarProp
     router.push('/(tabs)/profile' as any);
   }, [router]);
 
-  const photoUri = primaryPet?.mainPhoto || user?.photo || user?.animalPhoto;
-  const displayName = primaryPet?.name || user?.animalName || user?.pseudo || user?.name || '';
+  const photoUri = getPetImageUrl(primaryPet) || getUserAvatarUrl(user);
 
   const Avatar = (
     <TouchableOpacity
@@ -70,19 +70,12 @@ const TopBar = React.memo(({ rightAction, onMenuPress, onBackPress }: TopBarProp
       testID="topbar-avatar"
       activeOpacity={0.85}
     >
-      {photoUri ? (
-        <Image
-          source={{ uri: photoUri }}
-          style={styles.avatarImage}
-          resizeMode="cover"
-        />
-      ) : (
-        <View style={styles.avatarFallback}>
-          <Text style={styles.avatarInitials}>
-            {displayName ? displayName.charAt(0).toUpperCase() : '🐾'}
-          </Text>
-        </View>
-      )}
+      <Image
+        source={{ uri: photoUri || 'https://via.placeholder.com/64' }}
+        style={styles.avatarImage}
+        resizeMode="cover"
+        defaultSource={require('@/assets/images/icon.png')}
+      />
     </TouchableOpacity>
   );
 

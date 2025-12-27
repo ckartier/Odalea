@@ -9,6 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { getPetImageUrl, DEFAULT_PET_PLACEHOLDER } from '@/lib/image-helpers';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
@@ -74,7 +75,7 @@ export default function PetProfileScreen() {
         }
       }
     }
-  }, [id, getPet, getPetOwner, user]);
+  }, [id, getPet, getPetOwner, user, router]);
   
   const handleSendMessage = () => {
     if (!pet || !user) return;
@@ -168,7 +169,11 @@ export default function PetProfileScreen() {
   }
   
   // All photos including main photo and gallery
-  const allPhotos = [pet.mainPhoto, ...pet.galleryPhotos];
+  const mainPhotoUrl = getPetImageUrl(pet);
+  const allPhotos = [
+    mainPhotoUrl || DEFAULT_PET_PLACEHOLDER,
+    ...(pet.galleryPhotos?.filter(url => url && url.startsWith('https://')) || [])
+  ].filter(Boolean);
   
   return (
     <View style={styles.container}>
@@ -192,9 +197,10 @@ export default function PetProfileScreen() {
         {/* Main Photo */}
         <View style={styles.photoContainer}>
           <Image
-            source={{ uri: allPhotos[currentPhotoIndex] }}
+            source={{ uri: allPhotos[currentPhotoIndex] || DEFAULT_PET_PLACEHOLDER }}
             style={styles.mainPhoto}
             contentFit="cover"
+            placeholder={require('@/assets/images/icon.png')}
           />
           
           {/* Photo Indicators */}
