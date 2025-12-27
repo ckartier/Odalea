@@ -1,4 +1,4 @@
-import { storage } from './firebase';
+import { storage, auth } from './firebase';
 import { 
   ref, 
   uploadBytes, 
@@ -68,9 +68,19 @@ export class StorageService {
       console.log('📤 [UPLOAD START] URI:', uri.substring(0, 100));
       console.log('📤 [UPLOAD START] Platform:', Platform.OS);
       
+      const currentUser = auth.currentUser;
+      console.log('👤 [UPLOAD] Current user:', currentUser?.uid || 'NOT AUTHENTICATED');
+      
+      if (!currentUser) {
+        throw new Error('Vous devez être connecté pour uploader des images');
+      }
+      
       if (!uri || uri.trim() === '') {
         throw new Error('URI is empty or invalid');
       }
+      
+      await currentUser.getIdToken(true);
+      console.log('🔑 [UPLOAD] Auth token refreshed');
       
       const blob = await this.uriToBlob(uri);
       console.log('📤 [UPLOAD] Blob ready, size:', blob.size, 'type:', blob.type);
@@ -82,6 +92,8 @@ export class StorageService {
       const storageRef = ref(storage, path);
       console.log('📤 [UPLOAD] Storage ref created:', path);
       console.log('📤 [UPLOAD] Storage bucket:', storage.app.options.storageBucket);
+      console.log('📤 [UPLOAD] Full path:', storageRef.fullPath);
+      console.log('📤 [UPLOAD] Bucket:', storageRef.bucket);
 
       if (options?.onProgress) {
         const uploadTask = uploadBytesResumable(storageRef, blob, {
@@ -132,32 +144,41 @@ export class StorageService {
       console.error('  - Message:', error?.message || 'Unknown error');
       console.error('  - Code:', error?.code || 'N/A');
       console.error('  - Name:', error?.name || 'N/A');
-      console.error('  - ServerResponse:', error?.serverResponse || 'N/A');
-      console.error('  - CustomData:', error?.customData || 'N/A');
-      console.error('  - Stack:', error?.stack?.substring(0, 300));
+      console.error('  - Auth user:', auth.currentUser?.uid || 'none');
+      console.error('  - Storage bucket:', storage.app.options.storageBucket || 'none');
+      
+      if (error?.customData) {
+        console.error('  - CustomData:', JSON.stringify(error.customData, null, 2));
+      }
+      if (error?.serverResponse) {
+        console.error('  - ServerResponse:', JSON.stringify(error.serverResponse, null, 2));
+      }
+      
+      console.error('  - Stack:', error?.stack?.substring(0, 500));
       
       if (error?.code === 'storage/unauthorized') {
-        const detailMsg = 'Accès refusé. Les règles Firebase Storage bloquent l\'upload. Connectez-vous ou vérifiez vos permissions.';
+        const detailMsg = 'Accès refusé. Vérifiez vos règles Firebase Storage.';
         console.error('💡 Suggestion:', detailMsg);
         throw new Error(detailMsg);
       } else if (error?.code === 'storage/canceled') {
         throw new Error('Upload annulé.');
       } else if (error?.code === 'storage/unknown') {
-        const detailMsg = `Erreur Storage inconnue. Vérifiez:\n- Connexion internet\n- Règles Firebase Storage\n- Configuration du bucket (${storage.app.options.storageBucket})`;
-        console.error('💡 Suggestion:', detailMsg);
+        const userMsg = auth.currentUser ? `Utilisateur: ${auth.currentUser.uid}` : 'Non authentifié';
+        const detailMsg = `Erreur inconnue lors de l'upload.\n${userMsg}\nBucket: ${storage.app.options.storageBucket || 'non configuré'}\n\nVérifiez:\n1. Votre connexion internet\n2. Les règles Firebase Storage\n3. Que le bucket existe`;
+        console.error('💡 Détails complets:', detailMsg);
         throw new Error(detailMsg);
       } else if (error?.code === 'storage/object-not-found') {
-        throw new Error('Objet non trouvé dans le Storage.');
+        throw new Error('Objet non trouvé.');
       } else if (error?.code === 'storage/bucket-not-found') {
-        throw new Error('Bucket Storage non trouvé. Vérifiez la configuration Firebase.');
+        throw new Error('Bucket Storage introuvable.');
       } else if (error?.code === 'storage/project-not-found') {
-        throw new Error('Projet Firebase non trouvé.');
+        throw new Error('Projet Firebase introuvable.');
       } else if (error?.code === 'storage/quota-exceeded') {
         throw new Error('Quota de stockage dépassé.');
       } else if (error?.code === 'storage/unauthenticated') {
-        throw new Error('Non authentifié. Connectez-vous pour uploader des images.');
+        throw new Error('Vous devez être connecté.');
       } else if (error?.code === 'storage/retry-limit-exceeded') {
-        throw new Error('Limite de tentatives dépassée. Réessayez plus tard.');
+        throw new Error('Trop de tentatives. Réessayez plus tard.');
       }
       
       throw error;

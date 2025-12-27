@@ -26,7 +26,6 @@ const rawConfig = {
 
 const firebaseConfig = {
   ...rawConfig,
-  storageBucket: rawConfig.storageBucket?.replace('.firebasestorage.app', '.appspot.com') || 'copattes.appspot.com',
 };
 
 // Initialize Firebase
@@ -38,6 +37,10 @@ if (getApps().length === 0) {
     console.log('📊 Project ID:', firebaseConfig.projectId);
     console.log('📦 Storage Bucket:', firebaseConfig.storageBucket);
     console.log('📱 Platform:', Platform.OS, '| App ID:', firebaseConfig.appId);
+    
+    if (!firebaseConfig.storageBucket || firebaseConfig.storageBucket === '') {
+      console.error('⚠️ WARNING: Storage bucket is not configured!');
+    }
   } catch (error) {
     console.error('❌ Firebase initialization error:', error);
     app = initializeApp({
