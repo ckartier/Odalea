@@ -79,9 +79,6 @@ export class StorageService {
         throw new Error('URI is empty or invalid');
       }
       
-      await currentUser.getIdToken(true);
-      console.log('🔑 [UPLOAD] Auth token refreshed');
-      
       const blob = await this.uriToBlob(uri);
       console.log('📤 [UPLOAD] Blob ready, size:', blob.size, 'type:', blob.type);
       
