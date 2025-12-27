@@ -11,7 +11,7 @@
 const firebaseConfig = {
   apiKey: "AIzaSyAkZRD6EuCR5HfjEzByEJxXdi-LWlXqvjI",
   authDomain: "copattes.firebaseapp.com",
-  projectId: "copattes",
+  projectId: "Odalea",
   storageBucket: "copattes.firebasestorage.app",
   messagingSenderId: "636879478460",
   appId: "1:636879478460:ios:021febbd8341d31f93bab9",
