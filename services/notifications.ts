@@ -5,17 +5,20 @@ import Constants from 'expo-constants';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
-const resolveProjectId = (): string => {
+const resolveProjectId = (): string | null => {
   const projectId =
     Constants.expoConfig?.extra?.eas?.projectId ??
-    Constants.easConfig?.projectId ??
-    process.env.EXPO_PUBLIC_PROJECT_ID ??
-    process.env.EXPO_PUBLIC_APP_ID ??
-    'w652a3hp1zy769f2om526'; // Fallback to known Project ID
+    Constants.easConfig?.projectId;
 
   if (!projectId) {
-    console.warn('Project ID not found. Push notifications may not work.');
-    return 'w652a3hp1zy769f2om526';
+    console.warn('⚠️ EAS Project ID not found. Push notifications require a valid EAS project.');
+    return null;
+  }
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(projectId)) {
+    console.warn('⚠️ Project ID is not a valid UUID. Push notifications require EAS.');
+    return null;
   }
 
   return projectId;
@@ -59,6 +62,11 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
 
     try {
       const projectId = resolveProjectId();
+
+      if (!projectId) {
+        console.log('⚠️ Skipping push notifications - EAS project required');
+        return;
+      }
 
       token = (
         await Notifications.getExpoPushTokenAsync({
