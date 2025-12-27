@@ -68,11 +68,20 @@ export class StorageService {
       console.log('📤 [UPLOAD START] URI:', uri.substring(0, 100));
       console.log('📤 [UPLOAD START] Platform:', Platform.OS);
       
+      if (!uri || uri.trim() === '') {
+        throw new Error('URI is empty or invalid');
+      }
+      
       const blob = await this.uriToBlob(uri);
       console.log('📤 [UPLOAD] Blob ready, size:', blob.size, 'type:', blob.type);
       
+      if (!blob || blob.size === 0) {
+        throw new Error('Blob is empty or invalid');
+      }
+      
       const storageRef = ref(storage, path);
       console.log('📤 [UPLOAD] Storage ref created:', path);
+      console.log('📤 [UPLOAD] Storage bucket:', storage.app.options.storageBucket);
 
       if (options?.onProgress) {
         const uploadTask = uploadBytesResumable(storageRef, blob, {
@@ -122,15 +131,33 @@ export class StorageService {
       console.error('❌ [UPLOAD FAILED] Error details:');
       console.error('  - Message:', error?.message || 'Unknown error');
       console.error('  - Code:', error?.code || 'N/A');
+      console.error('  - Name:', error?.name || 'N/A');
       console.error('  - ServerResponse:', error?.serverResponse || 'N/A');
-      console.error('  - Stack:', error?.stack?.substring(0, 200));
+      console.error('  - CustomData:', error?.customData || 'N/A');
+      console.error('  - Stack:', error?.stack?.substring(0, 300));
       
       if (error?.code === 'storage/unauthorized') {
-        throw new Error('Accès refusé. Vérifiez les règles Firebase Storage.');
+        const detailMsg = 'Accès refusé. Les règles Firebase Storage bloquent l\'upload. Connectez-vous ou vérifiez vos permissions.';
+        console.error('💡 Suggestion:', detailMsg);
+        throw new Error(detailMsg);
       } else if (error?.code === 'storage/canceled') {
         throw new Error('Upload annulé.');
       } else if (error?.code === 'storage/unknown') {
-        throw new Error('Erreur inconnue. Vérifiez votre connexion et réessayez.');
+        const detailMsg = `Erreur Storage inconnue. Vérifiez:\n- Connexion internet\n- Règles Firebase Storage\n- Configuration du bucket (${storage.app.options.storageBucket})`;
+        console.error('💡 Suggestion:', detailMsg);
+        throw new Error(detailMsg);
+      } else if (error?.code === 'storage/object-not-found') {
+        throw new Error('Objet non trouvé dans le Storage.');
+      } else if (error?.code === 'storage/bucket-not-found') {
+        throw new Error('Bucket Storage non trouvé. Vérifiez la configuration Firebase.');
+      } else if (error?.code === 'storage/project-not-found') {
+        throw new Error('Projet Firebase non trouvé.');
+      } else if (error?.code === 'storage/quota-exceeded') {
+        throw new Error('Quota de stockage dépassé.');
+      } else if (error?.code === 'storage/unauthenticated') {
+        throw new Error('Non authentifié. Connectez-vous pour uploader des images.');
+      } else if (error?.code === 'storage/retry-limit-exceeded') {
+        throw new Error('Limite de tentatives dépassée. Réessayez plus tard.');
       }
       
       throw error;

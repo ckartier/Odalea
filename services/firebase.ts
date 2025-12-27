@@ -26,7 +26,7 @@ const rawConfig = {
 
 const firebaseConfig = {
   ...rawConfig,
-  storageBucket: rawConfig.storageBucket?.includes('firebasestorage.app') ? rawConfig.storageBucket.replace('.firebasestorage.app', '.appspot.com') : rawConfig.storageBucket,
+  storageBucket: rawConfig.storageBucket?.replace('.firebasestorage.app', '.appspot.com') || 'copattes.appspot.com',
 };
 
 // Initialize Firebase
@@ -36,6 +36,7 @@ if (getApps().length === 0) {
     app = initializeApp(firebaseConfig);
     console.log('🔥 Firebase initialized successfully');
     console.log('📊 Project ID:', firebaseConfig.projectId);
+    console.log('📦 Storage Bucket:', firebaseConfig.storageBucket);
     console.log('📱 Platform:', Platform.OS, '| App ID:', firebaseConfig.appId);
   } catch (error) {
     console.error('❌ Firebase initialization error:', error);
