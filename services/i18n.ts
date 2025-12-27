@@ -48,6 +48,7 @@ export const saveLanguagePreference = async (language: 'en' | 'fr' | 'es' | 'de'
   try {
     await AsyncStorage.setItem('user_language', language);
     i18n.locale = language;
+    console.log('🌐 Language changed to:', language);
   } catch (error) {
     console.error('Error saving language preference:', error);
   }

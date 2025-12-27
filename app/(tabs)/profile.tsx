@@ -159,7 +159,7 @@ export default function ProfileScreen() {
   const tint = primaryPetGender === 'male' ? 'male' : primaryPetGender === 'female' ? 'female' : 'neutral';
 
   return (
-    <AppBackground variant={primaryPetGender === 'male' ? 'male' : primaryPetGender === 'female' ? 'female' : 'default'}>
+    <AppBackground>
       <StatusBar style="dark" />
       
       {/* Fixed Header */}

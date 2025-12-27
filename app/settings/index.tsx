@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Linking,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -16,7 +15,6 @@ import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { useTheme } from '@/hooks/theme-store';
 
 import {
-  Settings as SettingsIcon,
   Bell,
   Globe,
   Moon,
@@ -33,7 +31,7 @@ import {
 export default function SettingsScreen() {
   const router = useRouter();
   const { t, currentLocale, changeLanguage } = useI18n();
-  const { user, signOut } = useFirebaseUser();
+  const { signOut } = useFirebaseUser();
   const { currentTheme, mode, setThemeMode, isDark } = useTheme();
 
   const handleLanguageChange = () => {
@@ -45,9 +43,6 @@ export default function SettingsScreen() {
           text: 'Français',
           onPress: async () => {
             await changeLanguage('fr');
-            if (user) {
-              await signOut();
-            }
           },
           style: currentLocale === 'fr' ? 'default' : 'cancel',
         },
@@ -55,9 +50,6 @@ export default function SettingsScreen() {
           text: 'English',
           onPress: async () => {
             await changeLanguage('en');
-            if (user) {
-              await signOut();
-            }
           },
           style: currentLocale === 'en' ? 'default' : 'cancel',
         },
@@ -65,9 +57,6 @@ export default function SettingsScreen() {
           text: 'Español',
           onPress: async () => {
             await changeLanguage('es');
-            if (user) {
-              await signOut();
-            }
           },
           style: currentLocale === 'es' ? 'default' : 'cancel',
         },
@@ -75,9 +64,6 @@ export default function SettingsScreen() {
           text: 'Deutsch',
           onPress: async () => {
             await changeLanguage('de');
-            if (user) {
-              await signOut();
-            }
           },
           style: currentLocale === 'de' ? 'default' : 'cancel',
         },
@@ -85,9 +71,6 @@ export default function SettingsScreen() {
           text: 'Italiano',
           onPress: async () => {
             await changeLanguage('it');
-            if (user) {
-              await signOut();
-            }
           },
           style: currentLocale === 'it' ? 'default' : 'cancel',
         },
@@ -104,9 +87,6 @@ export default function SettingsScreen() {
           text: 'Clair',
           onPress: async () => {
             await setThemeMode('light');
-            if (user) {
-              await signOut();
-            }
           },
           style: mode === 'light' ? 'default' : 'cancel',
         },
@@ -114,9 +94,6 @@ export default function SettingsScreen() {
           text: 'Sombre',
           onPress: async () => {
             await setThemeMode('dark');
-            if (user) {
-              await signOut();
-            }
           },
           style: mode === 'dark' ? 'default' : 'cancel',
         },
@@ -124,9 +101,6 @@ export default function SettingsScreen() {
           text: 'Système',
           onPress: async () => {
             await setThemeMode('system');
-            if (user) {
-              await signOut();
-            }
           },
           style: mode === 'system' ? 'default' : 'cancel',
         },

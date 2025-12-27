@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/colors';
 import { TYPOGRAPHY } from '@/constants/typography';
 import { useAuth } from '@/hooks/auth-store';
-import { usePets } from '@/hooks/pets-store';
+import { getUserAvatarUrl } from '@/lib/image-helpers';
 import {
   Home,
   Map,
@@ -52,7 +52,6 @@ export default function MenuScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
-  const { userPets } = usePets();
 
   const isProfessional = Boolean(user?.isProfessional);
   const isCatSitter = Boolean(user?.isCatSitter);
@@ -238,7 +237,7 @@ export default function MenuScreen() {
     router.back();
   };
 
-  const petPhoto = userPets?.[0]?.mainPhoto || user?.photo || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=100&h=100&fit=crop&crop=face';
+  const userAvatar = getUserAvatarUrl(user) || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face';
 
   const renderMenuItem = (item: MenuItem, index: number) => (
     <TouchableOpacity
@@ -285,11 +284,11 @@ export default function MenuScreen() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top }]}>
         <View style={styles.userInfo}>
-          <Image source={{ uri: petPhoto }} style={styles.userPhoto} />
+          <Image source={{ uri: userAvatar }} style={styles.userPhoto} />
           <View style={styles.userDetails}>
             <Text style={styles.welcomeText}>Bienvenue,</Text>
-            <Text style={styles.appName} numberOfLines={1}>
-              {user?.firstName || 'Utilisateur'}
+            <Text style={styles.userName} numberOfLines={1}>
+              {user?.pseudo || user?.firstName || 'Utilisateur'}
             </Text>
           </View>
         </View>
@@ -392,7 +391,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.9)',
     marginBottom: 2,
   },
-  appName: {
+  userName: {
     ...TYPOGRAPHY.h5,
     color: COLORS.white,
   },

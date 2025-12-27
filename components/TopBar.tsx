@@ -7,7 +7,7 @@ import { Menu } from 'lucide-react-native';
 import { usePets } from '@/hooks/pets-store';
 import { useAuth } from '@/hooks/auth-store';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getPetImageUrl, getUserAvatarUrl } from '@/lib/image-helpers';
+import { getUserAvatarUrl } from '@/lib/image-helpers';
 
 
 interface TopBarProps {
@@ -60,7 +60,7 @@ const TopBar = React.memo(({ rightAction, onMenuPress, onBackPress }: TopBarProp
     router.push('/(tabs)/profile' as any);
   }, [router]);
 
-  const photoUri = getPetImageUrl(primaryPet) || getUserAvatarUrl(user);
+  const photoUri = getUserAvatarUrl(user) || 'https://via.placeholder.com/64';
 
   const Avatar = (
     <TouchableOpacity
@@ -93,14 +93,17 @@ const TopBar = React.memo(({ rightAction, onMenuPress, onBackPress }: TopBarProp
 
   const userLabel = useMemo(() => user?.pseudo || user?.name || '', [user?.pseudo, user?.name]);
   const subtitle = useMemo(() => {
-    if (primaryPet?.breed) {
-      return `${primaryPet.name ?? 'Animal'} • ${primaryPet.breed}`;
+    if (primaryPet?.character && primaryPet.character.length > 0) {
+      return primaryPet.character[0] || 'Adorable compagnon';
+    }
+    if (primaryPet?.name) {
+      return `${primaryPet.name}${primaryPet.breed ? ` • ${primaryPet.breed}` : ''}`;
     }
     if (user?.city) {
       return `${user.city}${user.zipCode ? `, ${user.zipCode}` : ''}`;
     }
     return 'Prenez soin de vos animaux';
-  }, [primaryPet?.breed, primaryPet?.name, user?.city, user?.zipCode]);
+  }, [primaryPet?.character, primaryPet?.name, primaryPet?.breed, user?.city, user?.zipCode]);
 
   if (!shouldShow) {
     return null;

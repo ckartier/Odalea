@@ -10,7 +10,7 @@ import { MessagingContext } from "@/hooks/messaging-store";
 import { ShopContext } from "@/hooks/shop-store";
 import { BadgesContext } from "@/hooks/badges-store";
 import { PetsContext } from "@/hooks/pets-store";
-import { I18nContext } from "@/hooks/i18n-store";
+import { I18nContext, useI18n } from "@/hooks/i18n-store";
 import { EmergencyContext } from "@/hooks/emergency-store";
 import { ThemeContext } from "@/hooks/theme-store";
 import { LostFoundContext } from "@/hooks/lost-found-store";
@@ -108,11 +108,21 @@ const RootLayoutNav = React.memo(() => {
 
 RootLayoutNav.displayName = 'RootLayoutNav';
 
+// Language wrapper that rerenders on language change
+const LanguageWrapper = React.memo(() => {
+  const { currentLocale } = useI18n();
+  
+  return (
+    <RootLayoutInner key={currentLocale} />
+  );
+});
+
+LanguageWrapper.displayName = 'LanguageWrapper';
+
 // Optimized Provider composition to reduce nesting and improve performance
 const AppProviders = React.memo(({ children }: { children: React.ReactNode }) => {
   return (
-    <I18nContext>
-      <FirebaseUserContext>
+    <FirebaseUserContext>
         <NotificationsProvider>
           <EmergencyContext>
             <PetsContext>
@@ -147,7 +157,6 @@ const AppProviders = React.memo(({ children }: { children: React.ReactNode }) =>
           </EmergencyContext>
         </NotificationsProvider>
       </FirebaseUserContext>
-    </I18nContext>
   );
 });
 
@@ -161,10 +170,23 @@ NotificationsProvider.displayName = 'NotificationsProvider';
 
 AppProviders.displayName = 'AppProviders';
 
-export default function RootLayout() {
-  // Memoize the gesture handler style to prevent re-creation
+function RootLayoutInner() {
   const gestureHandlerStyle = useMemo(() => ({ flex: 1 }), []);
 
+  return (
+    <GlobalErrorBoundary>
+      <GestureHandlerRootView style={gestureHandlerStyle}>
+        <AppProviders>
+          <AppBackground>
+            <RootLayoutNav />
+          </AppBackground>
+        </AppProviders>
+      </GestureHandlerRootView>
+    </GlobalErrorBoundary>
+  );
+}
+
+export default function RootLayout() {
   useEffect(() => {
     SplashScreen.hideAsync();
   }, []);
@@ -173,15 +195,9 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <trpc.Provider client={trpcClient} queryClient={queryClient}>
-          <GlobalErrorBoundary>
-            <GestureHandlerRootView style={gestureHandlerStyle}>
-              <AppProviders>
-                <AppBackground>
-                  <RootLayoutNav />
-                </AppBackground>
-              </AppProviders>
-            </GestureHandlerRootView>
-          </GlobalErrorBoundary>
+          <I18nContext>
+            <LanguageWrapper />
+          </I18nContext>
         </trpc.Provider>
       </QueryClientProvider>
     </SafeAreaProvider>
