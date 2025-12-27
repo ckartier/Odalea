@@ -1,6 +1,6 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator, setPersistence, browserLocalPersistence } from 'firebase/auth';
-import { initializeFirestore, connectFirestoreEmulator, enableNetwork, disableNetwork, setLogLevel, persistentLocalCache, type Firestore } from 'firebase/firestore';
+import { initializeFirestore, getFirestore, connectFirestoreEmulator, enableNetwork, disableNetwork, setLogLevel, persistentLocalCache, type Firestore } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { Platform } from 'react-native';
 
@@ -75,14 +75,9 @@ try {
   );
   console.log('🔥 Firestore initialized with persistent cache');
 } catch (error: any) {
-  console.warn('⚠️ Failed to initialize Firestore with persistent cache:', error?.message);
-  db = initializeFirestore(
-    app,
-    {
-      ignoreUndefinedProperties: true,
-    },
-  );
-  console.log('🔥 Firestore initialized without persistent cache');
+  console.warn('⚠️ Failed to initialize Firestore with persistent cache, using existing instance:', error?.message);
+  db = getFirestore(app);
+  console.log('🔥 Using existing Firestore instance');
 }
 // Persistence configured via persistentLocalCache above to avoid runtime conflicts
 const storage = getStorage(app);
