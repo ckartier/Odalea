@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -54,7 +54,7 @@ export default function CreatePostScreen() {
     }
   }, [userPets, params]);
 
-  const handlePost = async () => {
+  const handlePost = useCallback(async () => {
     if (!content.trim()) {
       Alert.alert(t('common.error'), 'Please write something to share');
       return;
@@ -91,9 +91,9 @@ export default function CreatePostScreen() {
       console.error('Error creating post:', error);
       Alert.alert(t('common.error'), 'Failed to create post. Please try again.');
     }
-  };
+  }, [content, photos, location, locationCoords, createPost, t]);
 
-  const handleAddLocation = () => {
+  const handleAddLocation = useCallback(() => {
     Alert.prompt(
       'Add Location',
       'Enter a location name:',
@@ -111,9 +111,9 @@ export default function CreatePostScreen() {
       'plain-text',
       location
     );
-  };
+  }, [location]);
 
-  const handleAddPhoto = async () => {
+  const handleAddPhoto = useCallback(async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
@@ -136,34 +136,34 @@ export default function CreatePostScreen() {
       console.error('Error picking image:', error);
       Alert.alert('Error', 'Failed to pick image. Please try again.');
     }
-  };
+  }, []);
+
+  const screenOptions = useMemo(() => ({
+    title: t('community.create_post'),
+    headerLeft: () => (
+      <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+        <X size={24} color={COLORS.black} />
+      </TouchableOpacity>
+    ),
+    headerRight: () => (
+      <TouchableOpacity 
+        onPress={handlePost}
+        disabled={!content.trim() || isCreatingPost}
+        style={[
+          styles.headerPostButton, 
+          (!content.trim() || isCreatingPost) && styles.headerPostButtonDisabled
+        ]}
+      >
+        <Text style={styles.headerPostButtonText}>
+          {isCreatingPost ? '...' : t('common.post') || 'Post'}
+        </Text>
+      </TouchableOpacity>
+    ),
+  }), [t, handlePost, content, isCreatingPost]);
 
   return (
     <View style={styles.container}>
-      <Stack.Screen
-        options={{
-          title: t('community.create_post'),
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
-              <X size={24} color={COLORS.black} />
-            </TouchableOpacity>
-          ),
-          headerRight: () => (
-            <TouchableOpacity 
-              onPress={handlePost}
-              disabled={!content.trim() || isCreatingPost}
-              style={[
-                styles.headerPostButton, 
-                (!content.trim() || isCreatingPost) && styles.headerPostButtonDisabled
-              ]}
-            >
-              <Text style={styles.headerPostButtonText}>
-                {isCreatingPost ? '...' : t('common.post') || 'Post'}
-              </Text>
-            </TouchableOpacity>
-          ),
-        }}
-      />
+      <Stack.Screen options={screenOptions} />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Content Input */}
