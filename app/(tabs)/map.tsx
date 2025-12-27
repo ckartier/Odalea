@@ -47,15 +47,16 @@ import {
   FileText,
   UserPlus,
   MessageCircle,
-  Sparkles,
+
 } from 'lucide-react-native';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { petService, userService, petSitterService } from '@/services/database';
 import { getBlurredUserLocation, getBlurredPetLocation } from '@/services/location-privacy';
 import { track } from '@/services/tracking';
 import { useFriends } from '@/hooks/friends-store';
-import { useMatching } from '@/hooks/matching-store';
+import { useFavorites } from '@/hooks/favorites-store';
 import { calculateDistance } from '@/services/location-privacy';
+import * as Haptics from 'expo-haptics';
 
 interface Region {
   latitude: number;
@@ -147,7 +148,7 @@ export default function MapScreen() {
   const { getThemedColor } = useTheme();
   const insets = useSafeAreaInsets();
   const { sendFriendRequest, isFriend, isRequestSent, isSendingRequest } = useFriends();
-  const { likePet, matches } = useMatching();
+  const { toggleFavorite, isFavorite, isTogglingFavorite } = useFavorites();
 
   const [region, setRegion] = useState<Region>({
     latitude: DEFAULT_LAT,
@@ -402,30 +403,27 @@ export default function MapScreen() {
     }
   };
 
-  const handleCreatePost = () => {
-    if (!selectedPet || !userLocation) return;
-    incrementActionCount();
-
-    const petLoc = selectedPet.location;
-    if (!petLoc?.latitude || !petLoc?.longitude) return;
-
-    const distance = Math.round(calculateDistance(userLocation, petLoc));
-    const blurred = getBlurredPetLocation(selectedPet.id, petLoc);
-    const content = `Vu sur la map à ~${distance} m`;
-
-    router.push(`/community/create?prefill=1&content=${encodeURIComponent(content)}&lat=${blurred.latitude}&lng=${blurred.longitude}&sourcePetId=${selectedPet.id}`);
-  };
-
-  const handleViewMatching = () => {
+  const handleViewPosts = () => {
     if (!selectedPet) return;
     incrementActionCount();
-    router.push(`/matching/discover?focusPetId=${selectedPet.id}`);
+    router.push(`/community?petId=${selectedPet.id}`);
   };
 
-  const getMatchStatus = () => {
-    if (!selectedPet?.id || !matches) return '—';
-    const isMatched = matches.some(m => m.petIds?.includes(selectedPet.id));
-    return isMatched ? 'Match' : 'Like';
+  const handleToggleFavorite = async () => {
+    if (!selectedPet) return;
+    try {
+      if (Platform.OS !== 'web') {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+      await toggleFavorite(selectedPet.id);
+      showPopup({ 
+        type: 'success', 
+        title: isFavorite(selectedPet.id) ? 'Retiré des favoris' : 'Ajouté aux favoris',
+        message: isFavorite(selectedPet.id) ? 'Animal retiré de vos favoris' : 'Animal ajouté à vos favoris'
+      });
+    } catch (error: any) {
+      showPopup({ type: 'error', title: 'Erreur', message: error?.message || 'Impossible de modifier les favoris' });
+    }
   };
 
   const handleFilterPress = async (filter: MapFilter) => {
@@ -1095,19 +1093,19 @@ export default function MapScreen() {
                   <TouchableOpacity
                     style={[
                       styles.actionBtn,
-                      (selectedPet.ownerId === user?.id || isFriend(selectedPet.ownerId || '') || isRequestSent(selectedPet.ownerId || '')) && styles.actionBtnDisabled
+                      (isFriend(selectedPet.ownerId || '') || isRequestSent(selectedPet.ownerId || '')) && styles.actionBtnDisabled
                     ]}
                     onPress={handleAddFriend}
                     disabled={!selectedPet.ownerId || selectedPet.ownerId === user?.id || isFriend(selectedPet.ownerId) || isRequestSent(selectedPet.ownerId) || isSendingRequest}
                     activeOpacity={0.7}
                     testID="btn-ami"
                   >
-                    <UserPlus size={18} color={selectedPet.ownerId === user?.id ? COLORS.darkGray : isFriend(selectedPet.ownerId || '') ? COLORS.darkGray : isRequestSent(selectedPet.ownerId || '') ? COLORS.darkGray : COLORS.primary} />
+                    <UserPlus size={18} color={isFriend(selectedPet.ownerId || '') ? COLORS.darkGray : isRequestSent(selectedPet.ownerId || '') ? COLORS.darkGray : COLORS.primary} />
                     <Text style={[
                       styles.actionBtnText,
-                      (selectedPet.ownerId === user?.id || isFriend(selectedPet.ownerId || '') || isRequestSent(selectedPet.ownerId || '')) && styles.actionBtnTextDisabled
+                      (isFriend(selectedPet.ownerId || '') || isRequestSent(selectedPet.ownerId || '')) && styles.actionBtnTextDisabled
                     ]}>
-                      {selectedPet.ownerId === user?.id ? 'Toi' : isFriend(selectedPet.ownerId || '') ? 'Ami' : isRequestSent(selectedPet.ownerId || '') ? 'Envoyée' : 'Ajouter'}
+                      {isFriend(selectedPet.ownerId || '') ? 'Ami' : isRequestSent(selectedPet.ownerId || '') ? 'Envoyée' : 'Ajouter'}
                     </Text>
                   </TouchableOpacity>
 
@@ -1115,23 +1113,28 @@ export default function MapScreen() {
                     style={styles.actionBtn}
                     onPress={(e) => {
                       e?.stopPropagation?.();
-                      handleCreatePost();
+                      handleViewPosts();
                     }}
                     activeOpacity={0.7}
                     testID="btn-post"
                   >
                     <MessageCircle size={18} color={COLORS.primary} />
-                    <Text style={styles.actionBtnText}>Post</Text>
+                    <Text style={styles.actionBtnText}>Posts</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     style={styles.actionBtn}
-                    onPress={handleViewMatching}
+                    onPress={handleToggleFavorite}
                     activeOpacity={0.7}
-                    testID="btn-match"
+                    disabled={isTogglingFavorite}
+                    testID="btn-favori"
                   >
-                    <Sparkles size={18} color={COLORS.primary} />
-                    <Text style={styles.actionBtnText}>{getMatchStatus()}</Text>
+                    <Heart 
+                      size={18} 
+                      color={isFavorite(selectedPet.id) ? COLORS.error : COLORS.primary}
+                      fill={isFavorite(selectedPet.id) ? COLORS.error : 'none'}
+                    />
+                    <Text style={[styles.actionBtnText, isFavorite(selectedPet.id) && { color: COLORS.error }]}>Favori</Text>
                   </TouchableOpacity>
                 </View>
               </View>

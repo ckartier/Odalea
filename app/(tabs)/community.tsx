@@ -15,7 +15,7 @@ import {
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { COLORS, SHADOWS, DIMENSIONS } from '@/constants/colors';
 import { TYPOGRAPHY } from '@/constants/typography';
 import { useI18n } from '@/hooks/i18n-store';
@@ -40,6 +40,7 @@ type FilterType = 'all' | 'lost' | 'found' | 'challenges' | 'pros';
 export default function CommunityScreen() {
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
+  const { petId } = useLocalSearchParams<{ petId?: string }>();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const {
     posts,
@@ -236,7 +237,9 @@ export default function CommunityScreen() {
   const filteredPosts = useMemo(() => {
     let filtered = posts;
 
-    if (activeFilter === 'lost') {
+    if (petId) {
+      filtered = posts.filter(p => p.fromPetId === petId);
+    } else if (activeFilter === 'lost') {
       filtered = posts.filter(p => p.type === 'lost');
     } else if (activeFilter === 'found') {
       filtered = posts.filter(p => p.type === 'found');
@@ -251,7 +254,7 @@ export default function CommunityScreen() {
     }
 
     return filtered;
-  }, [posts, activeFilter, isPremium]);
+  }, [posts, activeFilter, isPremium, petId]);
 
   const renderPost = (post: any) => {
     const isLiked = isPostLiked(post.id);
@@ -461,7 +464,18 @@ export default function CommunityScreen() {
 
       <GlassCard tint="neutral" style={styles.filterContainer} noPadding>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-          {filters.map(filter => (
+          {petId && (
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                styles.activeFilterButton,
+              ]}
+              onPress={() => router.replace('/community')}
+            >
+              <Text style={styles.activeFilterText}>Tout</Text>
+            </TouchableOpacity>
+          )}
+          {!petId && filters.map(filter => (
             <TouchableOpacity
               key={filter.key}
               style={[

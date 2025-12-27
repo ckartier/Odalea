@@ -23,6 +23,7 @@ import { FirebaseUserContext } from "@/hooks/firebase-user-store";
 import { SocialContext } from "@/hooks/social-store";
 import { FriendsContext } from "@/hooks/friends-store";
 import { MatchingContext } from "@/hooks/matching-store";
+import { FavoritesContext } from "@/hooks/favorites-store";
 import { trpc, trpcClient } from "@/lib/trpc";
 import AppBackground from "@/components/AppBackground";
 import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
@@ -137,11 +138,13 @@ const AppProviders = React.memo(({ children }: { children: React.ReactNode }) =>
                               <UnifiedMessagingContext>
                                 <SocialContext>
                                   <FriendsContext>
-                                    <ShopContext>
-                                      <BadgesContext>
-                                        {children}
-                                      </BadgesContext>
-                                    </ShopContext>
+                                    <FavoritesContext>
+                                      <ShopContext>
+                                        <BadgesContext>
+                                          {children}
+                                        </BadgesContext>
+                                      </ShopContext>
+                                    </FavoritesContext>
                                   </FriendsContext>
                                 </SocialContext>
                               </UnifiedMessagingContext>
