@@ -385,7 +385,18 @@ export interface Post {
   createdAt: Date;
   updatedAt: Date;
   tags?: string[];
-  type: 'text' | 'photo' | 'video' | 'lost' | 'found';
+  type: 'text' | 'photo' | 'video' | 'lost' | 'found' | 'challenge' | 'professional';
+  challengeId?: string;
+  shareInCommunity?: boolean;
+  isPremiumContent?: boolean;
+  isProPost?: boolean;
+  professionalData?: {
+    businessName: string;
+    activityType?: string;
+    productIds?: string[];
+  };
+  status?: 'lost' | 'found' | 'reunited';
+  reward?: number;
 }
 
 export interface Comment {

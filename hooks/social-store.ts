@@ -1,21 +1,22 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { databaseService, lostFoundService } from '@/services/database';
-import { Post, Comment, User } from '@/types';
+import { databaseService } from '@/services/database';
+import { Post, Comment } from '@/types';
 import { useFirebaseUser } from './firebase-user-store';
 import { useUser } from './user-store';
+import { usePremium } from './premium-store';
 import { StorageService } from '@/services/storage';
+import { Alert } from 'react-native';
 
 export const [SocialContext, useSocial] = createContextHook(() => {
   const { user: firebaseUser } = useFirebaseUser();
   const { user: mockUser } = useUser();
+  const { isPremium, showPremiumPrompt } = usePremium();
   const queryClient = useQueryClient();
   
-  // Use Firebase user if available, otherwise fall back to mock user
   const user = firebaseUser || mockUser;
   
-  // Debug logging
   useEffect(() => {
     console.log('🔍 Social Store - Auth Status:', {
       firebaseUser: firebaseUser ? { id: firebaseUser.id, name: firebaseUser.name } : null,
@@ -23,16 +24,18 @@ export const [SocialContext, useSocial] = createContextHook(() => {
       finalUser: user ? { id: user.id, name: user.name } : null
     });
   }, [firebaseUser, mockUser, user]);
+
   const [posts, setPosts] = useState<Post[]>([]);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
 
-  // Get posts feed
   const postsQuery = useQuery({
     queryKey: ['posts', 'feed'],
     queryFn: async () => {
-      const [posts, lostReports] = await Promise.all([
+      const [normalPosts, lostReports, challengePosts] = await Promise.all([
         databaseService.post.getPostsFeed(),
-        databaseService.lostFound.listReports().catch(() => [])
+        databaseService.lostFound.listReports().catch(() => []),
+        databaseService.challenge.getParticipations().catch(() => [])
       ]);
 
       const mappedLost: Post[] = (lostReports as any[]).map((r: any) => {
@@ -40,7 +43,7 @@ export const [SocialContext, useSocial] = createContextHook(() => {
         const authorName = r?.reporterName || r?.authorName || 'Anonyme';
         const image = r?.photo || r?.imageUrl || undefined;
         const petName = r?.petName || r?.animalName || 'Animal';
-        const content = r?.description || `Animal perdu: ${petName}`;
+        const content = r?.description || `Animal ${r?.type === 'found' ? 'trouvé' : 'perdu'}: ${petName}`;
         const loc = r?.location && r.location.latitude && r.location.longitude ? {
           name: r?.address || r?.city || undefined,
           latitude: Number(r.location.latitude),
@@ -60,24 +63,49 @@ export const [SocialContext, useSocial] = createContextHook(() => {
           createdAt,
           updatedAt: createdAt,
           tags: Array.isArray(r?.tags) ? r.tags : undefined,
-          type: 'lost',
+          type: r?.type === 'found' ? 'found' : 'lost',
+          status: r?.status || (r?.type === 'found' ? 'found' : 'lost'),
+          reward: r?.reward,
         } as Post;
       });
 
-      return [...mappedLost, ...posts];
+      const mappedChallenges: Post[] = (challengePosts as any[])
+        .filter((p: any) => p.shareInCommunity === true)
+        .map((p: any) => {
+          const createdAt = p?.submittedAt ? new Date(p.submittedAt) : new Date();
+          return {
+            id: `challenge-${String(p.id)}`,
+            authorId: String(p?.userId || 'unknown'),
+            authorName: String(p?.userName || 'Anonyme'),
+            authorPhoto: p?.userPhoto,
+            content: `A relevé le défi : ${p?.challengeTitle || 'Défi'}`,
+            images: p?.proof?.type === 'photo' && p?.proof?.data ? [p.proof.data] : undefined,
+            likesCount: p?.yesVotes || 0,
+            commentsCount: 0,
+            createdAt,
+            updatedAt: createdAt,
+            type: 'challenge',
+            challengeId: String(p?.challengeId || ''),
+            shareInCommunity: true,
+            isPremiumContent: false,
+          } as Post;
+        });
+
+      const allPosts = [...mappedLost, ...mappedChallenges, ...normalPosts];
+      return allPosts.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
     },
     enabled: !!user,
     refetchInterval: 30000,
   });
 
-  // Update posts when query data changes
   useEffect(() => {
     if (postsQuery.data) {
       setPosts(postsQuery.data);
     }
   }, [postsQuery.data]);
 
-  // Load liked posts for current user
   useEffect(() => {
     const loadLikedPosts = async () => {
       if (!user || !posts.length) return;
@@ -85,7 +113,6 @@ export const [SocialContext, useSocial] = createContextHook(() => {
       try {
         const likedPostIds = new Set<string>();
         
-        // Check which posts are liked by current user
         for (const post of posts) {
           const isLiked = await databaseService.post.isPostLiked(post.id, user.id);
           if (isLiked) {
@@ -102,7 +129,6 @@ export const [SocialContext, useSocial] = createContextHook(() => {
     loadLikedPosts();
   }, [user, posts]);
 
-  // Create post mutation
   const createPostMutation = useMutation({
     mutationFn: async (postData: {
       content: string;
@@ -113,6 +139,11 @@ export const [SocialContext, useSocial] = createContextHook(() => {
       tags?: string[];
     }) => {
       if (!user) throw new Error('User not authenticated');
+      
+      if (!isPremium && postData.images && postData.images.length > 1) {
+        showPremiumPrompt('gallery');
+        throw new Error('Premium required for multiple images');
+      }
       
       let uploadedImageUrls: string[] | undefined;
       
@@ -156,7 +187,6 @@ export const [SocialContext, useSocial] = createContextHook(() => {
       return await databaseService.post.createPost(post);
     },
     onSuccess: () => {
-      // Refetch posts after creating a new one
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       console.log('✅ Post created successfully');
     },
@@ -165,7 +195,6 @@ export const [SocialContext, useSocial] = createContextHook(() => {
     }
   });
 
-  // Like/Unlike post mutation
   const toggleLikeMutation = useMutation({
     mutationFn: async ({ postId }: { postId: string }) => {
       if (!user) throw new Error('User not authenticated');
@@ -173,10 +202,8 @@ export const [SocialContext, useSocial] = createContextHook(() => {
       return await databaseService.post.toggleLike(postId, user.id);
     },
     onMutate: async ({ postId }) => {
-      // Optimistic update
       const isCurrentlyLiked = likedPosts.has(postId);
       
-      // Update liked posts set
       setLikedPosts(prev => {
         const newSet = new Set(prev);
         if (isCurrentlyLiked) {
@@ -187,7 +214,6 @@ export const [SocialContext, useSocial] = createContextHook(() => {
         return newSet;
       });
       
-      // Update posts array
       setPosts(prevPosts => 
         prevPosts.map(post => 
           post.id === postId 
@@ -206,7 +232,6 @@ export const [SocialContext, useSocial] = createContextHook(() => {
     onError: (error, { postId }, context) => {
       console.error('❌ Error toggling like:', error);
       
-      // Revert optimistic update
       if (context) {
         setLikedPosts(prev => {
           const newSet = new Set(prev);
@@ -233,7 +258,6 @@ export const [SocialContext, useSocial] = createContextHook(() => {
       }
     },
     onSuccess: ({ liked, likesCount }, { postId }) => {
-      // Update with server response
       setPosts(prevPosts => 
         prevPosts.map(post => 
           post.id === postId 
@@ -246,7 +270,6 @@ export const [SocialContext, useSocial] = createContextHook(() => {
     }
   });
 
-  // Add comment mutation
   const addCommentMutation = useMutation({
     mutationFn: async ({ postId, content }: { postId: string; content: string }) => {
       if (!user) throw new Error('User not authenticated');
@@ -262,7 +285,6 @@ export const [SocialContext, useSocial] = createContextHook(() => {
       return await databaseService.comment.addComment(comment);
     },
     onSuccess: (commentId, { postId }) => {
-      // Update post comments count
       setPosts(prevPosts => 
         prevPosts.map(post => 
           post.id === postId 
@@ -271,7 +293,6 @@ export const [SocialContext, useSocial] = createContextHook(() => {
         )
       );
       
-      // Invalidate comments query for this post
       queryClient.invalidateQueries({ queryKey: ['comments', postId] });
       console.log('✅ Comment added successfully');
     },
@@ -280,7 +301,49 @@ export const [SocialContext, useSocial] = createContextHook(() => {
     }
   });
 
-  // Get comments for a post
+  const reportPostMutation = useMutation({
+    mutationFn: async ({ postId, reason }: { postId: string; reason: string }) => {
+      if (!user) throw new Error('User not authenticated');
+      
+      console.log(`🚨 Reporting post ${postId} for reason: ${reason}`);
+      Alert.alert(
+        'Signalement envoyé',
+        'Votre signalement a été pris en compte. Notre équipe va le vérifier.',
+        [{ text: 'OK' }]
+      );
+      
+      return { success: true };
+    },
+    onError: (error) => {
+      console.error('❌ Error reporting post:', error);
+      Alert.alert('Erreur', 'Impossible de signaler ce contenu. Veuillez réessayer.');
+    }
+  });
+
+  const blockUserMutation = useMutation({
+    mutationFn: async ({ userId }: { userId: string }) => {
+      if (!user) throw new Error('User not authenticated');
+      
+      console.log(`🚫 Blocking user ${userId}`);
+      setBlockedUsers(prev => new Set(prev).add(userId));
+      
+      Alert.alert(
+        'Utilisateur bloqué',
+        'Vous ne verrez plus les publications de cet utilisateur.',
+        [{ text: 'OK' }]
+      );
+      
+      return { success: true };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    },
+    onError: (error) => {
+      console.error('❌ Error blocking user:', error);
+      Alert.alert('Erreur', 'Impossible de bloquer cet utilisateur. Veuillez réessayer.');
+    }
+  });
+
   const getComments = useCallback(async (postId: string): Promise<Comment[]> => {
     try {
       return await databaseService.comment.getComments(postId);
@@ -290,7 +353,6 @@ export const [SocialContext, useSocial] = createContextHook(() => {
     }
   }, []);
 
-  // Get user posts
   const getUserPosts = useCallback(async (userId: string): Promise<Post[]> => {
     try {
       return await databaseService.post.getPostsByUser(userId);
@@ -300,7 +362,6 @@ export const [SocialContext, useSocial] = createContextHook(() => {
     }
   }, []);
 
-  // Real-time posts listener
   useEffect(() => {
     if (!user) return;
     
@@ -308,17 +369,12 @@ export const [SocialContext, useSocial] = createContextHook(() => {
     
     const unsubscribe = databaseService.realtime.listenToPostsFeed((newPosts) => {
       console.log('📡 Received real-time posts update:', newPosts.length);
-      setPosts((prev) => {
-        const lostOnes = prev.filter(p => p.type === 'lost');
-        const merged = [...lostOnes, ...newPosts];
-        return merged;
-      });
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
     });
     
     return unsubscribe;
-  }, [user]);
+  }, [user, queryClient]);
 
-  // Create post function
   const createPost = async (postData: {
     content: string;
     images?: string[];
@@ -333,40 +389,49 @@ export const [SocialContext, useSocial] = createContextHook(() => {
     });
   };
 
-  // Toggle like function
   const toggleLike = async (postId: string) => {
     return toggleLikeMutation.mutateAsync({ postId });
   };
 
-  // Add comment function
   const addComment = async (postId: string, content: string) => {
     return addCommentMutation.mutateAsync({ postId, content });
   };
 
-  // Check if post is liked
+  const reportPost = async (postId: string, reason: string) => {
+    return reportPostMutation.mutateAsync({ postId, reason });
+  };
+
+  const blockUser = async (userId: string) => {
+    return blockUserMutation.mutateAsync({ userId });
+  };
+
   const isPostLiked = (postId: string): boolean => {
     return likedPosts.has(postId);
   };
 
-  // Refresh posts
   const refreshPosts = () => {
     queryClient.invalidateQueries({ queryKey: ['posts'] });
   };
 
+  const filteredPosts = posts.filter(post => !blockedUsers.has(post.authorId));
+
   return {
-    posts,
+    posts: filteredPosts,
     isLoading: postsQuery.isLoading,
     isError: postsQuery.isError,
     error: postsQuery.error,
     createPost,
     toggleLike,
     addComment,
+    reportPost,
+    blockUser,
     getComments,
     getUserPosts,
     isPostLiked,
     refreshPosts,
     isCreatingPost: createPostMutation.isPending,
     isTogglingLike: toggleLikeMutation.isPending,
-    isAddingComment: addCommentMutation.isPending
+    isAddingComment: addCommentMutation.isPending,
+    blockedUsers,
   };
 });

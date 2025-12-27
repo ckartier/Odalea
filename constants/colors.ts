@@ -56,6 +56,7 @@ export const COLORS = {
   available: '#10B981',
   busy: '#F59E0B',
   premium: '#A855F7',
+  gold: '#FFD700',
   catSitter: '#FFB3E6',
   
   transparent: 'transparent',

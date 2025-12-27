@@ -10,6 +10,7 @@ import {
   Platform,
   TextInput,
   Image,
+  Alert,
 } from 'react-native';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,9 +20,10 @@ import { COLORS, SHADOWS, DIMENSIONS } from '@/constants/colors';
 import { TYPOGRAPHY } from '@/constants/typography';
 import { useI18n } from '@/hooks/i18n-store';
 import { useSocial } from '@/hooks/social-store';
+import { usePremium } from '@/hooks/premium-store';
 import GlassCard from '@/components/GlassCard';
 import AppBackground from '@/components/AppBackground';
-import { Plus, Heart, MessageCircle, Share, MapPin, AlertTriangle, Send } from 'lucide-react-native';
+import { Plus, Heart, MessageCircle, Share, MapPin, AlertTriangle, Send, Award, DollarSign } from 'lucide-react-native';
 import { realtimeService } from '@/services/database';
 
 interface LocalComment {
@@ -32,10 +34,12 @@ interface LocalComment {
   createdAt: Date;
 }
 
+type FilterType = 'all' | 'lost' | 'found' | 'challenges' | 'pros';
+
 export default function CommunityScreen() {
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
-  const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const {
     posts,
     isLoading,
@@ -46,7 +50,11 @@ export default function CommunityScreen() {
     isTogglingLike,
     addComment,
     isAddingComment,
+    reportPost,
+    blockUser,
   } = useSocial();
+  
+  const { isPremium, showPremiumPrompt } = usePremium();
 
   const onRefresh = async () => {
     refreshPosts();
@@ -69,8 +77,6 @@ export default function CommunityScreen() {
     }
     router.push('/community/create');
   };
-
-
 
   const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
   const [comments, setComments] = useState<LocalComment[]>([]);
@@ -122,7 +128,6 @@ export default function CommunityScreen() {
     try {
       await addComment(postId, newComment.trim());
       setNewComment('');
-      // No need to manually refresh as listener updates it
     } catch (e) {
       console.log('Add comment error', e);
     }
@@ -133,15 +138,61 @@ export default function CommunityScreen() {
       await Haptics.selectionAsync();
     }
     console.log('Sharing post:', postId);
-    // TODO: Implement native share functionality
   };
 
-  const filters = [
+  const handleReportPost = (postId: string, authorName: string) => {
+    Alert.alert(
+      'Signaler ce contenu',
+      `Pourquoi signalez-vous la publication de ${authorName} ?`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { 
+          text: 'Spam ou publicité', 
+          onPress: () => reportPost(postId, 'spam')
+        },
+        { 
+          text: 'Contenu inapproprié', 
+          onPress: () => reportPost(postId, 'inappropriate')
+        },
+        { 
+          text: 'Harcèlement', 
+          onPress: () => reportPost(postId, 'harassment')
+        },
+      ]
+    );
+  };
+
+  const handleBlockUser = (userId: string, authorName: string) => {
+    Alert.alert(
+      'Bloquer cet utilisateur',
+      `Êtes-vous sûr de vouloir bloquer ${authorName} ? Vous ne verrez plus ses publications.`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { 
+          text: 'Bloquer', 
+          style: 'destructive',
+          onPress: () => blockUser(userId)
+        },
+      ]
+    );
+  };
+
+  const filters: { key: FilterType; label: string; premium?: boolean }[] = [
     { key: 'all', label: t('map.show_all') },
-    { key: 'following', label: t('community.following') },
-    { key: 'nearby', label: t('community.nearby') },
-    { key: 'lost_found', label: t('lost_found.lost_found') },
+    { key: 'lost', label: 'Perdus' },
+    { key: 'found', label: 'Trouvés' },
+    { key: 'challenges', label: 'Défis' },
+    { key: 'pros', label: 'Pros', premium: !isPremium },
   ];
+
+  const handleFilterPress = (filterKey: FilterType) => {
+    const filter = filters.find(f => f.key === filterKey);
+    if (filter?.premium) {
+      showPremiumPrompt('filters');
+      return;
+    }
+    setActiveFilter(filterKey);
+  };
 
   const formatTimeAgo = (timestamp: any) => {
     if (!timestamp) return 'now';
@@ -157,23 +208,61 @@ export default function CommunityScreen() {
   };
 
   const filteredPosts = useMemo(() => {
-    if (activeFilter === 'all') return posts;
-    if (activeFilter === 'following') return posts; // Placeholder for following logic
-    if (activeFilter === 'nearby') return posts.filter(p => p.location);
-    if (activeFilter === 'lost_found') return posts.filter(p => p.type === 'lost' || p.type === 'found');
-    return posts;
-  }, [posts, activeFilter]);
+    let filtered = posts;
+
+    if (activeFilter === 'lost') {
+      filtered = posts.filter(p => p.type === 'lost');
+    } else if (activeFilter === 'found') {
+      filtered = posts.filter(p => p.type === 'found');
+    } else if (activeFilter === 'challenges') {
+      filtered = posts.filter(p => p.type === 'challenge');
+    } else if (activeFilter === 'pros') {
+      filtered = posts.filter(p => p.type === 'professional' || p.isProPost);
+    }
+
+    if (!isPremium && activeFilter === 'pros') {
+      filtered = filtered.slice(0, 3);
+    }
+
+    return filtered;
+  }, [posts, activeFilter, isPremium]);
 
   const renderPost = (post: any) => {
     const isLiked = isPostLiked(post.id);
     const isUrgent = post.type === 'lost' || post.type === 'found';
+    const isChallenge = post.type === 'challenge';
+    const isPro = post.type === 'professional' || post.isProPost;
+    
+    const displayImages = isUrgent && post.images 
+      ? [post.images[0]]
+      : post.images;
     
     return (
-      <GlassCard key={post.id} tint="neutral" style={[styles.postCard, isUrgent && styles.urgentPost]}>
+      <GlassCard key={post.id} tint="neutral" style={[
+        styles.postCard, 
+        isUrgent && styles.urgentPost,
+        isChallenge && styles.challengePost,
+        isPro && styles.proPost,
+      ]}>
         {isUrgent && (
-          <View style={styles.urgentBanner}>
+          <View style={[styles.urgentBanner, post.type === 'found' && styles.foundBanner]}>
             <AlertTriangle size={16} color={COLORS.white} />
-            <Text style={styles.urgentText}>{t('lost_found.lost_found').toUpperCase()}</Text>
+            <Text style={styles.urgentText}>
+              {post.type === 'found' ? 'ANIMAL TROUVÉ' : 'ANIMAL PERDU'}
+            </Text>
+            {post.reward && post.reward > 0 && (
+              <View style={styles.rewardBadge}>
+                <DollarSign size={14} color={COLORS.white} />
+                <Text style={styles.rewardText}>{post.reward}€</Text>
+              </View>
+            )}
+          </View>
+        )}
+        
+        {isChallenge && (
+          <View style={styles.challengeBanner}>
+            <Award size={16} color={COLORS.white} />
+            <Text style={styles.challengeText}>DÉFI RELEVÉ</Text>
           </View>
         )}
         
@@ -198,16 +287,58 @@ export default function CommunityScreen() {
               )}
             </View>
           </View>
+          <TouchableOpacity 
+            style={styles.moreButton}
+            onPress={() => {
+              Alert.alert(
+                'Actions',
+                '',
+                [
+                  { text: 'Annuler', style: 'cancel' },
+                  { 
+                    text: 'Signaler', 
+                    onPress: () => handleReportPost(post.id, post.authorName)
+                  },
+                  { 
+                    text: 'Bloquer l\'utilisateur', 
+                    style: 'destructive',
+                    onPress: () => handleBlockUser(post.authorId, post.authorName)
+                  },
+                ]
+              );
+            }}
+          >
+            <Text style={styles.moreButtonText}>⋯</Text>
+          </TouchableOpacity>
         </View>
 
         <Text style={styles.postContent}>{post.content}</Text>
 
-        {post.images && post.images.length > 0 && (
-          <Image 
-            source={{ uri: post.images[0] }} 
-            style={styles.postImage}
-            resizeMode="cover"
-          />
+        {displayImages && displayImages.length > 0 && (
+          <View style={styles.imagesContainer}>
+            {displayImages.map((img: string, idx: number) => (
+              <Image 
+                key={idx}
+                source={{ uri: img }} 
+                style={[
+                  styles.postImage,
+                  displayImages.length > 1 && styles.multipleImages
+                ]}
+                resizeMode="cover"
+              />
+            ))}
+          </View>
+        )}
+
+        {isUrgent && post.images && post.images.length > 1 && (
+          <TouchableOpacity 
+            style={styles.viewAllPhotosButton}
+            onPress={() => router.push(`/lost-found/${post.id.replace('lost-', '')}`)}
+          >
+            <Text style={styles.viewAllPhotosText}>
+              Voir toutes les photos ({post.images.length})
+            </Text>
+          </TouchableOpacity>
         )}
 
         <View style={styles.postActions}>
@@ -298,8 +429,9 @@ export default function CommunityScreen() {
               style={[
                 styles.filterButton,
                 activeFilter === filter.key && styles.activeFilterButton,
+                filter.premium && styles.premiumFilterButton,
               ]}
-              onPress={() => setActiveFilter(filter.key)}
+              onPress={() => handleFilterPress(filter.key)}
             >
               <Text
                 style={[
@@ -309,10 +441,26 @@ export default function CommunityScreen() {
               >
                 {filter.label}
               </Text>
+              {filter.premium && <Text style={styles.premiumBadge}>👑</Text>}
             </TouchableOpacity>
           ))}
         </ScrollView>
       </GlassCard>
+
+      {!isPremium && activeFilter === 'pros' && (
+        <GlassCard tint="neutral" style={styles.premiumUpsellCard}>
+          <Text style={styles.upsellTitle}>Contenu Premium 👑</Text>
+          <Text style={styles.upsellText}>
+            Débloquez l&apos;accès illimité aux posts des professionnels et découvrez leurs offres exclusives.
+          </Text>
+          <TouchableOpacity 
+            style={styles.upsellButton}
+            onPress={() => router.push('/premium')}
+          >
+            <Text style={styles.upsellButtonText}>Passer à Premium</Text>
+          </TouchableOpacity>
+        </GlassCard>
+      )}
 
       <ScrollView
         style={styles.feed}
@@ -334,7 +482,9 @@ export default function CommunityScreen() {
         ) : filteredPosts.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>Aucune publication trouvée</Text>
-            <Text style={styles.emptySubtext}>Essayez de modifier vos filtres</Text>
+            <Text style={styles.emptySubtext}>
+              {activeFilter !== 'all' ? 'Essayez de modifier vos filtres' : 'Soyez le premier à publier !'}
+            </Text>
           </View>
         ) : (
           filteredPosts.map(renderPost)
@@ -391,9 +541,16 @@ const styles = StyleSheet.create({
     marginRight: DIMENSIONS.SPACING.sm,
     borderRadius: 999,
     backgroundColor: COLORS.lightGray,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   activeFilterButton: {
     backgroundColor: COLORS.primary,
+  },
+  premiumFilterButton: {
+    borderWidth: 1,
+    borderColor: COLORS.gold,
   },
   filterText: {
     ...TYPOGRAPHY.labelSmall,
@@ -401,6 +558,36 @@ const styles = StyleSheet.create({
   },
   activeFilterText: {
     color: COLORS.white,
+  },
+  premiumBadge: {
+    fontSize: 12,
+  },
+  premiumUpsellCard: {
+    marginHorizontal: DIMENSIONS.SPACING.md,
+    marginBottom: DIMENSIONS.SPACING.sm,
+    padding: DIMENSIONS.SPACING.md,
+  },
+  upsellTitle: {
+    ...TYPOGRAPHY.h5,
+    color: COLORS.white,
+    marginBottom: DIMENSIONS.SPACING.xs,
+  },
+  upsellText: {
+    ...TYPOGRAPHY.body2,
+    color: COLORS.white,
+    opacity: 0.9,
+    marginBottom: DIMENSIONS.SPACING.md,
+  },
+  upsellButton: {
+    backgroundColor: COLORS.white,
+    paddingVertical: DIMENSIONS.SPACING.sm,
+    paddingHorizontal: DIMENSIONS.SPACING.lg,
+    borderRadius: DIMENSIONS.SPACING.sm,
+    alignItems: 'center',
+  },
+  upsellButtonText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.primary,
   },
   feed: {
     flex: 1,
@@ -414,6 +601,14 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: COLORS.lost,
   },
+  challengePost: {
+    borderWidth: 2,
+    borderColor: COLORS.gold,
+  },
+  proPost: {
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
   urgentBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -426,10 +621,45 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: DIMENSIONS.SPACING.md,
     borderTopRightRadius: DIMENSIONS.SPACING.md,
   },
+  foundBanner: {
+    backgroundColor: COLORS.primary,
+  },
+  challengeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.gold,
+    marginHorizontal: -DIMENSIONS.SPACING.md,
+    marginTop: -DIMENSIONS.SPACING.md,
+    marginBottom: DIMENSIONS.SPACING.sm + 4,
+    paddingVertical: DIMENSIONS.SPACING.sm,
+    paddingHorizontal: DIMENSIONS.SPACING.md,
+    borderTopLeftRadius: DIMENSIONS.SPACING.md,
+    borderTopRightRadius: DIMENSIONS.SPACING.md,
+  },
   urgentText: {
     ...TYPOGRAPHY.overline,
     color: COLORS.white,
     marginLeft: DIMENSIONS.SPACING.xs + 2,
+    flex: 1,
+  },
+  challengeText: {
+    ...TYPOGRAPHY.overline,
+    color: COLORS.white,
+    marginLeft: DIMENSIONS.SPACING.xs + 2,
+  },
+  rewardBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: DIMENSIONS.SPACING.xs + 2,
+    paddingVertical: DIMENSIONS.SPACING.xs / 2,
+    borderRadius: 999,
+    gap: 2,
+  },
+  rewardText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.white,
+    fontWeight: '700' as const,
   },
   postHeader: {
     flexDirection: 'row',
@@ -468,16 +698,46 @@ const styles = StyleSheet.create({
     color: COLORS.darkGray,
     marginLeft: DIMENSIONS.SPACING.xs,
   },
+  moreButton: {
+    padding: DIMENSIONS.SPACING.xs,
+  },
+  moreButtonText: {
+    fontSize: 24,
+    color: COLORS.darkGray,
+    fontWeight: '700' as const,
+  },
   postContent: {
     ...TYPOGRAPHY.body2,
     color: COLORS.black,
+    marginBottom: DIMENSIONS.SPACING.sm,
+  },
+  imagesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: DIMENSIONS.SPACING.xs,
     marginBottom: DIMENSIONS.SPACING.sm,
   },
   postImage: {
     width: '100%',
     height: 200,
     borderRadius: DIMENSIONS.SPACING.sm + 4,
-    marginBottom: DIMENSIONS.SPACING.sm + 4,
+  },
+  multipleImages: {
+    width: '48%',
+    height: 150,
+  },
+  viewAllPhotosButton: {
+    paddingVertical: DIMENSIONS.SPACING.xs + 2,
+    paddingHorizontal: DIMENSIONS.SPACING.sm,
+    backgroundColor: COLORS.lightGray,
+    borderRadius: DIMENSIONS.SPACING.sm,
+    alignSelf: 'flex-start',
+    marginBottom: DIMENSIONS.SPACING.sm,
+  },
+  viewAllPhotosText: {
+    ...TYPOGRAPHY.body3,
+    color: COLORS.primary,
+    fontWeight: '600' as const,
   },
   postActions: {
     flexDirection: 'row',
