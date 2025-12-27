@@ -21,6 +21,7 @@ import { TYPOGRAPHY } from '@/constants/typography';
 import { useI18n } from '@/hooks/i18n-store';
 import { useSocial } from '@/hooks/social-store';
 import { usePremium } from '@/hooks/premium-store';
+import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import GlassCard from '@/components/GlassCard';
 import AppBackground from '@/components/AppBackground';
 import { Plus, Heart, MessageCircle, Share, MapPin, AlertTriangle, Send, Award, DollarSign } from 'lucide-react-native';
@@ -52,7 +53,11 @@ export default function CommunityScreen() {
     isAddingComment,
     reportPost,
     blockUser,
+    deletePost,
+    isDeletingPost,
   } = useSocial();
+  
+  const { user } = useFirebaseUser();
   
   const { isPremium, showPremiumPrompt } = usePremium();
 
@@ -176,6 +181,27 @@ export default function CommunityScreen() {
       ]
     );
   };
+  
+  const handleDeletePost = (postId: string, authorName: string) => {
+    Alert.alert(
+      'Supprimer la publication',
+      `Êtes-vous sûr de vouloir supprimer cette publication de ${authorName} ?`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { 
+          text: 'Supprimer', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deletePost(postId);
+            } catch (error) {
+              console.error('Error deleting post:', error);
+            }
+          }
+        },
+      ]
+    );
+  };
 
   const filters: { key: FilterType; label: string; premium?: boolean }[] = [
     { key: 'all', label: t('map.show_all') },
@@ -269,13 +295,13 @@ export default function CommunityScreen() {
         <View style={styles.postHeader}>
           <Image 
             source={{ 
-              uri: post.authorPhoto || 'https://images.unsplash.com/photo-1494790108755-2616b9e0e4b0?w=100&h=100&fit=crop&crop=face' 
+              uri: post.authorPhoto || 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=100&h=100&fit=crop&crop=face' 
             }} 
             style={styles.avatar}
             resizeMode="cover"
           />
           <View style={styles.authorInfo}>
-            <Text style={styles.authorName}>{post.authorName || 'Anonyme'}</Text>
+            <Text style={styles.authorName}>{post.authorName || 'Animal'}</Text>
             <View style={styles.postMeta}>
               <Text style={styles.timeAgo}>{formatTimeAgo(post.createdAt)}</Text>
               {post.location?.name && (
@@ -290,11 +316,20 @@ export default function CommunityScreen() {
           <TouchableOpacity 
             style={styles.moreButton}
             onPress={() => {
-              Alert.alert(
-                'Actions',
-                '',
-                [
-                  { text: 'Annuler', style: 'cancel' },
+              const isOwner = user && (post.fromOwnerId === user.id || post.authorId === user.id);
+              
+              const actions: any[] = [
+                { text: 'Annuler', style: 'cancel' },
+              ];
+              
+              if (isOwner) {
+                actions.push({
+                  text: 'Supprimer mon post',
+                  style: 'destructive',
+                  onPress: () => handleDeletePost(post.id, post.authorName)
+                });
+              } else {
+                actions.push(
                   { 
                     text: 'Signaler', 
                     onPress: () => handleReportPost(post.id, post.authorName)
@@ -303,10 +338,13 @@ export default function CommunityScreen() {
                     text: 'Bloquer l\'utilisateur', 
                     style: 'destructive',
                     onPress: () => handleBlockUser(post.authorId, post.authorName)
-                  },
-                ]
-              );
+                  }
+                );
+              }
+              
+              Alert.alert('Actions', '', actions);
             }}
+            disabled={isDeletingPost}
           >
             <Text style={styles.moreButtonText}>⋯</Text>
           </TouchableOpacity>

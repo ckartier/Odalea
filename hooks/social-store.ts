@@ -32,17 +32,19 @@ export const [SocialContext, useSocial] = createContextHook(() => {
   const postsQuery = useQuery({
     queryKey: ['posts', 'feed'],
     queryFn: async () => {
+      console.log('🔄 Fetching posts feed with pet data...');
       const [normalPosts, lostReports, challengePosts] = await Promise.all([
         databaseService.post.getPostsFeed(),
         databaseService.lostFound.listReports().catch(() => []),
         databaseService.challenge.getParticipations().catch(() => [])
       ]);
+      
+      console.log(`📊 Fetched ${normalPosts.length} normal posts, ${lostReports.length} lost/found, ${challengePosts.length} challenges`);
 
       const mappedLost: Post[] = (lostReports as any[]).map((r: any) => {
         const createdAt = (r?.createdAt as any)?.toDate?.() || new Date();
-        const authorName = r?.reporterName || r?.authorName || 'Anonyme';
-        const image = r?.photo || r?.imageUrl || undefined;
         const petName = r?.petName || r?.animalName || 'Animal';
+        const image = r?.photo || r?.imageUrl || undefined;
         const content = r?.description || `Animal ${r?.type === 'found' ? 'trouvé' : 'perdu'}: ${petName}`;
         const loc = r?.location && r.location.latitude && r.location.longitude ? {
           name: r?.address || r?.city || undefined,
@@ -52,8 +54,10 @@ export const [SocialContext, useSocial] = createContextHook(() => {
         return {
           id: `lost-${String(r.id)}`,
           authorId: String(r?.userId ?? r?.authorId ?? 'unknown'),
-          authorName: String(authorName),
-          authorPhoto: r?.authorPhoto || undefined,
+          authorName: String(petName),
+          authorPhoto: image,
+          fromPetId: r?.petId ? String(r.petId) : undefined,
+          fromOwnerId: String(r?.userId ?? r?.authorId ?? 'unknown'),
           content: String(content),
           images: image ? [String(image)] : undefined,
           petId: r?.petId ? String(r.petId) : undefined,
@@ -76,8 +80,10 @@ export const [SocialContext, useSocial] = createContextHook(() => {
           return {
             id: `challenge-${String(p.id)}`,
             authorId: String(p?.userId || 'unknown'),
-            authorName: String(p?.userName || 'Anonyme'),
+            authorName: String(p?.userName || 'Participant'),
             authorPhoto: p?.userPhoto,
+            fromPetId: p?.petId ? String(p.petId) : undefined,
+            fromOwnerId: String(p?.userId || 'unknown'),
             content: `A relevé le défi : ${p?.challengeTitle || 'Défi'}`,
             images: p?.proof?.type === 'photo' && p?.proof?.data ? [p.proof.data] : undefined,
             likesCount: p?.yesVotes || 0,
@@ -92,9 +98,46 @@ export const [SocialContext, useSocial] = createContextHook(() => {
         });
 
       const allPosts = [...mappedLost, ...mappedChallenges, ...normalPosts];
-      return allPosts.sort((a, b) => 
+      const sorted = allPosts.sort((a, b) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
+      
+      // Extract unique petIds from posts that have fromPetId
+      const petIds = Array.from(new Set(
+        sorted
+          .map(p => p.fromPetId)
+          .filter((id): id is string => !!id)
+      ));
+      
+      console.log(`🐾 Found ${petIds.length} unique pets to fetch`);
+      
+      // Fetch pet data in batch
+      if (petIds.length > 0) {
+        try {
+          const petsMap = await databaseService.pet.getPetsByIds(petIds);
+          
+          // Enrich posts with pet data
+          const enrichedPosts = sorted.map(post => {
+            if (post.fromPetId && petsMap.has(post.fromPetId)) {
+              const pet = petsMap.get(post.fromPetId)!;
+              return {
+                ...post,
+                authorName: pet.name || 'Animal',
+                authorPhoto: pet.mainPhoto || undefined,
+              };
+            }
+            return post;
+          });
+          
+          console.log(`✅ Enriched ${enrichedPosts.length} posts with pet data`);
+          return enrichedPosts;
+        } catch (error) {
+          console.error('❌ Error fetching pet data:', error);
+          return sorted;
+        }
+      }
+      
+      return sorted;
     },
     enabled: !!user,
     refetchInterval: 30000,
@@ -404,6 +447,39 @@ export const [SocialContext, useSocial] = createContextHook(() => {
   const blockUser = async (userId: string) => {
     return blockUserMutation.mutateAsync({ userId });
   };
+  
+  const deletePostMutation = useMutation({
+    mutationFn: async ({ postId }: { postId: string }) => {
+      if (!user) throw new Error('User not authenticated');
+      
+      console.log(`🗑️ Deleting post ${postId}`);
+      
+      // Delete from Firestore if it's a normal post
+      if (!postId.startsWith('lost-') && !postId.startsWith('challenge-')) {
+        const { deleteDoc, doc } = await import('firebase/firestore');
+        const { db } = await import('@/services/firebase');
+        const postRef = doc(db, 'posts', postId);
+        await deleteDoc(postRef);
+      }
+      
+      return { postId };
+    },
+    onSuccess: ({ postId }) => {
+      // Remove from local state
+      setPosts(prevPosts => prevPosts.filter(p => p.id !== postId));
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      console.log('✅ Post deleted successfully');
+      Alert.alert('Succès', 'Votre publication a été supprimée.');
+    },
+    onError: (error) => {
+      console.error('❌ Error deleting post:', error);
+      Alert.alert('Erreur', 'Impossible de supprimer cette publication.');
+    }
+  });
+  
+  const deletePost = async (postId: string) => {
+    return deletePostMutation.mutateAsync({ postId });
+  };
 
   const isPostLiked = (postId: string): boolean => {
     return likedPosts.has(postId);
@@ -425,6 +501,7 @@ export const [SocialContext, useSocial] = createContextHook(() => {
     addComment,
     reportPost,
     blockUser,
+    deletePost,
     getComments,
     getUserPosts,
     isPostLiked,
@@ -432,6 +509,7 @@ export const [SocialContext, useSocial] = createContextHook(() => {
     isCreatingPost: createPostMutation.isPending,
     isTogglingLike: toggleLikeMutation.isPending,
     isAddingComment: addCommentMutation.isPending,
+    isDeletingPost: deletePostMutation.isPending,
     blockedUsers,
   };
 });

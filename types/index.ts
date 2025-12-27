@@ -372,6 +372,8 @@ export interface Post {
   authorId: string;
   authorName: string;
   authorPhoto?: string;
+  fromPetId?: string;
+  fromOwnerId?: string;
   content: string;
   images?: string[];
   petId?: string;

@@ -287,6 +287,47 @@ export const petService = {
       console.error('❌ Error getting nearby pets:', error);
       throw error;
     }
+  },
+
+  // Get pet by ID
+  async getPet(petId: string): Promise<Pet | null> {
+    try {
+      const petRef = doc(db, COLLECTIONS.PETS, petId);
+      const petSnap = await getDoc(petRef);
+      
+      if (petSnap.exists()) {
+        return { id: petSnap.id, ...petSnap.data() } as Pet;
+      }
+      return null;
+    } catch (error) {
+      console.error('❌ Error getting pet:', error);
+      return null;
+    }
+  },
+
+  // Get multiple pets by IDs (batch)
+  async getPetsByIds(petIds: string[]): Promise<Map<string, Pet>> {
+    try {
+      const petsMap = new Map<string, Pet>();
+      
+      if (!petIds || petIds.length === 0) return petsMap;
+      
+      // Fetch pets in parallel
+      const petPromises = petIds.map(id => this.getPet(id));
+      const pets = await Promise.all(petPromises);
+      
+      pets.forEach((pet, index) => {
+        if (pet) {
+          petsMap.set(petIds[index], pet);
+        }
+      });
+      
+      console.log(`✅ Fetched ${petsMap.size} pets from ${petIds.length} requested`);
+      return petsMap;
+    } catch (error) {
+      console.error('❌ Error getting pets by IDs:', error);
+      return new Map();
+    }
   }
 };
 
