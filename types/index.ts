@@ -24,6 +24,14 @@ export interface NotificationSettings {
   lostFoundAlerts: boolean;
 }
 
+export interface UserRoles {
+  catSitter?: boolean;
+  breeder?: boolean;
+  shelter?: boolean;
+  vet?: boolean;
+  boutique?: boolean;
+}
+
 export interface User {
   id: string;
   firstName: string;
@@ -50,6 +58,7 @@ export interface User {
   referralCode?: string;
   isPremium: boolean;
   role?: 'user' | 'admin';
+  roles?: UserRoles;
   createdAt: number;
   pets: Pet[];
   animalType?: string;

@@ -6,6 +6,7 @@ import { COLORS, DIMENSIONS } from '@/constants/colors';
 import { Menu } from 'lucide-react-native';
 import { usePets } from '@/hooks/pets-store';
 import { useAuth } from '@/hooks/auth-store';
+import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getUserAvatarUrl } from '@/lib/image-helpers';
 
@@ -29,6 +30,7 @@ const TopBar = React.memo(({ rightAction, onMenuPress, onBackPress }: TopBarProp
   const insets = useSafeAreaInsets();
   const { userPets } = usePets();
   const { user } = useAuth();
+  const { user: firebaseUser } = useFirebaseUser();
   const authPets = useMemo(() => user?.pets ?? [], [user?.pets]);
   const combinedPets = useMemo(() => {
     const safeUserPets = Array.isArray(userPets) ? userPets : [];
@@ -36,10 +38,7 @@ const TopBar = React.memo(({ rightAction, onMenuPress, onBackPress }: TopBarProp
     return (safeUserPets.length > 0) ? safeUserPets : safeAuthPets;
   }, [userPets, authPets]);
 
-  const primaryPet = useMemo(() => {
-    if (!Array.isArray(combinedPets)) return undefined;
-    return combinedPets.find((p) => p.isPrimary) ?? combinedPets[0];
-  }, [combinedPets]);
+
 
   const shouldShow = useMemo(() => !(
     pathname?.includes('/auth/') ||
@@ -60,7 +59,7 @@ const TopBar = React.memo(({ rightAction, onMenuPress, onBackPress }: TopBarProp
     router.push('/(tabs)/profile' as any);
   }, [router]);
 
-  const photoUri = getUserAvatarUrl(user) || 'https://via.placeholder.com/64';
+  const photoUri = getUserAvatarUrl(firebaseUser || user) || 'https://via.placeholder.com/64';
 
   const Avatar = (
     <TouchableOpacity
@@ -91,19 +90,28 @@ const TopBar = React.memo(({ rightAction, onMenuPress, onBackPress }: TopBarProp
     </TouchableOpacity>
   );
 
-  const userLabel = useMemo(() => user?.pseudo || user?.name || '', [user?.pseudo, user?.name]);
+  const userLabel = useMemo(() => {
+    const currentUser = firebaseUser || user;
+    return currentUser?.pseudo || currentUser?.name || '';
+  }, [firebaseUser, user]);
+  
   const subtitle = useMemo(() => {
-    if (primaryPet?.character && primaryPet.character.length > 0) {
-      return primaryPet.character[0] || 'Adorable compagnon';
+    const pets = combinedPets.filter(p => p);
+    
+    if (pets.length === 0) {
+      return 'Ajoutez un animal';
     }
-    if (primaryPet?.name) {
-      return `${primaryPet.name}${primaryPet.breed ? ` • ${primaryPet.breed}` : ''}`;
+    
+    if (pets.length === 1) {
+      return pets[0].name;
     }
-    if (user?.city) {
-      return `${user.city}${user.zipCode ? `, ${user.zipCode}` : ''}`;
+    
+    if (pets.length === 2) {
+      return `${pets[0].name} • ${pets[1].name}`;
     }
-    return 'Prenez soin de vos animaux';
-  }, [primaryPet?.character, primaryPet?.name, primaryPet?.breed, user?.city, user?.zipCode]);
+    
+    return `${pets[0].name} • ${pets[1].name} +${pets.length - 2}`;
+  }, [combinedPets]);
 
   if (!shouldShow) {
     return null;

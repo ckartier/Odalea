@@ -8,12 +8,15 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/colors';
 import { TYPOGRAPHY } from '@/constants/typography';
 import { useAuth } from '@/hooks/auth-store';
+import { useFirebaseUser } from '@/hooks/firebase-user-store';
+import { useFriends } from '@/hooks/friends-store';
+import { useMessaging } from '@/hooks/messaging-store';
 import { getUserAvatarUrl } from '@/lib/image-helpers';
 import {
   Home,
@@ -52,6 +55,9 @@ export default function MenuScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
+  const { user: firebaseUser } = useFirebaseUser();
+  const { pendingRequests } = useFriends();
+  const { conversations } = useMessaging();
 
   const isProfessional = Boolean(user?.isProfessional);
   const isCatSitter = Boolean(user?.isCatSitter);
@@ -59,6 +65,10 @@ export default function MenuScreen() {
   useEffect(() => {
     console.log('MenuScreen mounted');
   }, []);
+
+  const friendRequestCount = pendingRequests?.length || 0;
+  const unreadMessagesCount = conversations?.filter(c => c.unreadCount > 0).length || 0;
+  const userAvatar = getUserAvatarUrl(firebaseUser || user) || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face';
 
   const handleSignOut = async () => {
     try {
@@ -79,6 +89,13 @@ export default function MenuScreen() {
   };
 
   const mainMenuItems: MenuItem[] = [
+    {
+      id: 'friends',
+      title: 'Mes Amis',
+      icon: <Heart size={24} color="#111" />,
+      route: '/friends',
+      badge: friendRequestCount,
+    },
     {
       id: 'home',
       title: 'Accueil',
@@ -125,8 +142,9 @@ export default function MenuScreen() {
     {
       id: 'messages',
       title: 'Messages',
-      icon: <MessageCircle size={24} color={COLORS.primary} />,
+      icon: <MessageCircle size={24} color="#111" />,
       route: '/(tabs)/messages',
+      badge: unreadMessagesCount,
     },
   ];
 
@@ -237,14 +255,12 @@ export default function MenuScreen() {
     router.back();
   };
 
-  const userAvatar = getUserAvatarUrl(user) || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face';
-
   const renderMenuItem = (item: MenuItem, index: number) => (
     <TouchableOpacity
       key={item.id}
       style={[
         styles.menuItem,
-        index === 0 && { borderTopWidth: 0 } // Remove border for first item
+        index === 0 && { borderTopWidth: 0 }
       ]}
       onPress={() => handleMenuItemPress(item)}
       activeOpacity={0.7}
@@ -254,33 +270,19 @@ export default function MenuScreen() {
         {item.icon}
       </View>
       <Text style={[styles.menuItemText, item.id === 'logout' && { color: '#FF6B6B' }]}>{item.title}</Text>
-      <ChevronRight size={20} color="rgba(255, 255, 255, 0.8)" />
+      {item.badge && item.badge > 0 ? (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{item.badge > 99 ? '99+' : item.badge}</Text>
+        </View>
+      ) : null}
+      <ChevronRight size={20} color="#111" />
     </TouchableOpacity>
   );
 
-  const renderQuickAccessItem = (item: MenuItem) => (
-    <TouchableOpacity
-      key={item.id}
-      style={styles.quickAccessItem}
-      onPress={() => handleMenuItemPress(item)}
-      activeOpacity={0.7}
-      testID={`quick-${item.id}`}
-    >
-      <View style={[styles.quickAccessIcon, item.color ? { backgroundColor: `${item.color}15` } : {}]}>
-        {item.icon}
-      </View>
-      <Text style={styles.quickAccessText} numberOfLines={2}>{item.title}</Text>
-    </TouchableOpacity>
-  );
+
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#E8B4D4', '#C8A2C8', '#A8B4D8']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top }]}>
         <View style={styles.userInfo}>
@@ -293,7 +295,7 @@ export default function MenuScreen() {
           </View>
         </View>
         <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-          <X size={24} color={COLORS.white} />
+          <X size={24} color="#111" />
         </TouchableOpacity>
       </View>
 
@@ -302,12 +304,6 @@ export default function MenuScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Quick Access Grid - First 6 items */}
-        <Text style={styles.sectionTitle}>Accès rapide</Text>
-        <View style={styles.quickAccessGrid}>
-          {mainMenuItems.slice(0, 6).map(renderQuickAccessItem)}
-        </View>
-
         {/* Main Navigation */}
         <Text style={styles.sectionTitle}>Navigation principale</Text>
         <View style={styles.menuSection}>
@@ -358,6 +354,7 @@ export default function MenuScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
@@ -365,9 +362,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.3)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   userInfo: {
     flexDirection: 'row',
@@ -388,18 +385,18 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     ...TYPOGRAPHY.caption,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: '#666',
     marginBottom: 2,
   },
   userName: {
     ...TYPOGRAPHY.h5,
-    color: COLORS.white,
+    color: '#111',
   },
   closeButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -412,51 +409,19 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...TYPOGRAPHY.overline,
-    color: COLORS.white,
+    color: '#111',
     marginBottom: 12,
     marginTop: 16,
     letterSpacing: 1.2,
   },
-  quickAccessGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: -6,
-    marginBottom: 16,
-  },
-  quickAccessItem: {
-    width: '31%',
-    marginHorizontal: '1.16%',
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  quickAccessIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  quickAccessText: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: '600',
-    color: COLORS.white,
-    textAlign: 'center',
-    lineHeight: 14,
-  },
+
   menuSection: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     marginBottom: 24,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'rgba(0, 0, 0, 0.1)',
   },
   menuItem: {
     flexDirection: 'row',
@@ -464,13 +429,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+    borderTopColor: 'rgba(0, 0, 0, 0.05)',
   },
   menuIconContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
@@ -478,7 +443,22 @@ const styles = StyleSheet.create({
   menuItemText: {
     flex: 1,
     ...TYPOGRAPHY.body2,
-    color: COLORS.white,
+    color: '#111',
+  },
+  badge: {
+    backgroundColor: COLORS.error,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginRight: 8,
+    minWidth: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
   footer: {
     alignItems: 'center',
@@ -487,6 +467,6 @@ const styles = StyleSheet.create({
   },
   footerText: {
     ...TYPOGRAPHY.caption,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: '#666',
   },
 });
