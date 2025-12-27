@@ -9,7 +9,7 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import { useI18n } from '@/hooks/i18n-store';
 import { useSocial } from '@/hooks/social-store';
@@ -21,20 +21,38 @@ export default function CreatePostScreen() {
   const { t } = useI18n();
   const { createPost, isCreatingPost } = useSocial();
   const { userPets } = usePets();
+  const params = useLocalSearchParams();
   
   const [content, setContent] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
   const [location, setLocation] = useState('');
+  const [locationCoords, setLocationCoords] = useState<{ latitude: number; longitude: number } | null>(null);
 
   useEffect(() => {
     console.log('🔍 Create Post - Component mounted');
     
-    const primaryPet = userPets.find(pet => pet.isPrimary) || userPets[0];
-    if (primaryPet?.mainPhoto) {
-      setPhotos([primaryPet.mainPhoto]);
-      console.log('🐾 Auto-added pet photo:', primaryPet.name);
+    if (params.prefill === '1') {
+      console.log('📝 Prefilling post from map');
+      if (params.content && typeof params.content === 'string') {
+        setContent(decodeURIComponent(params.content));
+      }
+      if (params.lat && params.lng) {
+        const lat = parseFloat(params.lat as string);
+        const lng = parseFloat(params.lng as string);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          setLocationCoords({ latitude: lat, longitude: lng });
+          const locName = params.locName ? decodeURIComponent(params.locName as string) : 'Localisation';
+          setLocation(locName);
+        }
+      }
+    } else {
+      const primaryPet = userPets.find(pet => pet.isPrimary) || userPets[0];
+      if (primaryPet?.mainPhoto) {
+        setPhotos([primaryPet.mainPhoto]);
+        console.log('🐾 Auto-added pet photo:', primaryPet.name);
+      }
     }
-  }, [userPets]);
+  }, [userPets, params]);
 
   const handlePost = async () => {
     if (!content.trim()) {
@@ -49,7 +67,11 @@ export default function CreatePostScreen() {
         content: content.trim(),
         images: photos.length > 0 ? photos : undefined,
         type: photos.length > 0 ? 'photo' as const : 'text' as const,
-        location: location ? { name: location, latitude: 0, longitude: 0 } : undefined,
+        location: location && locationCoords 
+          ? { name: location, latitude: locationCoords.latitude, longitude: locationCoords.longitude }
+          : location 
+          ? { name: location, latitude: 0, longitude: 0 }
+          : undefined,
       };
       
       console.log('📝 Creating post with data:', postData);
@@ -110,7 +132,8 @@ export default function CreatePostScreen() {
       if (!result.canceled) {
         setPhotos(prev => [...prev, result.assets[0].uri]);
       }
-    } catch (_error) {
+    } catch (error) {
+      console.error('Error picking image:', error);
       Alert.alert('Error', 'Failed to pick image. Please try again.');
     }
   };

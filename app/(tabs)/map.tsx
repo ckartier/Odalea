@@ -43,11 +43,18 @@ import {
   ShieldCheck,
   RefreshCcw,
   X,
+  FileText,
+  UserPlus,
+  MessageCircle,
+  Sparkles,
 } from 'lucide-react-native';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { petService, userService, petSitterService } from '@/services/database';
 import { getBlurredUserLocation, getBlurredPetLocation } from '@/services/location-privacy';
 import { track } from '@/services/tracking';
+import { useFriends } from '@/hooks/friends-store';
+import { useMatching } from '@/hooks/matching-store';
+import { calculateDistance } from '@/services/location-privacy';
 
 interface Region {
   latitude: number;
@@ -138,6 +145,8 @@ export default function MapScreen() {
   const { t } = useI18n();
   const { getThemedColor } = useTheme();
   const insets = useSafeAreaInsets();
+  const { sendFriendRequest, isFriend, isRequestSent, isSendingRequest } = useFriends();
+  const { likePet, matches } = useMatching();
 
   const [region, setRegion] = useState<Region>({
     latitude: DEFAULT_LAT,
@@ -376,6 +385,46 @@ export default function MapScreen() {
       incrementActionCount();
       router.push(`/profile/${selectedUser.id}`);
     }
+  };
+
+  const handleAddFriend = async () => {
+    if (!selectedPet?.ownerId || !user?.id) return;
+    if (selectedPet.ownerId === user.id) {
+      showPopup({ type: 'error', title: 'Erreur', message: 'Vous ne pouvez pas vous ajouter vous-même' });
+      return;
+    }
+    try {
+      await sendFriendRequest(selectedPet.ownerId);
+      showPopup({ type: 'success', title: 'Succès', message: 'Demande d\'ami envoyée' });
+    } catch (error: any) {
+      showPopup({ type: 'error', title: 'Erreur', message: error?.message || 'Impossible d\'envoyer la demande' });
+    }
+  };
+
+  const handleCreatePost = () => {
+    if (!selectedPet || !userLocation) return;
+    incrementActionCount();
+
+    const petLoc = selectedPet.location;
+    if (!petLoc?.latitude || !petLoc?.longitude) return;
+
+    const distance = Math.round(calculateDistance(userLocation, petLoc));
+    const blurred = getBlurredPetLocation(selectedPet.id, petLoc);
+    const content = `Vu sur la map à ~${distance} m`;
+
+    router.push(`/community/create?prefill=1&content=${encodeURIComponent(content)}&lat=${blurred.latitude}&lng=${blurred.longitude}&sourcePetId=${selectedPet.id}`);
+  };
+
+  const handleViewMatching = () => {
+    if (!selectedPet) return;
+    incrementActionCount();
+    router.push(`/matching/discover?focusPetId=${selectedPet.id}`);
+  };
+
+  const getMatchStatus = () => {
+    if (!selectedPet?.id || !matches) return '—';
+    const isMatched = matches.some(m => m.petIds?.includes(selectedPet.id));
+    return isMatched ? 'Match' : 'Like';
   };
 
   const handleFilterPress = async (filter: MapFilter) => {
@@ -1034,6 +1083,60 @@ export default function MapScreen() {
                     </View>
                   )}
                 </View>
+
+                <View style={styles.actionsRow}>
+                  <TouchableOpacity
+                    style={styles.actionBtn}
+                    onPress={handlePetCardPress}
+                    activeOpacity={0.7}
+                    testID="btn-fiche"
+                  >
+                    <FileText size={18} color={COLORS.primary} />
+                    <Text style={styles.actionBtnText}>Fiche</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.actionBtn,
+                      (selectedPet.ownerId === user?.id || isFriend(selectedPet.ownerId || '') || isRequestSent(selectedPet.ownerId || '')) && styles.actionBtnDisabled
+                    ]}
+                    onPress={handleAddFriend}
+                    disabled={!selectedPet.ownerId || selectedPet.ownerId === user?.id || isFriend(selectedPet.ownerId) || isRequestSent(selectedPet.ownerId) || isSendingRequest}
+                    activeOpacity={0.7}
+                    testID="btn-ami"
+                  >
+                    <UserPlus size={18} color={selectedPet.ownerId === user?.id ? COLORS.darkGray : isFriend(selectedPet.ownerId || '') ? COLORS.darkGray : isRequestSent(selectedPet.ownerId || '') ? COLORS.darkGray : COLORS.primary} />
+                    <Text style={[
+                      styles.actionBtnText,
+                      (selectedPet.ownerId === user?.id || isFriend(selectedPet.ownerId || '') || isRequestSent(selectedPet.ownerId || '')) && styles.actionBtnTextDisabled
+                    ]}>
+                      {selectedPet.ownerId === user?.id ? 'Toi' : isFriend(selectedPet.ownerId || '') ? 'Ami' : isRequestSent(selectedPet.ownerId || '') ? 'Envoyée' : 'Ajouter'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.actionBtn}
+                    onPress={(e) => {
+                      e?.stopPropagation?.();
+                      handleCreatePost();
+                    }}
+                    activeOpacity={0.7}
+                    testID="btn-post"
+                  >
+                    <MessageCircle size={18} color={COLORS.primary} />
+                    <Text style={styles.actionBtnText}>Post</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.actionBtn}
+                    onPress={handleViewMatching}
+                    activeOpacity={0.7}
+                    testID="btn-match"
+                  >
+                    <Sparkles size={18} color={COLORS.primary} />
+                    <Text style={styles.actionBtnText}>{getMatchStatus()}</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </GlassCard>
@@ -1451,5 +1554,34 @@ const styles = StyleSheet.create({
   popupCloseText: {
     color: '#fff',
     fontWeight: '700',
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    marginTop: 12,
+    gap: 8,
+  },
+  actionBtn: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.4)',
+    minHeight: 56,
+  },
+  actionBtnDisabled: {
+    opacity: 0.5,
+  },
+  actionBtnText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  actionBtnTextDisabled: {
+    color: COLORS.darkGray,
   },
 });
