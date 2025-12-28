@@ -173,11 +173,11 @@ export const userService = {
       const qs = await getDocs(qy);
       return qs.docs.map(d => ({ id: d.id, ...(d.data() as any) })) as User[];
     } catch (error) {
-      console.error('❌ Error getting all users:', error);
       if (isPermissionDenied(error)) {
-        console.log('🔒 Returning empty user list due to permission rules');
+        console.log('🔒 getAllUsers: Permission denied, returning empty list (expected with current rules)');
         return [] as User[];
       }
+      console.error('❌ Error getting all users:', error);
       throw error;
     }
   },
@@ -1117,11 +1117,11 @@ export const productService = {
         ...doc.data()
       })) as Product[];
     } catch (error) {
-      console.error('❌ Error getting products by category:', error);
       if (isPermissionDenied(error)) {
-        console.log('🔒 Returning empty products due to permission rules');
+        console.log('🔒 getProductsByCategory: Permission denied, returning empty list (expected - products require admin write)');
         return [] as Product[];
       }
+      console.error('❌ Error getting products by category:', error);
       throw error;
     }
   },
@@ -1256,11 +1256,11 @@ export const lostFoundService = {
       const qs = await getDocs(qy);
       return qs.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() })) as any[];
     } catch (error) {
-      console.error('❌ Error listing lost&found reports:', error);
       if (isPermissionDenied(error)) {
-        console.log('🔒 Returning empty lost&found list due to permission rules');
+        console.log('🔒 listReports: Permission denied, returning empty list (expected with current rules)');
         return [] as any[];
       }
+      console.error('❌ Error listing lost&found reports:', error);
       return [] as any[];
     }
   },
@@ -1819,11 +1819,11 @@ export const challengeService = {
 
       return filtered;
     } catch (error) {
-      console.error('❌ Error getting active challenges:', error);
       if (isPermissionDenied(error)) {
-        console.log('🔒 Returning empty active challenges due to permission rules');
+        console.log('🔒 getActiveChallenges: Permission denied, returning empty list (expected - challenges require admin write)');
         return [] as Challenge[];
       }
+      console.error('❌ Error getting active challenges:', error);
       throw error;
     }
   },
@@ -2370,56 +2370,7 @@ export const healthService = {
   }
 };
 
-// Reviews Services
-export const reviewService = {
-  // Create review
-  async createReview(review: any): Promise<string> {
-    try {
-      const reviewsRef = collection(db, COLLECTIONS.REVIEWS);
-      const docRef = await addDoc(reviewsRef, {
-        ...review,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
-      console.log('✅ Review created successfully');
-      return docRef.id;
-    } catch (error) {
-      console.error('❌ Error creating review:', error);
-      throw error;
-    }
-  },
 
-  // Get reviews by target
-  async getReviewsByTarget(targetId: string, targetType: string): Promise<any[]> {
-    try {
-      const reviewsRef = collection(db, COLLECTIONS.REVIEWS);
-      // Build constraints dynamically to support 'all'
-      const constraints: any[] = [where('targetType', '==', targetType)];
-      if (targetId !== 'all') {
-        constraints.push(where('targetId', '==', targetId));
-      }
-      const q = query(reviewsRef, ...constraints);
-      const querySnapshot = await getDocs(q);
-      const items = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
-      const toMillis = (val: any): number => {
-        if (!val) return 0;
-        if (typeof val === 'number') return val;
-        if (typeof (val as any)?.toMillis === 'function') return (val as any).toMillis();
-        if (typeof (val as any)?.toDate === 'function') return (val as any).toDate().getTime();
-        if (val instanceof Date) return val.getTime();
-        return 0;
-      };
-      return items.sort((a: any, b: any) => toMillis(b.createdAt) - toMillis(a.createdAt));
-    } catch (error) {
-      console.error('❌ Error getting reviews:', error);
-      if (isPermissionDenied(error)) {
-        console.log('🔒 Returning empty reviews due to permission rules');
-        return [] as any[];
-      }
-      throw error;
-    }
-  }
-};
 
 // Emergency Services
 export const emergencyService = {
@@ -2635,6 +2586,100 @@ export const petMatchingService = {
   }
 };
 
+// Review Services
+export const reviewService = {
+  // Get reviews for cat sitter
+  async getReviewsBySitter(sitterId: string): Promise<any[]> {
+    try {
+      const reviewsRef = collection(db, COLLECTIONS.REVIEWS);
+      const q = query(
+        reviewsRef,
+        where('targetId', '==', sitterId),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    } catch (error) {
+      if (isPermissionDenied(error)) {
+        console.log('🔒 getReviewsBySitter: Permission denied, returning empty list (expected with current rules)');
+        return [];
+      }
+      console.error('❌ Error getting reviews:', error);
+      return [];
+    }
+  },
+
+  // Get reviews by target (supports both specific ID and 'all')
+  async getReviewsByTarget(targetId: string, targetType: string): Promise<any[]> {
+    try {
+      const reviewsRef = collection(db, COLLECTIONS.REVIEWS);
+      const constraints: any[] = [where('targetType', '==', targetType)];
+      if (targetId !== 'all') {
+        constraints.push(where('targetId', '==', targetId));
+      }
+      const q = query(reviewsRef, ...constraints);
+      const querySnapshot = await getDocs(q);
+      const items = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
+      const toMillis = (val: any): number => {
+        if (!val) return 0;
+        if (typeof val === 'number') return val;
+        if (typeof (val as any)?.toMillis === 'function') return (val as any).toMillis();
+        if (typeof (val as any)?.toDate === 'function') return (val as any).toDate().getTime();
+        if (val instanceof Date) return val.getTime();
+        return 0;
+      };
+      return items.sort((a: any, b: any) => toMillis(b.createdAt) - toMillis(a.createdAt));
+    } catch (error) {
+      if (isPermissionDenied(error)) {
+        console.log('🔒 getReviewsByTarget: Permission denied, returning empty list (expected with current rules)');
+        return [];
+      }
+      console.error('❌ Error getting reviews:', error);
+      return [];
+    }
+  },
+
+  // Create review
+  async createReview(review: any): Promise<string> {
+    try {
+      const reviewsRef = collection(db, COLLECTIONS.REVIEWS);
+      const docRef = await addDoc(reviewsRef, {
+        ...review,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      console.log('✅ Review created successfully');
+      return docRef.id;
+    } catch (error) {
+      console.error('❌ Error creating review:', error);
+      throw error;
+    }
+  },
+
+  // Get all reviews
+  async getAllReviews(limitCount = 100): Promise<any[]> {
+    try {
+      const reviewsRef = collection(db, COLLECTIONS.REVIEWS);
+      const q = query(reviewsRef, orderBy('createdAt', 'desc'), limit(limitCount));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    } catch (error) {
+      if (isPermissionDenied(error)) {
+        console.log('🔒 getAllReviews: Permission denied, returning empty list (expected with current rules)');
+        return [];
+      }
+      console.error('❌ Error getting reviews:', error);
+      return [];
+    }
+  }
+};
+
 // Export all services
 export const databaseService = {
   user: userService,
@@ -2647,6 +2692,7 @@ export const databaseService = {
   product: productService,
   professionalProduct: professionalProductService,
   order: orderService,
+  review: reviewService,
   messaging: messagingService,
   friendRequest: friendRequestService,
   badge: badgeService,
@@ -2657,7 +2703,6 @@ export const databaseService = {
   petSitter: petSitterService,
   booking: bookingService,
   health: healthService,
-  review: reviewService,
   emergency: emergencyService,
   petMatching: petMatchingService,
 };
