@@ -4,9 +4,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, usePathname } from 'expo-router';
 import { COLORS, DIMENSIONS } from '@/constants/colors';
 import { Menu } from 'lucide-react-native';
-import { usePets } from '@/hooks/pets-store';
 import { useAuth } from '@/hooks/auth-store';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
+import { useActivePet } from '@/hooks/active-pet-store';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getUserAvatarUrl } from '@/lib/image-helpers';
 
@@ -28,15 +28,9 @@ const TopBar = React.memo(({ rightAction, onMenuPress, onBackPress }: TopBarProp
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const { userPets } = usePets();
   const { user } = useAuth();
   const { user: firebaseUser } = useFirebaseUser();
-  const authPets = useMemo(() => user?.pets ?? [], [user?.pets]);
-  const combinedPets = useMemo(() => {
-    const safeUserPets = Array.isArray(userPets) ? userPets : [];
-    const safeAuthPets = Array.isArray(authPets) ? authPets : [];
-    return (safeUserPets.length > 0) ? safeUserPets : safeAuthPets;
-  }, [userPets, authPets]);
+  const { activePet } = useActivePet();
 
 
 
@@ -96,22 +90,11 @@ const TopBar = React.memo(({ rightAction, onMenuPress, onBackPress }: TopBarProp
   }, [firebaseUser, user]);
   
   const subtitle = useMemo(() => {
-    const pets = combinedPets.filter(p => p);
-    
-    if (pets.length === 0) {
+    if (!activePet) {
       return 'Ajoutez un animal';
     }
-    
-    if (pets.length === 1) {
-      return pets[0].name;
-    }
-    
-    if (pets.length === 2) {
-      return `${pets[0].name} • ${pets[1].name}`;
-    }
-    
-    return `${pets[0].name} • ${pets[1].name} +${pets.length - 2}`;
-  }, [combinedPets]);
+    return activePet.name;
+  }, [activePet]);
 
   if (!shouldShow) {
     return null;

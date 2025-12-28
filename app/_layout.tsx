@@ -24,6 +24,7 @@ import { SocialContext } from "@/hooks/social-store";
 import { FriendsContext } from "@/hooks/friends-store";
 import { MatchingContext } from "@/hooks/matching-store";
 import { FavoritesContext } from "@/hooks/favorites-store";
+import { ActivePetContext } from "@/hooks/active-pet-store";
 import { trpc, trpcClient } from "@/lib/trpc";
 import AppBackground from "@/components/AppBackground";
 import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
@@ -127,35 +128,37 @@ const AppProviders = React.memo(({ children }: { children: React.ReactNode }) =>
         <NotificationsProvider>
           <EmergencyContext>
             <PetsContext>
-              <MatchingContext>
-                <ThemeContext>
-                  <LostFoundContext>
-                    <BookingContext>
-                      <ChallengesContext>
-                        <PremiumContext>
-                          <CatSitterContext>
-                            <MessagingContext>
-                              <UnifiedMessagingContext>
-                                <SocialContext>
-                                  <FriendsContext>
-                                    <FavoritesContext>
-                                      <ShopContext>
-                                        <BadgesContext>
-                                          {children}
-                                        </BadgesContext>
-                                      </ShopContext>
-                                    </FavoritesContext>
-                                  </FriendsContext>
-                                </SocialContext>
-                              </UnifiedMessagingContext>
-                            </MessagingContext>
-                          </CatSitterContext>
-                        </PremiumContext>
-                      </ChallengesContext>
-                    </BookingContext>
-                  </LostFoundContext>
-                </ThemeContext>
-              </MatchingContext>
+              <ActivePetContext>
+                <MatchingContext>
+                  <ThemeContext>
+                    <LostFoundContext>
+                      <BookingContext>
+                        <ChallengesContext>
+                          <PremiumContext>
+                            <CatSitterContext>
+                              <MessagingContext>
+                                <UnifiedMessagingContext>
+                                  <SocialContext>
+                                    <FriendsContext>
+                                      <FavoritesContext>
+                                        <ShopContext>
+                                          <BadgesContext>
+                                            {children}
+                                          </BadgesContext>
+                                        </ShopContext>
+                                      </FavoritesContext>
+                                    </FriendsContext>
+                                  </SocialContext>
+                                </UnifiedMessagingContext>
+                              </MessagingContext>
+                            </CatSitterContext>
+                          </PremiumContext>
+                        </ChallengesContext>
+                      </BookingContext>
+                    </LostFoundContext>
+                  </ThemeContext>
+                </MatchingContext>
+              </ActivePetContext>
             </PetsContext>
           </EmergencyContext>
         </NotificationsProvider>
