@@ -581,6 +581,10 @@
   },
   "settings": {
     "settings": "Einstellungen",
+    "preferences": "Einstellungen",
+    "security": "Sicherheit",
+    "support": "Unterstützung",
+    "legal": "Rechtliches",
     "support_infos": "Support & Info",
     "account": "Konto",
     "notifications": "Benachrichtigungen",
@@ -592,6 +596,10 @@
     "contact_support": "Support kontaktieren",
     "logout": "Abmelden",
     "delete_account": "Konto löschen",
+    "blocked_users": "Blockierte Benutzer",
+    "terms": "Nutzungsbedingungen",
+    "privacy_policy": "Datenschutzrichtlinie",
+    "all_rights_reserved": "Alle Rechte vorbehalten",
     "notification_settings": {
       "push_notifications": "Push-Benachrichtigungen",
       "email_notifications": "E-Mail-Benachrichtigungen",

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,19 +6,18 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { COLORS, SHADOWS } from '@/constants/colors';
+import { COLORS } from '@/constants/colors';
 import { useI18n } from '@/hooks/i18n-store';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
-import { useTheme } from '@/hooks/theme-store';
 
 import {
   Bell,
   Globe,
-  Moon,
-  Sun,
   Shield,
   HelpCircle,
   MessageSquare,
@@ -26,87 +25,25 @@ import {
   Trash2,
   ChevronRight,
   LogOut,
+  Check,
+  X,
+  UserX,
+  Info,
+  Lock,
 } from 'lucide-react-native';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { t, currentLocale, changeLanguage } = useI18n();
   const { signOut } = useFirebaseUser();
-  const { currentTheme, mode, setThemeMode, isDark } = useTheme();
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
 
-  const handleLanguageChange = () => {
-    Alert.alert(
-      t('settings.language'),
-      t('auth.select_language'),
-      [
-        {
-          text: 'Français',
-          onPress: async () => {
-            await changeLanguage('fr');
-          },
-          style: currentLocale === 'fr' ? 'default' : 'cancel',
-        },
-        {
-          text: 'English',
-          onPress: async () => {
-            await changeLanguage('en');
-          },
-          style: currentLocale === 'en' ? 'default' : 'cancel',
-        },
-        {
-          text: 'Español',
-          onPress: async () => {
-            await changeLanguage('es');
-          },
-          style: currentLocale === 'es' ? 'default' : 'cancel',
-        },
-        {
-          text: 'Deutsch',
-          onPress: async () => {
-            await changeLanguage('de');
-          },
-          style: currentLocale === 'de' ? 'default' : 'cancel',
-        },
-        {
-          text: 'Italiano',
-          onPress: async () => {
-            await changeLanguage('it');
-          },
-          style: currentLocale === 'it' ? 'default' : 'cancel',
-        },
-      ]
-    );
+  const handleLanguageChange = async (lang: 'en' | 'fr' | 'es' | 'de' | 'it') => {
+    await changeLanguage(lang);
+    setShowLanguageModal(false);
   };
 
-  const handleThemeChange = () => {
-    Alert.alert(
-      'Thème',
-      'Choisissez le thème de l\'application',
-      [
-        {
-          text: 'Clair',
-          onPress: async () => {
-            await setThemeMode('light');
-          },
-          style: mode === 'light' ? 'default' : 'cancel',
-        },
-        {
-          text: 'Sombre',
-          onPress: async () => {
-            await setThemeMode('dark');
-          },
-          style: mode === 'dark' ? 'default' : 'cancel',
-        },
-        {
-          text: 'Système',
-          onPress: async () => {
-            await setThemeMode('system');
-          },
-          style: mode === 'system' ? 'default' : 'cancel',
-        },
-      ]
-    );
-  };
+
 
   const handleSignOut = () => {
     Alert.alert(
@@ -144,74 +81,87 @@ export default function SettingsScreen() {
     );
   };
 
-  const settingsItems = [
-    {
-      id: 'notifications',
-      title: t('settings.notifications'),
-      icon: <Bell size={24} color={currentTheme.text} />,
-      onPress: () => router.push('/settings/notifications'),
-    },
+  const getLanguageName = () => {
+    switch (currentLocale) {
+      case 'fr': return 'Français';
+      case 'en': return 'English';
+      case 'es': return 'Español';
+      case 'de': return 'Deutsch';
+      case 'it': return 'Italiano';
+      default: return 'Français';
+    }
+  };
+
+  const preferencesItems = [
     {
       id: 'language',
       title: t('settings.language'),
-      icon: <Globe size={24} color={currentTheme.text} />,
-      subtitle: currentLocale === 'fr' ? 'Français' : currentLocale === 'en' ? 'English' : currentLocale === 'es' ? 'Español' : currentLocale === 'de' ? 'Deutsch' : 'Italiano',
-      onPress: handleLanguageChange,
+      icon: <Globe size={22} color={COLORS.black} />,
+      subtitle: getLanguageName(),
+      onPress: () => setShowLanguageModal(true),
     },
     {
-      id: 'theme',
-      title: t('settings.theme'),
-      icon: isDark ? <Moon size={24} color={currentTheme.text} /> : <Sun size={24} color={currentTheme.text} />,
-      subtitle: mode === 'light' ? 'Clair' : mode === 'dark' ? 'Sombre' : 'Système',
-      onPress: handleThemeChange,
+      id: 'notifications',
+      title: t('settings.notifications'),
+      icon: <Bell size={22} color={COLORS.black} />,
+      onPress: () => router.push('/settings/notifications'),
     },
+  ];
+
+  const securityItems = [
     {
       id: 'privacy',
       title: t('settings.privacy'),
-      icon: <Shield size={24} color={currentTheme.text} />,
+      icon: <Lock size={22} color={COLORS.black} />,
       onPress: () => router.push('/settings/privacy'),
     },
     {
       id: 'blocked-users',
-      title: 'Utilisateurs bloqués',
-      icon: <Shield size={24} color={currentTheme.text} />,
+      title: t('settings.blocked_users'),
+      icon: <UserX size={22} color={COLORS.black} />,
       onPress: () => router.push('/settings/blocked-users'),
     },
     {
+      id: 'rgpd',
+      title: 'RGPD',
+      icon: <Shield size={22} color={COLORS.black} />,
+      onPress: () => router.push('/settings/rgpd'),
+    },
+  ];
+
+  const supportItems = [
+    {
       id: 'help',
       title: t('settings.help'),
-      icon: <HelpCircle size={24} color={currentTheme.text} />,
+      icon: <HelpCircle size={22} color={COLORS.black} />,
       onPress: () => router.push('/settings/help'),
     },
     {
       id: 'faq',
-      title: 'Questions fréquentes',
-      icon: <HelpCircle size={24} color={currentTheme.text} />,
+      title: 'FAQ',
+      icon: <Info size={22} color={COLORS.black} />,
       onPress: () => router.push('/settings/faq'),
     },
     {
       id: 'support',
       title: t('settings.contact_support'),
-      icon: <MessageSquare size={24} color={currentTheme.text} />,
+      icon: <MessageSquare size={22} color={COLORS.black} />,
       onPress: () => router.push('/settings/support'),
     },
+  ];
+
+  const legalItems = [
     {
       id: 'terms',
-      title: 'Conditions d\'utilisation',
-      icon: <FileText size={24} color={currentTheme.text} />,
+      title: t('settings.terms'),
+      icon: <FileText size={22} color={COLORS.black} />,
       onPress: () => router.push('/legal/terms'),
     },
     {
       id: 'privacy-policy',
-      title: 'Politique de confidentialité',
-      icon: <FileText size={24} color={currentTheme.text} />,
+      title: t('settings.privacy_policy'),
+      icon: <FileText size={22} color={COLORS.black} />,
       onPress: () => router.push('/legal/privacy'),
-    },
-    {
-      id: 'rgpd',
-      title: 'RGPD',
-      icon: <Shield size={24} color={currentTheme.text} />,
-      onPress: () => router.push('/settings/rgpd'),
     },
   ];
 
@@ -235,56 +185,111 @@ export default function SettingsScreen() {
   const renderSettingItem = (item: any) => (
     <TouchableOpacity
       key={item.id}
-      style={[styles.settingItem, SHADOWS.small, { backgroundColor: currentTheme.card }]}
+      style={[styles.settingItem, { backgroundColor: COLORS.white }]}
       onPress={item.onPress}
       activeOpacity={0.7}
     >
-      <View style={[styles.settingIcon, { backgroundColor: currentTheme.background }]}>
+      <View style={styles.settingIcon}>
         {item.icon}
       </View>
       <View style={styles.settingContent}>
-        <Text style={[styles.settingTitle, { color: item.textColor || currentTheme.text }]}>
+        <Text style={[styles.settingTitle, { color: item.textColor || COLORS.black }]}>
           {item.title}
         </Text>
         {item.subtitle && (
-          <Text style={[styles.settingSubtitle, { color: currentTheme.text }]}>{item.subtitle}</Text>
+          <Text style={styles.settingSubtitle}>{item.subtitle}</Text>
         )}
       </View>
-      <ChevronRight size={20} color={currentTheme.text} />
+      <ChevronRight size={20} color={COLORS.gray} />
     </TouchableOpacity>
   );
 
+  const languages = [
+    { code: 'fr' as const, name: 'Français', flag: '🇫🇷' },
+    { code: 'en' as const, name: 'English', flag: '🇬🇧' },
+    { code: 'es' as const, name: 'Español', flag: '🇪🇸' },
+    { code: 'de' as const, name: 'Deutsch', flag: '🇩🇪' },
+    { code: 'it' as const, name: 'Italiano', flag: '🇮🇹' },
+  ];
+
   return (
-    <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
+    <View style={styles.container}>
       <Stack.Screen
         options={{
           title: t('settings.settings'),
-          headerStyle: { backgroundColor: currentTheme.card },
-          headerTintColor: currentTheme.text,
+          headerStyle: { backgroundColor: COLORS.white },
+          headerTintColor: COLORS.black,
+          headerShadowVisible: false,
         }}
       />
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <StatusBar style="dark" />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>Général</Text>
-          {settingsItems.map(renderSettingItem)}
+          <Text style={styles.sectionTitle}>{t('settings.preferences')}</Text>
+          {preferencesItems.map(renderSettingItem)}
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>Compte</Text>
+          <Text style={styles.sectionTitle}>{t('settings.security')}</Text>
+          {securityItems.map(renderSettingItem)}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('settings.support')}</Text>
+          {supportItems.map(renderSettingItem)}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('settings.legal')}</Text>
+          {legalItems.map(renderSettingItem)}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('settings.account')}</Text>
           {dangerousItems.map(renderSettingItem)}
         </View>
 
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: currentTheme.text }]}>
-            Coppet v1.0.0
-          </Text>
-          <Text style={[styles.footerText, { color: currentTheme.text }]}>
-            © 2024 Coppet. Tous droits réservés.
-          </Text>
+          <Text style={styles.footerText}>Odalea v1.0.0</Text>
+          <Text style={styles.footerText}>© 2025 Odalea. {t('settings.all_rights_reserved')}</Text>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={showLanguageModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowLanguageModal(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setShowLanguageModal(false)}>
+          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{t('settings.language')}</Text>
+              <TouchableOpacity onPress={() => setShowLanguageModal(false)} style={styles.closeButton}>
+                <X size={24} color={COLORS.black} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.languageList}>
+              {languages.map((lang) => (
+                <TouchableOpacity
+                  key={lang.code}
+                  style={styles.languageItem}
+                  onPress={() => handleLanguageChange(lang.code)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.languageFlag}>{lang.flag}</Text>
+                  <Text style={styles.languageName}>{lang.name}</Text>
+                  {currentLocale === lang.code && (
+                    <Check size={24} color={COLORS.primary} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -292,6 +297,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.white,
   },
   content: {
     flex: 1,
@@ -301,9 +307,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    marginBottom: 16,
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: COLORS.gray,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
     paddingHorizontal: 4,
   },
   settingItem: {
@@ -311,35 +320,96 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 8,
+    marginBottom: 1,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
   },
   settingIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.lightGray,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
   settingContent: {
     flex: 1,
   },
   settingTitle: {
     fontSize: 16,
-    fontWeight: '600' as const,
+    fontWeight: '500' as const,
     marginBottom: 2,
   },
   settingSubtitle: {
     fontSize: 14,
+    color: COLORS.gray,
   },
   footer: {
     alignItems: 'center',
-    paddingVertical: 32,
+    paddingVertical: 40,
     paddingHorizontal: 16,
+    marginTop: 20,
   },
   footerText: {
     fontSize: 12,
+    color: COLORS.gray,
     textAlign: 'center',
     marginBottom: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 40,
+    maxHeight: '70%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: COLORS.black,
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.lightGray,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  languageList: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
+  languageItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+  },
+  languageFlag: {
+    fontSize: 28,
+    marginRight: 16,
+  },
+  languageName: {
+    flex: 1,
+    fontSize: 17,
+    fontWeight: '500' as const,
+    color: COLORS.black,
   },
 });

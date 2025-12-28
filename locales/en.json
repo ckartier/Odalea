@@ -581,6 +581,10 @@
   },
   "settings": {
     "settings": "Settings",
+    "preferences": "Preferences",
+    "security": "Security",
+    "support": "Support",
+    "legal": "Legal",
     "support_infos": "Support & Info",
     "account": "Account",
     "notifications": "Notifications",
@@ -592,6 +596,10 @@
     "contact_support": "Contact Support",
     "logout": "Logout",
     "delete_account": "Delete Account",
+    "blocked_users": "Blocked Users",
+    "terms": "Terms of Service",
+    "privacy_policy": "Privacy Policy",
+    "all_rights_reserved": "All rights reserved",
     "notification_settings": {
       "push_notifications": "Push Notifications",
       "email_notifications": "Email Notifications",
