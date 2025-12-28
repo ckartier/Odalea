@@ -185,20 +185,45 @@ service cloud.firestore {
       // Le client et le cat-sitter peuvent lire la réservation
       allow read: if isAuthenticated() && 
                      (resource.data.userId == request.auth.uid || 
-                      resource.data.catSitterId == request.auth.uid);
+                      resource.data.catSitterId == request.auth.uid || 
+                      resource.data.clientId == request.auth.uid);
       
       // Seul le client peut créer une réservation
       allow create: if isAuthenticated() && 
-                       request.resource.data.userId == request.auth.uid;
+                       (request.resource.data.userId == request.auth.uid || 
+                        request.resource.data.clientId == request.auth.uid);
       
       // Le client et le cat-sitter peuvent modifier le statut
       allow update: if isAuthenticated() && 
                        (resource.data.userId == request.auth.uid || 
+                        resource.data.clientId == request.auth.uid || 
                         resource.data.catSitterId == request.auth.uid);
       
       // Seul le client peut supprimer sa réservation
       allow delete: if isAuthenticated() && 
-                       resource.data.userId == request.auth.uid;
+                       (resource.data.userId == request.auth.uid || 
+                        resource.data.clientId == request.auth.uid);
+    }
+    
+    // Booking Requests Collection (Cat Sitter requests)
+    match /bookingRequests/{requestId} {
+      // Le client et le cat-sitter peuvent lire
+      allow read: if isAuthenticated() && 
+                     (resource.data.clientId == request.auth.uid || 
+                      resource.data.sitterId == request.auth.uid);
+      
+      // Seul le client peut créer
+      allow create: if isAuthenticated() && 
+                       request.resource.data.clientId == request.auth.uid;
+      
+      // Les deux parties peuvent modifier le statut
+      allow update: if isAuthenticated() && 
+                       (resource.data.clientId == request.auth.uid || 
+                        resource.data.sitterId == request.auth.uid);
+      
+      // Seul le client peut supprimer
+      allow delete: if isAuthenticated() && 
+                       resource.data.clientId == request.auth.uid;
     }
     
     // Reviews Collection
@@ -560,6 +585,127 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && 
                        resource.data.userId == request.auth.uid;
     }
+    
+    // User Settings Collection (App settings, preferences)
+    match /userSettings/{userId} {
+      // Seul l'utilisateur peut lire ses paramètres
+      allow read: if isOwner(userId);
+      
+      // Seul l'utilisateur peut créer/modifier
+      allow create, update: if isOwner(userId);
+      
+      // Seul l'utilisateur peut supprimer
+      allow delete: if isOwner(userId);
+    }
+    
+    // User Preferences Collection (Language, theme, notifications)
+    match /userPreferences/{userId} {
+      // Seul l'utilisateur peut lire ses préférences
+      allow read: if isOwner(userId);
+      
+      // Seul l'utilisateur peut créer/modifier
+      allow create, update: if isOwner(userId);
+      
+      // Pas de suppression
+      allow delete: if false;
+    }
+    
+    // Cat Sitter Messages Collection (Messaging spécifique cat-sitter)
+    match /catSitterMessages/{messageId} {
+      // Les participants peuvent lire
+      allow read: if isAuthenticated() && 
+                     (resource.data.senderId == request.auth.uid || 
+                      resource.data.receiverId == request.auth.uid);
+      
+      // Seul l'expéditeur peut créer
+      allow create: if isAuthenticated() && 
+                       request.resource.data.senderId == request.auth.uid;
+      
+      // Le destinataire peut marquer comme lu
+      allow update: if isAuthenticated() && 
+                       resource.data.receiverId == request.auth.uid &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'readAt']);
+      
+      // Pas de suppression
+      allow delete: if false;
+    }
+    
+    // Active Pet Selection (User's currently active pet for posting)
+    match /activePets/{userId} {
+      // Seul l'utilisateur peut lire
+      allow read: if isOwner(userId);
+      
+      // Seul l'utilisateur peut créer/modifier
+      allow create, update: if isOwner(userId);
+      
+      // Seul l'utilisateur peut supprimer
+      allow delete: if isOwner(userId);
+    }
+    
+    // Unread Counts Collection (Cache for unread messages, notifications)
+    match /unreadCounts/{userId} {
+      // Seul l'utilisateur peut lire
+      allow read: if isOwner(userId);
+      
+      // Le système et l'utilisateur peuvent écrire
+      allow write: if isOwner(userId);
+    }
+    
+    // User Roles Collection (Cat sitter, breeder, shelter badges)
+    match /userRoles/{userId} {
+      // Tout utilisateur authentifié peut lire les rôles publics
+      allow read: if isAuthenticated();
+      
+      // Seul l'utilisateur peut créer son profil de rôle
+      allow create: if isOwner(userId);
+      
+      // Seul l'utilisateur peut modifier (sauf verification status)
+      allow update: if isOwner(userId) && 
+                       (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['verified', 'verifiedAt']));
+      
+      // Pas de suppression directe
+      allow delete: if false;
+    }
+    
+    // Discovery Feed Collection (Algorithme de découverte)
+    match /discoveryFeed/{userId} {
+      // Seul l'utilisateur peut lire son feed personnalisé
+      allow read: if isOwner(userId);
+      
+      // Le système génère le feed
+      allow write: if false;
+    }
+    
+    // Blocked Users Collection
+    match /blockedUsers/{blockId} {
+      // Seul l'utilisateur bloqueur peut lire
+      allow read: if isAuthenticated() && 
+                     resource.data.blockerId == request.auth.uid;
+      
+      // Seul l'utilisateur peut bloquer
+      allow create: if isAuthenticated() && 
+                       request.resource.data.blockerId == request.auth.uid;
+      
+      // Pas de modification
+      allow update: if false;
+      
+      // Seul le bloqueur peut débloquer
+      allow delete: if isAuthenticated() && 
+                       resource.data.blockerId == request.auth.uid;
+    }
+    
+    // Reports Collection (Signalements de contenu)
+    match /reports/{reportId} {
+      // Seuls les admins peuvent lire (géré côté serveur)
+      allow read: if false;
+      
+      // Tout utilisateur authentifié peut créer un signalement
+      allow create: if isAuthenticated() && 
+                       request.resource.data.reporterId == request.auth.uid;
+      
+      // Seuls les admins peuvent modifier/supprimer (géré côté serveur)
+      allow update, delete: if false;
+    }
   }
 }
 ```
@@ -794,6 +940,16 @@ Date de dernière mise à jour: 2025-01-06
 8. **medications** - Médicaments et plannings de médication
 9. **healthDocuments** - Documents de santé des animaux
 10. **healthReminders** - Rappels de santé (vaccins, traitements, etc.)
+11. **bookingRequests** - Demandes de réservation cat-sitter
+12. **userSettings** - Paramètres utilisateur (langue, notifications, etc.)
+13. **userPreferences** - Préférences UI/UX
+14. **catSitterMessages** - Messages spécifiques cat-sitter
+15. **activePets** - Animal actif sélectionné par utilisateur
+16. **unreadCounts** - Compteurs de notifications non lues
+17. **userRoles** - Rôles utilisateur (cat-sitter, éleveur, refuge)
+18. **discoveryFeed** - Feed personnalisé de découverte
+19. **blockedUsers** - Utilisateurs bloqués
+20. **reports** - Signalements de contenu
 
 ### Fonctionnalités couvertes
 
@@ -808,6 +964,12 @@ Date de dernière mise à jour: 2025-01-06
 ✅ Défis et badges
 ✅ Perdu & Trouvé
 ✅ Notifications
+✅ Réservations cat-sitter complètes
+✅ Paramètres et préférences utilisateur
+✅ Système de rôles (badges pros)
+✅ Blocage d'utilisateurs
+✅ Signalements de contenu
+✅ Feed de découverte
 
 ### Important
 
