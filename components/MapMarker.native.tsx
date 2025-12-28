@@ -5,7 +5,7 @@ import { COLORS, SHADOWS } from '@/constants/colors';
 import { Pet } from '@/types';
 import { Marker } from 'react-native-maps';
 import { getBlurredPetLocation } from '@/services/location-privacy';
-import { Stethoscope } from 'lucide-react-native';
+import { Stethoscope, Home, GraduationCap } from 'lucide-react-native';
 
 interface MapMarkerProps {
   pet: Pet & { owner?: any };
@@ -19,10 +19,31 @@ const MapMarker: React.FC<MapMarkerProps> = ({ pet, onPress, isVet = false }) =>
     return getBlurredPetLocation(pet.id, pet.location);
   }, [pet.id, pet.location]);
 
-  if (!pet.location || !blurredLocation) return null;
-
   const markerColor = isVet ? '#10b981' : (pet.gender === 'male' ? COLORS.male : COLORS.female);
-  const isVetProfessional = pet.owner?.isProfessional && pet.owner?.professionalData?.activityType === 'vet';
+  
+  const professionalBadge = useMemo(() => {
+    if (!pet.owner?.isProfessional) return null;
+    const activityType = pet.owner.professionalData?.activityType;
+    
+    if (activityType === 'vet') {
+      return { Icon: Stethoscope, color: '#10b981' };
+    }
+    if (pet.owner.isCatSitter || activityType === 'catSitter') {
+      return { Icon: Home, color: '#6366f1' };
+    }
+    if (activityType === 'breeder') {
+      return { Icon: Home, color: '#f59e0b' };
+    }
+    if (activityType === 'shelter') {
+      return { Icon: Home, color: '#8b5cf6' };
+    }
+    if (activityType === 'educator') {
+      return { Icon: GraduationCap, color: '#06b6d4' };
+    }
+    return null;
+  }, [pet.owner]);
+
+  if (!pet.location || !blurredLocation) return null;
 
   return (
     <Marker
@@ -53,9 +74,9 @@ const MapMarker: React.FC<MapMarkerProps> = ({ pet, onPress, isVet = false }) =>
         )}
       </View>
       <View style={[styles.triangle, { borderTopColor: markerColor }]} />
-      {isVetProfessional && !isVet && (
-        <View style={styles.vetBadge}>
-          <Stethoscope size={12} color="#fff" />
+      {professionalBadge && !isVet && (
+        <View style={[styles.proBadge, { backgroundColor: professionalBadge.color }]}>
+          <professionalBadge.Icon size={12} color="#fff" strokeWidth={2.5} />
         </View>
       )}
     </Marker>
@@ -96,14 +117,13 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: -2,
   },
-  vetBadge: {
+  proBadge: {
     position: 'absolute',
     top: -4,
     right: -4,
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#10b981',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
