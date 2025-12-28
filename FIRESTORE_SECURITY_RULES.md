@@ -419,6 +419,147 @@ service cloud.firestore {
       // Seuls les admins peuvent créer/modifier/supprimer (géré côté serveur)
       allow write: if false;
     }
+    
+    // Favorites Collection (Like/Bookmark pets)
+    match /favorites/{favoriteId} {
+      // Tout utilisateur authentifié peut lire les favoris
+      allow read: if isAuthenticated();
+      
+      // Seul l'utilisateur peut créer/supprimer ses propres favoris
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid;
+      
+      // Pas de modification
+      allow update: if false;
+    }
+    
+    // Pet Likes Collection (Pet matching - likes)
+    match /petLikes/{likeId} {
+      // Tout utilisateur authentifié peut lire
+      allow read: if isAuthenticated();
+      
+      // Seul le propriétaire du pet peut créer un like
+      allow create: if isAuthenticated();
+      
+      // Pas de modification
+      allow update: if false;
+      
+      // Seul le propriétaire peut supprimer
+      allow delete: if isAuthenticated();
+    }
+    
+    // Pet Matches Collection (Pet matching - mutual matches)
+    match /petMatches/{matchId} {
+      // Seuls les propriétaires des pets matchés peuvent lire
+      allow read: if isAuthenticated();
+      
+      // Système crée automatiquement (via transaction)
+      allow create: if isAuthenticated();
+      
+      // Pas de modification directe
+      allow update: if false;
+      
+      // Les deux propriétaires peuvent supprimer (unmatch)
+      allow delete: if isAuthenticated();
+    }
+    
+    // Pet Passes Collection (Pet matching - passes)
+    match /petPasses/{passId} {
+      // Seul le propriétaire du pet peut lire ses passes
+      allow read: if isAuthenticated();
+      
+      // Seul le propriétaire du pet peut créer un pass
+      allow create: if isAuthenticated();
+      
+      // Pas de modification
+      allow update: if false;
+      
+      // Pas de suppression
+      allow delete: if false;
+    }
+    
+    // Pet Sitters Collection (Legacy - might be replaced by petSitterProfiles)
+    match /petSitters/{sitterId} {
+      // Tout utilisateur authentifié peut lire
+      allow read: if isAuthenticated();
+      
+      // Seul le cat-sitter peut créer/modifier son profil
+      allow create, update: if isOwner(sitterId);
+      
+      // Seul le cat-sitter peut supprimer
+      allow delete: if isOwner(sitterId);
+    }
+    
+    // Promo Submissions Collection (Professional promotions)
+    match /promoSubmissions/{submissionId} {
+      // Tout utilisateur authentifié peut lire les promos approuvées
+      allow read: if isAuthenticated();
+      
+      // Seul le professionnel peut créer sa promo
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      
+      // Seul le créateur peut modifier (avant approbation)
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid;
+      
+      // Seul le créateur peut supprimer
+      allow delete: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid;
+    }
+    
+    // Treatments Collection (Medical treatments)
+    match /treatments/{treatmentId} {
+      // Seul le propriétaire peut lire les traitements de son animal
+      allow read: if isAuthenticated();
+      
+      // Seul le propriétaire peut créer/modifier
+      allow create, update: if isAuthenticated();
+      
+      // Seul le propriétaire peut supprimer
+      allow delete: if isAuthenticated();
+    }
+    
+    // Medications Collection (Medication schedules)
+    match /medications/{medicationId} {
+      // Seul le propriétaire peut lire les médicaments de son animal
+      allow read: if isAuthenticated();
+      
+      // Seul le propriétaire peut créer/modifier
+      allow create, update: if isAuthenticated();
+      
+      // Seul le propriétaire peut supprimer
+      allow delete: if isAuthenticated();
+    }
+    
+    // Health Documents Collection
+    match /healthDocuments/{documentId} {
+      // Seul le propriétaire peut lire les documents de son animal
+      allow read: if isAuthenticated();
+      
+      // Seul le propriétaire peut créer/modifier
+      allow create, update: if isAuthenticated();
+      
+      // Seul le propriétaire peut supprimer
+      allow delete: if isAuthenticated();
+    }
+    
+    // Health Reminders Collection
+    match /healthReminders/{reminderId} {
+      // Seul le propriétaire peut lire ses rappels
+      allow read: if isAuthenticated() && 
+                     resource.data.userId == request.auth.uid;
+      
+      // Seul le propriétaire peut créer/modifier ses rappels
+      allow create, update: if isAuthenticated() && 
+                               request.resource.data.userId == request.auth.uid;
+      
+      // Seul le propriétaire peut supprimer
+      allow delete: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid;
+    }
   }
 }
 ```
@@ -638,3 +779,36 @@ Ces règles doivent être mises à jour lorsque:
 - Les exigences métier changent
 
 Date de dernière mise à jour: 2025-01-06
+
+## 📋 Collections ajoutées
+
+### Nouvelles collections (complétées)
+
+1. **favorites** - Système de favoris/likes pour les animaux (indépendant du matching)
+2. **petLikes** - Likes pour le système de matching entre animaux
+3. **petMatches** - Matches mutuels entre animaux
+4. **petPasses** - Passes (rejets) dans le matching
+5. **petSitters** - Profils cat-sitters (legacy, peut être remplacé par petSitterProfiles)
+6. **promoSubmissions** - Soumissions de promotions par les professionnels
+7. **treatments** - Traitements médicaux des animaux
+8. **medications** - Médicaments et plannings de médication
+9. **healthDocuments** - Documents de santé des animaux
+10. **healthReminders** - Rappels de santé (vaccins, traitements, etc.)
+
+### Fonctionnalités couvertes
+
+✅ Matching entre animaux (likes, matches, passes)
+✅ Favoris/bookmarks indépendants
+✅ Santé complète (traitements, médicaments, documents, rappels)
+✅ Promotions professionnelles
+✅ Cat-sitting (profils et réservations)
+✅ Social (posts, comments, likes, amis)
+✅ Messagerie (conversations, messages)
+✅ Commerce (produits, commandes)
+✅ Défis et badges
+✅ Perdu & Trouvé
+✅ Notifications
+
+### Important
+
+Toutes les collections nécessaires pour l'app ODALEA sont maintenant couvertes avec les bonnes permissions Firestore.
