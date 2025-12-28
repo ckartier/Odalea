@@ -437,10 +437,22 @@ export default function MapScreen() {
 
   const catSittersWithLocation = catSittersQuery.data ?? [];
 
+  const professionals = usersWithLocation.filter((u) => {
+    if (!u.isProfessional || !u.professionalData?.activityType) return false;
+    if (u.id.includes('paris-') || u.id.includes('test')) return false;
+    
+    const activityType = u.professionalData.activityType;
+    if (activeFilters.has('vets') && activityType === 'vet') return true;
+    if (activeFilters.has('stores') && (activityType === 'boutique' || activityType === 'breeder')) return true;
+    if (activeFilters.has('shelters') && activityType === 'shelter') return true;
+    return false;
+  });
+
   const filteredUsers = usersWithLocation.filter((u) => {
-    if (u.email?.includes('test') || u.pseudo?.toLowerCase().includes('test')) {
+    if (u.email?.includes('test') || u.pseudo?.toLowerCase().includes('test') || u.id.includes('paris-')) {
       return false;
     }
+    if (u.isProfessional) return false;
     if (u.isCatSitter && activeFilters.has('catSitters')) {
       return false;
     }
@@ -506,10 +518,22 @@ export default function MapScreen() {
           />
         ))}
         {Platform.OS !== 'web' && filteredUsers.map((u) => (
-          <UserMarker key={`user-${u.id}`} user={u} onPress={() => setSelectedUser(u)} />
+          <UserMarker key={`user-${u.id}`} user={u} onPress={() => {
+            setSelectedUser(u);
+            router.push(`/profile/${u.id}`);
+          }} />
         ))}
         {Platform.OS !== 'web' && filteredCatSitters.map((cs) => (
-          <UserMarker key={`cat-sitter-${cs.user.id}`} user={cs.user} isCatSitter onPress={() => setSelectedUser(cs.user)} />
+          <UserMarker key={`cat-sitter-${cs.user.id}`} user={cs.user} isCatSitter onPress={() => {
+            setSelectedUser(cs.user);
+            router.push(`/profile/${cs.user.id}`);
+          }} />
+        ))}
+        {Platform.OS !== 'web' && professionals.map((pro) => (
+          <UserMarker key={`pro-${pro.id}`} user={pro} isProfessional onPress={() => {
+            setSelectedUser(pro);
+            router.push(`/profile/${pro.id}`);
+          }} />
         ))}
       </MapView>
 

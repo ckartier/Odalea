@@ -101,6 +101,34 @@ export const [FriendsContext, useFriends] = createContextHook(() => {
   const sendFriendRequestMutation = useMutation({
     mutationFn: async (receiverId: string) => {
       if (!user?.id) throw new Error('User not authenticated');
+      
+      // Guard: reject non-Firebase UID formats
+      if (receiverId.includes('paris-') || receiverId.includes('test-') || receiverId.length < 20) {
+        throw new Error('ID utilisateur invalide');
+      }
+      
+      // Check if already friends
+      const userDoc = await databaseService.user.getUser(user.id);
+      if (userDoc?.friends?.includes(receiverId)) {
+        throw new Error('Déjà ami avec cet utilisateur');
+      }
+      
+      // Check if request already exists (sent or received)
+      const [sent, received] = await Promise.all([
+        databaseService.friendRequest.getSentFriendRequests(user.id),
+        databaseService.friendRequest.getFriendRequests(user.id)
+      ]);
+      
+      const existingSent = sent.find(r => r.receiverId === receiverId && r.status === 'pending');
+      if (existingSent) {
+        throw new Error('Demande déjà envoyée');
+      }
+      
+      const existingReceived = received.find(r => r.senderId === receiverId && r.status === 'pending');
+      if (existingReceived) {
+        throw new Error('Vous avez déjà une demande de cet utilisateur');
+      }
+      
       return await databaseService.friendRequest.sendFriendRequest(user.id, receiverId);
     },
     onSuccess: () => {

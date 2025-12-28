@@ -5,6 +5,7 @@ import { User } from '@/types';
 interface UserMarkerProps {
   user: User;
   isCatSitter?: boolean;
+  isProfessional?: boolean;
   onPress?: () => void;
 }
 

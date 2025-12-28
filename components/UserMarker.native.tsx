@@ -10,10 +10,11 @@ import { Stethoscope, Users } from 'lucide-react-native';
 interface UserMarkerProps {
   user: User;
   isCatSitter?: boolean;
+  isProfessional?: boolean;
   onPress?: () => void;
 }
 
-const UserMarker: React.FC<UserMarkerProps> = ({ user, isCatSitter = false, onPress }) => {
+const UserMarker: React.FC<UserMarkerProps> = ({ user, isCatSitter = false, isProfessional = false, onPress }) => {
   const blurredLocation = useMemo(() => {
     if (!user.location) return null;
     return getBlurredUserLocation(user.id, user.location);
@@ -23,7 +24,7 @@ const UserMarker: React.FC<UserMarkerProps> = ({ user, isCatSitter = false, onPr
 
   const primaryPet = user.pets?.find((p) => p.isPrimary) || user.pets?.[0];
   const markerColor = primaryPet?.gender === 'male' ? COLORS.male : primaryPet?.gender === 'female' ? COLORS.female : COLORS.primary;
-  const isVetProfessional = user.isProfessional && user.professionalData?.activityType === 'vet';
+  const isVetProfessional = (isProfessional || user.isProfessional) && user.professionalData?.activityType === 'vet';
 
   return (
     <Marker
