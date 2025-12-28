@@ -26,6 +26,8 @@ import { StorageService } from '@/services/storage';
 import { useBadges } from '@/hooks/badges-store';
 import { useChallenges } from '@/hooks/challenges-store';
 import { usePremium } from '@/hooks/premium-store';
+import { useActivePet } from '@/hooks/active-pet-store';
+import { usePets } from '@/hooks/pets-store';
 
 import { useFriends } from '@/hooks/friends-store';
 import { 
@@ -51,6 +53,8 @@ export default function ProfileScreen() {
   const { getUnlockedBadges } = useBadges();
   const { getUserActiveChallenges, getUserCompletedChallenges } = useChallenges();
   const { isPremium } = usePremium();
+  const { activePetId, setActivePet } = useActivePet();
+  const { userPets } = usePets();
 
   
   const [refreshing, setRefreshing] = useState(false);
@@ -343,15 +347,32 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
         
-        {user.pets.length > 0 ? (
-          <FlatList
-            data={user.pets}
-            renderItem={({ item }) => <PetCard pet={item} style={styles.petCard} />}
-            keyExtractor={item => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.petsContainer}
-          />
+        {userPets.length > 0 ? (
+          <>
+            <FlatList
+              data={userPets}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onPress={() => setActivePet(item.id)}
+                  style={styles.petCardWrapper}
+                >
+                  <PetCard pet={item} style={styles.petCard} />
+                  {activePetId === item.id && (
+                    <View style={styles.activePetBadge}>
+                      <Text style={styles.activePetText}>✓ Actif</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              )}
+              keyExtractor={item => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.petsContainer}
+            />
+            <Text style={styles.activePetHint}>
+              Touchez un animal pour le définir comme actif. Vos posts et actions seront signés par cet animal.
+            </Text>
+          </>
         ) : (
           <TouchableOpacity
             style={[styles.addPetCard, SHADOWS.small]}
@@ -624,8 +645,33 @@ const styles = StyleSheet.create({
     paddingRight: 16,
     gap: 12,
   },
-  petCard: {
+  petCardWrapper: {
+    position: 'relative',
     marginRight: 12,
+  },
+  petCard: {
+  },
+  activePetBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: COLORS.success,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    ...SHADOWS.small,
+  },
+  activePetText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.white,
+    fontWeight: '700' as const,
+  },
+  activePetHint: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.darkGray,
+    textAlign: 'center',
+    marginTop: 8,
+    marginHorizontal: 16,
   },
   addPetCard: {
     width: 160,

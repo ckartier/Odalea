@@ -2,7 +2,7 @@ import { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { databaseService } from '@/services/database';
+import { databaseService, postService } from '@/services/database';
 import { useAuth } from '@/hooks/user-store';
 import { safeJsonParse } from '@/lib/safe-json';
 
@@ -63,6 +63,9 @@ export interface UserChallenge {
     type: 'photo' | 'video' | 'text';
     data: string;
     timestamp: string;
+    shareToCommunity?: boolean;
+    petId?: string;
+    petName?: string;
   };
   validationStatus?: 'pending' | 'approved' | 'rejected';
   votes?: ChallengeVote[];
@@ -231,10 +234,13 @@ export const [ChallengesContext, useChallenges] = createContextHook(() => {
       proof 
     }: { 
       userChallengeId: string; 
-      proof: { type: 'photo' | 'video' | 'text'; data: string; };
+      proof: { type: 'photo' | 'video' | 'text'; data: string; shareToCommunity?: boolean; petId?: string; petName?: string; };
     }) => {
       const uc = userChallengesQuery.data?.find(ucItem => ucItem.id === userChallengeId);
       if (!uc) throw new Error('User challenge not found');
+      
+      const challenge = challengesQuery.data?.find(c => c.id === uc.challengeId);
+      
       await databaseService.challenge.submitProof({
         userChallengeId,
         challengeId: uc.challengeId,
@@ -243,6 +249,29 @@ export const [ChallengesContext, useChallenges] = createContextHook(() => {
         userPhoto: undefined,
         proof,
       });
+      
+      // Create community post if shareToCommunity is true
+      if (proof.shareToCommunity && challenge) {
+        try {
+          const postData = {
+            type: 'challenge' as const,
+            authorId: uc.userId,
+            authorName: undefined,
+            authorPhoto: undefined,
+            content: `J'ai relevé le défi "${challenge.title.fr}" ! ${challenge.icon}`,
+            images: [proof.data],
+            challengeId: challenge.id,
+            petId: proof.petId,
+            likesCount: 0,
+            commentsCount: 0,
+          };
+          await postService.createPost(postData as any);
+          console.log('✅ Challenge post created in community');
+        } catch (err) {
+          console.error('❌ Error creating community post:', err);
+        }
+      }
+      
       return uc;
     },
     onSuccess: () => {
@@ -342,7 +371,7 @@ export const [ChallengesContext, useChallenges] = createContextHook(() => {
     return joinChallengeMutation.mutateAsync({ challengeId, userId });
   };
 
-  const submitProof = (userChallengeId: string, proof: { type: 'photo' | 'video' | 'text'; data: string; }) => {
+  const submitProof = (userChallengeId: string, proof: { type: 'photo' | 'video' | 'text'; data: string; shareToCommunity?: boolean; petId?: string; petName?: string; }) => {
     return submitProofMutation.mutateAsync({ userChallengeId, proof });
   };
 

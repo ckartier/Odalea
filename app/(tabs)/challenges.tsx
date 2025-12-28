@@ -18,13 +18,9 @@ import { useI18n } from '@/hooks/i18n-store';
 import { useAuth } from '@/hooks/user-store';
 import { useChallenges } from '@/hooks/challenges-store';
 import { usePremium } from '@/hooks/premium-store';
+import { useActivePet } from '@/hooks/active-pet-store';
 import { 
   Trophy, 
-  Camera, 
-  Video, 
-  Activity, 
-  Brain, 
-  Calendar, 
   Users, 
   Award,
   Clock,
@@ -35,7 +31,8 @@ import {
   ThumbsDown,
   Star,
   Gift,
-  Plus
+  Plus,
+  Camera
 } from 'lucide-react-native';
 import Button from '@/components/Button';
 
@@ -57,7 +54,6 @@ export default function ChallengesScreen() {
     getUserPendingChallenges,
     getDaysLeft,
     getHoursLeft,
-    hasUserJoinedChallenge,
     hasUserVoted,
     getUserVote,
     isJoining,
@@ -70,30 +66,15 @@ export default function ChallengesScreen() {
   const [selectedChallenge, setSelectedChallenge] = useState<any>(null);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showProofModal, setShowProofModal] = useState(false);
-  const [showVotingModal, setShowVotingModal] = useState(false);
-  const [selectedParticipation, setSelectedParticipation] = useState<any>(null);
   const [selectedProofImage, setSelectedProofImage] = useState<string | null>(null);
+  const [shareToCommunity, setShareToCommunity] = useState(true);
+  const { activePet } = useActivePet();
 
   const onRefresh = async () => {
     setRefreshing(true);
     setTimeout(() => {
       setRefreshing(false);
     }, 1000);
-  };
-
-  const getChallengeIcon = (type: string) => {
-    switch (type) {
-      case 'photo':
-        return <Camera size={20} color={COLORS.primary} />;
-      case 'video':
-        return <Video size={20} color={COLORS.primary} />;
-      case 'activity':
-        return <Activity size={20} color={COLORS.primary} />;
-      case 'knowledge':
-        return <Brain size={20} color={COLORS.primary} />;
-      default:
-        return <Trophy size={20} color={COLORS.primary} />;
-    }
   };
 
   const getRankIcon = (rank: number) => {
@@ -135,7 +116,8 @@ export default function ChallengesScreen() {
         `Vous avez rejoint le défi "${challenge.title.fr}" !`,
         [{ text: t('common.ok') }]
       );
-    } catch (error) {
+    } catch (err) {
+      console.error('Error joining challenge:', err);
       Alert.alert(t('common.error'), 'Impossible de rejoindre ce défi.');
     }
   };
@@ -150,7 +132,8 @@ export default function ChallengesScreen() {
         'Votre preuve a été soumise et est en attente de validation par la communauté.',
         [{ text: t('common.ok') }]
       );
-    } catch (error) {
+    } catch (err) {
+      console.error('Error submitting proof:', err);
       Alert.alert(t('common.error'), 'Impossible de soumettre la preuve.');
     }
   };
@@ -223,8 +206,11 @@ export default function ChallengesScreen() {
     if (!userChallenge) return;
     
     const proof = {
-      type: 'photo',
+      type: 'photo' as const,
       data: selectedProofImage,
+      shareToCommunity: shareToCommunity,
+      petId: activePet?.id,
+      petName: activePet?.name,
     };
     
     handleSubmitProof(userChallenge.id, proof);
@@ -240,7 +226,8 @@ export default function ChallengesScreen() {
         'Votre vote a été enregistré !',
         [{ text: t('common.ok') }]
       );
-    } catch (error) {
+    } catch (err) {
+      console.error('Error voting:', err);
       Alert.alert(t('common.error'), 'Impossible d\'enregistrer votre vote.');
     }
   };
@@ -651,6 +638,25 @@ export default function ChallengesScreen() {
                 >
                   <Text style={styles.changePhotoText}>Changer la photo</Text>
                 </TouchableOpacity>
+                
+                <View style={styles.shareOption}>
+                  <TouchableOpacity
+                    style={styles.checkboxContainer}
+                    onPress={() => setShareToCommunity(!shareToCommunity)}
+                  >
+                    <View style={[styles.checkbox, shareToCommunity && styles.checkboxChecked]}>
+                      {shareToCommunity && <Text style={styles.checkmark}>✓</Text>}
+                    </View>
+                    <View style={styles.shareTextContainer}>
+                      <Text style={styles.shareText}>Partager à la communauté</Text>
+                      {activePet && (
+                        <Text style={styles.shareSubtext}>
+                          Signé par {activePet.name} {activePet.type === 'cat' ? '🐱' : '🐶'}
+                        </Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                </View>
               </View>
             ) : (
               <View style={styles.proofOptions}>
@@ -1154,5 +1160,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.primary,
     fontWeight: '500',
+  },
+  shareOption: {
+    marginTop: 16,
+    width: '100%',
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: COLORS.lightGray,
+    borderRadius: 12,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: COLORS.mediumGray,
+    backgroundColor: COLORS.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  checkmark: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '700' as const,
+  },
+  shareTextContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  shareText: {
+    fontSize: 14,
+    color: COLORS.black,
+    fontWeight: '600' as const,
+  },
+  shareSubtext: {
+    fontSize: 12,
+    color: COLORS.darkGray,
+    marginTop: 2,
   },
 });
