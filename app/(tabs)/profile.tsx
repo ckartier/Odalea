@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Alert,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Href, useRouter } from 'expo-router';
@@ -17,7 +18,7 @@ import { COLORS, SHADOWS } from '@/constants/colors';
 import { TYPOGRAPHY } from '@/constants/typography';
 import GlassCard from '@/components/GlassCard';
 import AppBackground from '@/components/AppBackground';
-import PetCard from '@/components/PetCard';
+
 import Badge from '@/components/Badge';
 import Button from '@/components/Button';
 import PhotoUploader from '@/components/PhotoUploader';
@@ -28,6 +29,9 @@ import { useChallenges } from '@/hooks/challenges-store';
 import { usePremium } from '@/hooks/premium-store';
 import { useActivePet } from '@/hooks/active-pet-store';
 import { usePets } from '@/hooks/pets-store';
+import { useSocial } from '@/hooks/social-store';
+import { PostCard } from '@/components/PostCard';
+import { Post } from '@/types';
 
 import { useFriends } from '@/hooks/friends-store';
 import { 
@@ -53,14 +57,31 @@ export default function ProfileScreen() {
   const { getUnlockedBadges } = useBadges();
   const { getUserActiveChallenges, getUserCompletedChallenges } = useChallenges();
   const { isPremium } = usePremium();
-  const { activePetId, setActivePet } = useActivePet();
+  const { activePetId, activePet, setActivePet } = useActivePet();
   const { userPets } = usePets();
+  const { 
+    getUserPosts, 
+    deletePost, 
+    toggleLike, 
+    isPostLiked, 
+    getComments, 
+    addComment,
+    reportPost,
+    blockUser,
+    isTogglingLike,
+    isAddingComment,
+    isDeletingPost,
+  } = useSocial();
 
   
   const [refreshing, setRefreshing] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | undefined>(user?.photo);
-
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [userPosts, setUserPosts] = useState<Post[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(true);
+  const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
+  const [commentsMap, setCommentsMap] = useState<Record<string, any[]>>({});
+  const [loadingComments, setLoadingComments] = useState<Record<string, boolean>>({});
   
   // Update profile photo when user changes
   useEffect(() => {
@@ -75,10 +96,26 @@ export default function ProfileScreen() {
   
 
   
+  const loadUserPosts = useCallback(async () => {
+    if (!user) return;
+    try {
+      setLoadingPosts(true);
+      const posts = await getUserPosts(user.id);
+      setUserPosts(posts);
+    } catch (error) {
+      console.error('❌ Error loading user posts:', error);
+    } finally {
+      setLoadingPosts(false);
+    }
+  }, [user, getUserPosts]);
+
+  useEffect(() => {
+    loadUserPosts();
+  }, [loadUserPosts]);
+
   const onRefresh = async () => {
     setRefreshing(true);
-    // Simulate refresh
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await loadUserPosts();
     setRefreshing(false);
   };
   
@@ -144,6 +181,51 @@ export default function ProfileScreen() {
       ]
     );
   };
+
+  const handleToggleComments = useCallback(async (postId: string) => {
+    setExpandedComments(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(postId)) {
+        newSet.delete(postId);
+      } else {
+        newSet.add(postId);
+        if (!commentsMap[postId]) {
+          setLoadingComments(prev => ({ ...prev, [postId]: true }));
+          getComments(postId).then(comments => {
+            setCommentsMap(prev => ({ ...prev, [postId]: comments }));
+            setLoadingComments(prev => ({ ...prev, [postId]: false }));
+          });
+        }
+      }
+      return newSet;
+    });
+  }, [commentsMap, getComments]);
+
+  const handleDeletePost = useCallback((postId: string, authorName: string) => {
+    Alert.alert(
+      'Supprimer',
+      'Voulez-vous vraiment supprimer cette publication ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deletePost(postId);
+              setUserPosts(prev => prev.filter(p => p.id !== postId));
+            } catch (error) {
+              console.error('❌ Error deleting post:', error);
+            }
+          },
+        },
+      ]
+    );
+  }, [deletePost]);
+
+  const handleShare = useCallback((postId: string) => {
+    Alert.alert('Partager', 'Fonctionnalité de partage à venir!');
+  }, []);
   
 
   
@@ -342,8 +424,9 @@ export default function ProfileScreen() {
         {/* My Pets Section */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Mes animaux</Text>
-          <TouchableOpacity onPress={handleAddPet}>
-            <Plus size={20} color={COLORS.maleAccent} />
+          <TouchableOpacity onPress={handleAddPet} style={styles.addPetButton}>
+            <Plus size={18} color={COLORS.white} />
+            <Text style={styles.addPetButtonText}>Ajouter</Text>
           </TouchableOpacity>
         </View>
         
@@ -351,27 +434,45 @@ export default function ProfileScreen() {
           <>
             <FlatList
               data={userPets}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  onPress={() => setActivePet(item.id)}
-                  style={styles.petCardWrapper}
-                >
-                  <PetCard pet={item} style={styles.petCard} />
-                  {activePetId === item.id && (
-                    <View style={styles.activePetBadge}>
-                      <Text style={styles.activePetText}>✓ Actif</Text>
+              renderItem={({ item }) => {
+                const isActive = activePetId === item.id;
+                return (
+                  <TouchableOpacity
+                    onPress={() => setActivePet(item.id)}
+                    style={[styles.petCardWrapper, isActive && styles.petCardWrapperActive]}
+                  >
+                    <View style={[styles.petCardInner, isActive && styles.petCardInnerActive]}>
+                      <Image 
+                        source={{ uri: item.mainPhoto || 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131' }}
+                        style={styles.petCardImage}
+                        contentFit="cover"
+                      />
+                      <View style={styles.petCardInfo}>
+                        <Text style={styles.petCardName}>{item.name}</Text>
+                        <Text style={styles.petCardBreed}>{item.breed || item.type}</Text>
+                      </View>
+                      {isActive && (
+                        <View style={styles.activePetBadge}>
+                          <Text style={styles.activePetText}>✓ Actif</Text>
+                        </View>
+                      )}
                     </View>
-                  )}
-                </TouchableOpacity>
-              )}
+                  </TouchableOpacity>
+                );
+              }}
               keyExtractor={item => item.id}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.petsContainer}
             />
-            <Text style={styles.activePetHint}>
-              Touchez un animal pour le définir comme actif. Vos posts et actions seront signés par cet animal.
-            </Text>
+            <View style={styles.activePetHintContainer}>
+              <Text style={styles.activePetHint}>
+                {activePet ? `Animal actif : ${activePet.name}` : 'Sélectionnez un animal actif'}
+              </Text>
+              <Text style={styles.activePetSubhint}>
+                Vos posts et actions seront signés par cet animal
+              </Text>
+            </View>
           </>
         ) : (
           <TouchableOpacity
@@ -381,6 +482,62 @@ export default function ProfileScreen() {
             <Plus size={32} color={COLORS.maleAccent} />
             <Text style={styles.addPetText}>Ajoutez votre premier animal</Text>
           </TouchableOpacity>
+        )}
+        
+        {/* User Stats */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{userPosts.length}</Text>
+            <Text style={styles.statLabel}>Posts</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{friends.length}</Text>
+            <Text style={styles.statLabel}>Amis</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{completedChallenges.length}</Text>
+            <Text style={styles.statLabel}>Défis</Text>
+          </View>
+        </View>
+        
+        {/* My Posts Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Mes posts</Text>
+        </View>
+        
+        {loadingPosts ? (
+          <View style={styles.postsLoadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+          </View>
+        ) : userPosts.length > 0 ? (
+          userPosts.map((post) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              isLiked={isPostLiked(post.id)}
+              currentUserId={user?.id}
+              onLike={toggleLike}
+              onComment={addComment}
+              onShare={handleShare}
+              onDelete={handleDeletePost}
+              onReport={reportPost}
+              onBlock={blockUser}
+              isTogglingLike={isTogglingLike}
+              isAddingComment={isAddingComment}
+              isDeletingPost={isDeletingPost}
+              comments={commentsMap[post.id] || []}
+              isCommentsLoading={loadingComments[post.id] || false}
+              isCommentsExpanded={expandedComments.has(post.id)}
+              onToggleComments={handleToggleComments}
+            />
+          ))
+        ) : (
+          <View style={styles.emptyPostsCard}>
+            <Text style={styles.emptyPostsText}>Aucune publication</Text>
+            <Text style={styles.emptyPostsSubtext}>Partagez vos moments dans la communauté</Text>
+          </View>
         )}
         
         {/* Challenges Section */}
@@ -643,21 +800,49 @@ const styles = StyleSheet.create({
   },
   petsContainer: {
     paddingRight: 16,
-    gap: 12,
+    gap: 16,
   },
   petCardWrapper: {
-    position: 'relative',
-    marginRight: 12,
+    marginRight: 16,
+    borderRadius: 16,
+    backgroundColor: COLORS.white,
+    ...SHADOWS.small,
   },
-  petCard: {
+  petCardWrapperActive: {
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+  },
+  petCardInner: {
+    width: 160,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  petCardInnerActive: {
+    opacity: 1,
+  },
+  petCardImage: {
+    width: '100%',
+    height: 160,
+  },
+  petCardInfo: {
+    padding: 12,
+    backgroundColor: COLORS.white,
+  },
+  petCardName: {
+    ...TYPOGRAPHY.h5,
+    marginBottom: 2,
+  },
+  petCardBreed: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.darkGray,
   },
   activePetBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 12,
+    right: 12,
     backgroundColor: COLORS.success,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 12,
     ...SHADOWS.small,
   },
@@ -666,12 +851,36 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontWeight: '700' as const,
   },
+  activePetHintContainer: {
+    marginTop: 12,
+    padding: 16,
+    backgroundColor: COLORS.lightGray,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
   activePetHint: {
+    ...TYPOGRAPHY.subtitle2,
+    color: COLORS.black,
+    textAlign: 'center',
+  },
+  activePetSubhint: {
     ...TYPOGRAPHY.caption,
     color: COLORS.darkGray,
     textAlign: 'center',
-    marginTop: 8,
-    marginHorizontal: 16,
+    marginTop: 4,
+  },
+  addPetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  addPetButtonText: {
+    ...TYPOGRAPHY.label,
+    color: COLORS.white,
   },
   addPetCard: {
     width: 160,
@@ -790,5 +999,54 @@ const styles = StyleSheet.create({
   managePremiumText: {
     ...TYPOGRAPHY.subtitle2,
     color: COLORS.primary,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 20,
+    marginVertical: 24,
+    ...SHADOWS.small,
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statNumber: {
+    ...TYPOGRAPHY.h2,
+    color: COLORS.black,
+  },
+  statLabel: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.darkGray,
+    marginTop: 4,
+  },
+  statDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: COLORS.mediumGray,
+  },
+  emptyPostsCard: {
+    padding: 40,
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    ...SHADOWS.small,
+  },
+  emptyPostsText: {
+    ...TYPOGRAPHY.h5,
+    color: COLORS.darkGray,
+    marginBottom: 8,
+  },
+  emptyPostsSubtext: {
+    ...TYPOGRAPHY.body2,
+    color: COLORS.darkGray,
+    textAlign: 'center',
+  },
+  postsLoadingContainer: {
+    padding: 40,
+    alignItems: 'center',
   },
 });
