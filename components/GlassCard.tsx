@@ -58,40 +58,35 @@ export default function GlassCard({
   const gradientColors = getGradientColors(tint);
   const shadow = getShadow(tint);
 
-  const containerStyle = [
-    styles.container,
-    shadow,
-    !noPadding && styles.padding,
-    style,
-  ];
+  const containerStyle = [styles.container, shadow, !noPadding && styles.padding, style];
 
+  // ✅ IMPORTANT : on empêche les calques (Blur/Gradient) de capter les touches
   const content = (
     <>
       {Platform.OS === 'web' ? (
-        <View
-          style={StyleSheet.absoluteFill}
-        >
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          {/* @ts-ignore - web only */}
           <div
             style={{
               position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
+              inset: 0,
               backgroundImage: `linear-gradient(135deg, ${gradientColors[0]}, ${gradientColors[1]})`,
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
+              pointerEvents: 'none',
             }}
           />
         </View>
       ) : (
         <>
           <BlurView
+            pointerEvents="none"
             intensity={intensity}
             tint={tint === 'male' || tint === 'female' || tint === 'neutral' ? 'light' : tint}
             style={StyleSheet.absoluteFill}
           />
           <LinearGradient
+            pointerEvents="none"
             colors={gradientColors}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -99,7 +94,11 @@ export default function GlassCard({
           />
         </>
       )}
-      <View style={styles.contentContainer}>{children}</View>
+
+      {/* ✅ box-none : laisse passer les touches aux enfants */}
+      <View style={styles.contentContainer} pointerEvents="box-none">
+        {children}
+      </View>
     </>
   );
 
@@ -107,7 +106,7 @@ export default function GlassCard({
     return (
       <TouchableOpacity
         testID={testID}
-        activeOpacity={0.8}
+        activeOpacity={0.85}
         onPress={onPress}
         disabled={disabled}
         style={containerStyle}
