@@ -12,10 +12,10 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { COLORS, DIMENSIONS } from '@/constants/colors';
+import { COLORS, DIMENSIONS, SHADOWS } from '@/constants/colors';
 import { TYPOGRAPHY } from '@/constants/typography';
 import { Heart, MessageCircle, Share, MapPin, AlertTriangle, Send, Award, DollarSign } from 'lucide-react-native';
-import GlassCard from './GlassCard';
+
 import { Post } from '@/types';
 
 interface PostCardProps {
@@ -143,7 +143,7 @@ const PostCardComponent: React.FC<PostCardProps> = ({
   }, [currentUserId, post, onDelete, onReport, onBlock]);
 
   return (
-    <GlassCard tint="neutral" style={[
+    <View style={[
       styles.postCard, 
       isUrgent && styles.urgentPost,
       isChallenge && styles.challengePost,
@@ -238,7 +238,7 @@ const PostCardComponent: React.FC<PostCardProps> = ({
         >
           <Heart
             size={24}
-            color={isLiked ? COLORS.error : COLORS.darkGray}
+            color={isLiked ? COLORS.error : COLORS.black}
             fill={isLiked ? COLORS.error : 'none'}
           />
           <Text style={[styles.actionText, isLiked && styles.likedText]}>
@@ -250,7 +250,7 @@ const PostCardComponent: React.FC<PostCardProps> = ({
           style={styles.actionButton}
           onPress={() => onToggleComments(post.id)}
         >
-          <MessageCircle size={24} color={COLORS.darkGray} />
+          <MessageCircle size={24} color={COLORS.black} />
           <Text style={styles.actionText}>{post.commentsCount || 0}</Text>
         </TouchableOpacity>
 
@@ -258,7 +258,7 @@ const PostCardComponent: React.FC<PostCardProps> = ({
           style={styles.actionButton}
           onPress={handleShare}
         >
-          <Share size={24} color={COLORS.darkGray} />
+          <Share size={24} color={COLORS.black} />
         </TouchableOpacity>
       </View>
 
@@ -303,7 +303,7 @@ const PostCardComponent: React.FC<PostCardProps> = ({
           </View>
         </View>
       )}
-    </GlassCard>
+    </View>
   );
 };
 
@@ -325,16 +325,19 @@ PostCard.displayName = 'PostCard';
 
 const styles = StyleSheet.create({
   postCard: {
+    backgroundColor: COLORS.white,
     marginHorizontal: DIMENSIONS.SPACING.md,
     marginVertical: DIMENSIONS.SPACING.sm,
-    borderRadius: 20,
+    borderRadius: 16,
+    padding: DIMENSIONS.SPACING.md,
+    ...SHADOWS.small,
   },
   urgentPost: {
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: COLORS.lost,
   },
   challengePost: {
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: COLORS.gold,
   },
   proPost: {
@@ -408,7 +411,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   authorName: {
-    ...TYPOGRAPHY.subtitle1,
+    ...TYPOGRAPHY.h6,
     color: COLORS.black,
     marginBottom: DIMENSIONS.SPACING.xs / 2,
   },
@@ -418,16 +421,16 @@ const styles = StyleSheet.create({
   },
   timeAgo: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.darkGray,
+    color: COLORS.textSecondary,
   },
   metaSeparator: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.darkGray,
+    color: COLORS.textSecondary,
     marginHorizontal: DIMENSIONS.SPACING.xs + 2,
   },
   location: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.darkGray,
+    color: COLORS.textSecondary,
     marginLeft: DIMENSIONS.SPACING.xs,
   },
   moreButton: {
@@ -435,7 +438,7 @@ const styles = StyleSheet.create({
   },
   moreButtonText: {
     fontSize: 24,
-    color: COLORS.darkGray,
+    color: COLORS.textSecondary,
     fontWeight: '700' as const,
   },
   postContent: {
@@ -489,8 +492,8 @@ const styles = StyleSheet.create({
   },
   actionText: {
     ...TYPOGRAPHY.body3,
-    fontWeight: '500' as const,
-    color: COLORS.darkGray,
+    fontWeight: '600' as const,
+    color: COLORS.textSecondary,
     marginLeft: DIMENSIONS.SPACING.xs + 2,
   },
   likedText: {

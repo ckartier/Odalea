@@ -1,33 +1,30 @@
-import React, { useMemo, useCallback } from "react";
-import { Tabs, useRouter } from "expo-router";
+import React, { useMemo } from "react";
+import { Tabs } from "expo-router";
 import { View, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IS_TABLET, RESPONSIVE_LAYOUT, COLORS } from "@/constants/colors";
-import TopBar, { useTopBarHeight } from "@/components/TopBar";
-import { Map, MessageCircle, Users, Trophy, User } from "lucide-react-native";
+import AppHeader, { useAppHeaderHeight } from "@/components/AppHeader";
+import { Map, MessageCircle, Users, User } from "lucide-react-native";
 
 export default function TabLayout() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const handleMenuToggle = useCallback(() => {
-    router.push('/menu' as any);
-  }, [router]);
 
-  const topBarHeight = useTopBarHeight();
+
+  const headerHeight = useAppHeaderHeight();
 
   const containerStyle = useMemo(() => ([
     styles.container,
     {
-      paddingTop: topBarHeight,
+      paddingTop: headerHeight,
       maxWidth: IS_TABLET ? RESPONSIVE_LAYOUT.contentMaxWidth : '100%',
       alignSelf: IS_TABLET ? 'center' : 'stretch',
     },
-  ]), [topBarHeight]);
+  ]), [headerHeight]);
 
   return (
     <>
-      <TopBar onMenuPress={handleMenuToggle} />
+      <AppHeader showMenu={false} showNotifications={false} />
 
       <View style={containerStyle}>
         <Tabs
@@ -73,13 +70,6 @@ export default function TabLayout() {
             }} 
           />
           <Tabs.Screen 
-            name="challenges" 
-            options={{ 
-              title: "Défis",
-              tabBarIcon: ({ color, size }) => <Trophy size={size} color={color} />,
-            }} 
-          />
-          <Tabs.Screen 
             name="profile" 
             options={{ 
               title: "Profil",
@@ -90,6 +80,7 @@ export default function TabLayout() {
           <Tabs.Screen name="shop" options={{ href: null }} />
           <Tabs.Screen name="cat-sitter" options={{ href: null }} />
           <Tabs.Screen name="lost-found" options={{ href: null }} />
+          <Tabs.Screen name="challenges" options={{ href: null }} />
         </Tabs>
       </View>
     </>

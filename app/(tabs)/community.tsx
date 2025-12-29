@@ -4,7 +4,6 @@ import {
   Text,
   View,
   FlatList,
-  ScrollView,
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
@@ -18,14 +17,14 @@ import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { COLORS, SHADOWS, DIMENSIONS } from '@/constants/colors';
 import { TYPOGRAPHY } from '@/constants/typography';
-import { useI18n } from '@/hooks/i18n-store';
+
 import { useSocial } from '@/hooks/social-store';
 import { usePremium } from '@/hooks/premium-store';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
-import GlassCard from '@/components/GlassCard';
-import AppBackground from '@/components/AppBackground';
 import { PostCard } from '@/components/PostCard';
-import { Plus } from 'lucide-react-native';
+import { SegmentedControl, SegmentOption } from '@/components/SegmentedControl';
+import EmptyState from '@/components/EmptyState';
+import { Plus, Filter } from 'lucide-react-native';
 import { realtimeService } from '@/services/database';
 import { Post } from '@/types';
 
@@ -47,8 +46,16 @@ interface FilterCount {
 
 type FilterType = 'all' | 'lost' | 'found' | 'challenges' | 'pros';
 
+const FILTER_OPTIONS: SegmentOption<FilterType>[] = [
+  { key: 'all', label: 'Tout' },
+  { key: 'lost', label: 'Perdus' },
+  { key: 'found', label: 'Trouvés' },
+  { key: 'challenges', label: 'Défis' },
+  { key: 'pros', label: 'Pros' },
+];
+
 export default function CommunityScreen() {
-  const { t } = useI18n();
+
   const insets = useSafeAreaInsets();
   const { petId } = useLocalSearchParams<{ petId?: string }>();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
@@ -79,12 +86,12 @@ export default function CommunityScreen() {
     refreshPosts();
   }, [refreshPosts]);
 
-  const handleCreatePost = async () => {
+  const handleCreatePost = useCallback(async () => {
     if (Platform.OS !== 'web') {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
     router.push('/community/create');
-  };
+  }, []);
 
   const handleToggleComments = useCallback((postId: string) => {
     setExpandedPostId(prev => prev === postId ? null : postId);
@@ -223,22 +230,22 @@ export default function CommunityScreen() {
     return counts;
   }, [posts]);
 
-  const filters = useMemo<{ key: FilterType; label: string; premium?: boolean; count: number }[]>(() => [
-    { key: 'all', label: t('map.show_all'), count: filterCounts.all },
-    { key: 'lost', label: 'Perdus', count: filterCounts.lost },
-    { key: 'found', label: 'Trouvés', count: filterCounts.found },
-    { key: 'challenges', label: 'Défis', count: filterCounts.challenges },
-    { key: 'pros', label: 'Pros', premium: !isPremium, count: filterCounts.pros },
-  ], [t, filterCounts, isPremium]);
+  const segmentOptions = useMemo<SegmentOption<FilterType>[]>(() => 
+    FILTER_OPTIONS.map(opt => ({
+      ...opt,
+      count: filterCounts[opt.key],
+      badge: opt.key === 'pros' && !isPremium ? '👑' : undefined,
+      disabled: opt.key === 'pros' && !isPremium,
+    })),
+  [filterCounts, isPremium]);
 
-  const handleFilterPress = useCallback((filterKey: FilterType) => {
-    const filter = filters.find(f => f.key === filterKey);
-    if (filter?.premium) {
+  const handleFilterChange = useCallback((filterKey: FilterType) => {
+    if (filterKey === 'pros' && !isPremium) {
       showPremiumPrompt('filters');
       return;
     }
     setActiveFilter(filterKey);
-  }, [filters, showPremiumPrompt]);
+  }, [isPremium, showPremiumPrompt]);
 
   const filteredPosts = useMemo(() => {
     let filtered = posts;
@@ -289,53 +296,16 @@ export default function CommunityScreen() {
   }, [comments, expandedPostId, user?.id, handleLike, handleSubmitComment, handleShare, handleDeletePost, handleReportPost, handleBlockUser, isTogglingLike, isAddingComment, isDeletingPost, isCommentsLoading, isPostLiked, handleToggleComments]);
 
   const renderHeader = useCallback(() => (
-    <>
-      <GlassCard tint="neutral" style={styles.filterContainer} noPadding>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-          {petId && (
-            <TouchableOpacity
-              style={[
-                styles.filterButton,
-                styles.activeFilterButton,
-              ]}
-              onPress={() => router.replace('/community')}
-            >
-              <Text style={styles.activeFilterText}>Tout</Text>
-            </TouchableOpacity>
-          )}
-          {!petId && filters.map(filter => (
-            <TouchableOpacity
-              key={filter.key}
-              style={[
-                styles.filterButton,
-                activeFilter === filter.key && styles.activeFilterButton,
-                filter.premium && styles.premiumFilterButton,
-              ]}
-              onPress={() => handleFilterPress(filter.key)}
-            >
-              <Text
-                style={[
-                  styles.filterText,
-                  activeFilter === filter.key && styles.activeFilterText,
-                ]}
-              >
-                {filter.label}
-              </Text>
-              {filter.count > 0 && (
-                <View style={styles.countBadge}>
-                  <Text style={[styles.countText, activeFilter === filter.key && styles.countTextActive]}>
-                    {filter.count}
-                  </Text>
-                </View>
-              )}
-              {filter.premium && <Text style={styles.premiumBadge}>👑</Text>}
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </GlassCard>
-
+    <View style={styles.headerContainer}>
+      <SegmentedControl<FilterType>
+        options={segmentOptions}
+        activeKey={activeFilter}
+        onChange={handleFilterChange}
+        style={styles.segmentedControl}
+      />
+      
       {!isPremium && activeFilter === 'pros' && (
-        <GlassCard tint="neutral" style={styles.premiumUpsellCard}>
+        <View style={styles.premiumUpsellCard}>
           <Text style={styles.upsellTitle}>Contenu Premium 👑</Text>
           <Text style={styles.upsellText}>
             Débloquez l&apos;accès illimité aux posts des professionnels et découvrez leurs offres exclusives.
@@ -346,10 +316,10 @@ export default function CommunityScreen() {
           >
             <Text style={styles.upsellButtonText}>Passer à Premium</Text>
           </TouchableOpacity>
-        </GlassCard>
+        </View>
       )}
-    </>
-  ), [petId, filters, activeFilter, isPremium, handleFilterPress]);
+    </View>
+  ), [segmentOptions, activeFilter, isPremium, handleFilterChange]);
 
   const renderEmpty = useCallback(() => {
     if (isLoading && posts.length === 0) {
@@ -363,24 +333,26 @@ export default function CommunityScreen() {
 
     if (isError) {
       return (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Échec du chargement des publications</Text>
-          <TouchableOpacity onPress={onRefresh} style={styles.retryButton}>
-            <Text style={styles.retryText}>Réessayer</Text>
-          </TouchableOpacity>
-        </View>
+        <EmptyState
+          icon={Filter}
+          title="Échec du chargement"
+          message="Impossible de charger les publications"
+          actionLabel="Réessayer"
+          onAction={onRefresh}
+        />
       );
     }
 
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>Aucune publication trouvée</Text>
-        <Text style={styles.emptySubtext}>
-          {activeFilter !== 'all' ? 'Essayez de modifier vos filtres' : 'Soyez le premier à publier !'}
-        </Text>
-      </View>
+      <EmptyState
+        icon={Plus}
+        title="Aucune publication"
+        message={activeFilter !== 'all' ? 'Essayez de modifier vos filtres' : 'Soyez le premier à publier !'}
+        actionLabel={activeFilter === 'all' ? 'Créer un post' : undefined}
+        onAction={activeFilter === 'all' ? handleCreatePost : undefined}
+      />
     );
-  }, [isLoading, posts.length, isError, onRefresh, activeFilter]);
+  }, [isLoading, posts.length, isError, onRefresh, activeFilter, handleCreatePost]);
 
   const renderFooter = useCallback(() => {
     if (filteredPosts.length === 0) return null;
@@ -393,7 +365,7 @@ export default function CommunityScreen() {
   }, [filteredPosts.length]);
 
   return (
-    <AppBackground>
+    <View style={styles.screen}>
       <FlatList
         data={filteredPosts}
         renderItem={renderPost}
@@ -424,68 +396,28 @@ export default function CommunityScreen() {
       >
         <Plus size={28} color={COLORS.white} />
       </TouchableOpacity>
-
-    </AppBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  filterContainer: {
-    marginHorizontal: DIMENSIONS.SPACING.md,
-    marginTop: DIMENSIONS.SPACING.sm,
-    marginBottom: DIMENSIONS.SPACING.sm,
-  },
-  filterScroll: {
-    paddingVertical: DIMENSIONS.SPACING.sm,
-    paddingHorizontal: DIMENSIONS.SPACING.md,
-  },
-  filterButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginRight: DIMENSIONS.SPACING.sm,
-    borderRadius: 999,
-    backgroundColor: COLORS.lightGray,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  activeFilterButton: {
-    backgroundColor: COLORS.primary,
-  },
-  premiumFilterButton: {
-    borderWidth: 1,
-    borderColor: COLORS.gold,
-  },
-  filterText: {
-    ...TYPOGRAPHY.labelSmall,
-    color: COLORS.darkGray,
-  },
-  activeFilterText: {
-    color: COLORS.white,
-  },
-  premiumBadge: {
-    fontSize: 12,
-  },
-  countBadge: {
+  screen: {
+    flex: 1,
     backgroundColor: COLORS.white,
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    marginLeft: 4,
   },
-  countText: {
-    ...TYPOGRAPHY.caption,
-    fontSize: 11,
-    fontWeight: '700' as const,
-    color: COLORS.darkGray,
+  headerContainer: {
+    backgroundColor: COLORS.white,
   },
-  countTextActive: {
-    color: COLORS.primary,
+  segmentedControl: {
+    marginTop: DIMENSIONS.SPACING.xs,
+    marginBottom: DIMENSIONS.SPACING.sm,
   },
   premiumUpsellCard: {
     marginHorizontal: DIMENSIONS.SPACING.md,
     marginBottom: DIMENSIONS.SPACING.sm,
     padding: DIMENSIONS.SPACING.md,
+    backgroundColor: COLORS.primary,
+    borderRadius: 16,
   },
   upsellTitle: {
     ...TYPOGRAPHY.h5,
@@ -495,15 +427,15 @@ const styles = StyleSheet.create({
   upsellText: {
     ...TYPOGRAPHY.body2,
     color: COLORS.white,
-    opacity: 0.9,
     marginBottom: DIMENSIONS.SPACING.md,
   },
   upsellButton: {
     backgroundColor: COLORS.white,
-    paddingVertical: DIMENSIONS.SPACING.sm,
+    paddingVertical: DIMENSIONS.SPACING.sm + 2,
     paddingHorizontal: DIMENSIONS.SPACING.lg,
-    borderRadius: DIMENSIONS.SPACING.sm,
+    borderRadius: 12,
     alignItems: 'center',
+    minHeight: 44,
   },
   upsellButtonText: {
     ...TYPOGRAPHY.button,
@@ -518,7 +450,7 @@ const styles = StyleSheet.create({
   },
   endOfFeedText: {
     ...TYPOGRAPHY.body3,
-    color: COLORS.darkGray,
+    color: COLORS.textSecondary,
   },
   fab: {
     position: 'absolute',
@@ -526,11 +458,11 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    ...SHADOWS.xl,
-    elevation: 10,
+    ...SHADOWS.large,
+    elevation: 8,
   },
   loadingContainer: {
     flex: 1,
@@ -540,44 +472,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     ...TYPOGRAPHY.body2,
-    color: COLORS.darkGray,
+    color: COLORS.textSecondary,
     marginTop: DIMENSIONS.SPACING.md,
-  },
-  errorContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: DIMENSIONS.SPACING.xl * 2,
-  },
-  errorText: {
-    ...TYPOGRAPHY.body2,
-    color: COLORS.error,
-    marginBottom: DIMENSIONS.SPACING.md,
-  },
-  retryButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: DIMENSIONS.SPACING.lg,
-    paddingVertical: DIMENSIONS.SPACING.sm,
-    borderRadius: DIMENSIONS.SPACING.sm,
-  },
-  retryText: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.white,
-  },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: DIMENSIONS.SPACING.xl * 2,
-  },
-  emptyText: {
-    ...TYPOGRAPHY.h5,
-    color: COLORS.darkGray,
-    marginBottom: DIMENSIONS.SPACING.sm,
-  },
-  emptySubtext: {
-    ...TYPOGRAPHY.body2,
-    color: COLORS.mediumGray,
-    textAlign: 'center',
   },
 });
