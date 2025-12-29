@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import RevenueCatPaywall from '@/components/RevenueCatPaywall';
+import CustomerCenter from '@/components/CustomerCenter';
 import {
   StyleSheet,
   Text,
@@ -12,8 +14,9 @@ import { useRouter, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import { useI18n } from '@/hooks/i18n-store';
-import { useAuth } from '@/hooks/auth-store';
-import { usePremium } from '@/hooks/premium-store';
+import { useFirebaseUser } from '@/hooks/firebase-user-store';
+import { useRevenueCat } from '@/hooks/revenuecat-store';
+
 import {
   Crown,
   Star,
@@ -140,52 +143,44 @@ const getPricingPlans = (t: (key: string) => string): PricingPlan[] => [
 export default function PremiumScreen() {
   const router = useRouter();
   const { t } = useI18n();
-  const { user, updateUser } = useAuth();
-  const premiumStore = usePremium();
+  const { user } = useFirebaseUser();
+  const { isPro, packages, isLoading, purchasePackage } = useRevenueCat();
   const premiumFeatures = getPremiumFeatures(t);
   const pricingPlans = getPricingPlans(t);
-  const [selectedPlan, setSelectedPlan] = useState<PricingPlan>(pricingPlans[1]); // Default to yearly
-  const [isLoading, setIsLoading] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [showCustomerCenter, setShowCustomerCenter] = useState(false);
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = () => {
     if (!user) {
       Alert.alert(t('auth.sign_in'), t('auth.create_account'));
       return;
     }
-
-    setIsLoading(true);
-
-    try {
-      // In a real app, this would integrate with payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate payment processing
-
-      const result = await premiumStore.upgradeToPremium(selectedPlan.id);
-      
-      if (result.success) {
-        await updateUser({ isPremium: true });
-        
-        Alert.alert(
-          'Bienvenue dans Premium ! 🎉',
-          'Vous avez maintenant accès à toutes les fonctionnalités premium. Profitez de votre expérience Odalea améliorée !',
-          [
-            {
-              text: 'Commencer l\'exploration',
-              onPress: () => router.replace('/(tabs)/map'),
-            },
-          ]
-        );
-      } else {
-        Alert.alert('Paiement échoué', result.error || 'Impossible de traiter le paiement. Veuillez réessayer.');
-      }
-    } catch (error) {
-      Alert.alert(t('common.error'), t('errors.unknown_error'));
-    } finally {
-      setIsLoading(false);
-    }
+    setShowPaywall(true);
   };
 
   const handleRestorePurchases = () => {
-    Alert.alert('Restaurer les achats', 'Ceci restaurerait les achats premium précédents.');
+    setShowCustomerCenter(true);
+  };
+
+  const handlePurchaseComplete = () => {
+    Alert.alert(
+      'Bienvenue dans Odalea Pro ! 🎉',
+      'Vous avez maintenant accès à toutes les fonctionnalités premium. Profitez de votre expérience améliorée !',
+      [
+        {
+          text: 'Commencer l\'exploration',
+          onPress: () => router.replace('/(tabs)/map'),
+        },
+      ]
+    );
+  };
+
+  const handlePurchaseError = (error: string) => {
+    Alert.alert(
+      'Achat Échoué',
+      error || 'Impossible de traiter l\'achat. Veuillez réessayer.',
+      [{ text: 'OK' }]
+    );
   };
 
   const renderFeature = (feature: PremiumFeature) => (
@@ -215,42 +210,39 @@ export default function PremiumScreen() {
     </View>
   );
 
-  const renderPricingPlan = (plan: PricingPlan) => (
-    <TouchableOpacity
-      key={plan.id}
-      style={[
-        styles.pricingPlan,
-        selectedPlan.id === plan.id && styles.selectedPlan,
-        plan.popular && styles.popularPlan,
-      ]}
-      onPress={() => setSelectedPlan(plan)}
-    >
-      {plan.popular && (
-        <View style={styles.popularBadge}>
-          <Star size={12} color={COLORS.white} />
-          <Text style={styles.popularText}>Plus populaire</Text>
+  const renderPricingPlan = (plan: PricingPlan) => {
+    const pkg = plan.id === 'monthly' ? packages.monthly : plan.id === 'yearly' ? packages.yearly : packages.lifetime;
+    const price = pkg?.product.priceString || `€${plan.price}`;
+    
+    return (
+      <View
+        key={plan.id}
+        style={[
+          styles.pricingPlan,
+          plan.popular && styles.popularPlan,
+        ]}
+      >
+        {plan.popular && (
+          <View style={styles.popularBadge}>
+            <Star size={12} color={COLORS.white} />
+            <Text style={styles.popularText}>Plus populaire</Text>
+          </View>
+        )}
+        
+        <Text style={styles.planName}>{plan.name}</Text>
+        <View style={styles.priceContainer}>
+          <Text style={styles.price}>{price}</Text>
+          <Text style={styles.period}>/{plan.period}</Text>
         </View>
-      )}
-      
-      <Text style={styles.planName}>{plan.name}</Text>
-      <View style={styles.priceContainer}>
-        <Text style={styles.price}>€{plan.price}</Text>
-        <Text style={styles.period}>/{plan.period}</Text>
+        
+        {plan.savings && (
+          <Text style={styles.savings}>{plan.savings}</Text>
+        )}
       </View>
-      
-      {plan.savings && (
-        <Text style={styles.savings}>{plan.savings}</Text>
-      )}
-      
-      {selectedPlan.id === plan.id && (
-        <View style={styles.selectedIndicator}>
-          <CheckCircle size={20} color={COLORS.success} />
-        </View>
-      )}
-    </TouchableOpacity>
-  );
+    );
+  };
 
-  if (user?.isPremium) {
+  if (isPro) {
     return (
       <View style={styles.container}>
         <StatusBar style="dark" />
@@ -278,6 +270,14 @@ export default function PremiumScreen() {
             onPress={() => router.push('/(tabs)/map')}
           >
             <Text style={styles.exploreButtonText}>Explorer les fonctionnalités Premium</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.managementButton}
+            onPress={() => setShowCustomerCenter(true)}
+          >
+            <CreditCard size={20} color={COLORS.premium} />
+            <Text style={styles.managementButtonText}>Gérer mon abonnement</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -378,15 +378,6 @@ export default function PremiumScreen() {
 
       {/* Upgrade Button */}
       <View style={[styles.upgradeContainer, SHADOWS.large]}>
-        <View style={styles.priceInfo}>
-          <Text style={styles.selectedPlanText}>
-            {selectedPlan.name} Plan - €{selectedPlan.price}
-          </Text>
-          {selectedPlan.savings && (
-            <Text style={styles.savingsText}>{selectedPlan.savings}</Text>
-          )}
-        </View>
-        
         <TouchableOpacity
           style={[styles.upgradeButton, isLoading && styles.disabledButton]}
           onPress={handleUpgrade}
@@ -394,7 +385,7 @@ export default function PremiumScreen() {
         >
           <CreditCard size={20} color={COLORS.white} />
           <Text style={styles.upgradeButtonText}>
-            {isLoading ? 'Traitement...' : 'Passer à Premium'}
+            {isLoading ? 'Chargement...' : 'Passer à Premium'}
           </Text>
         </TouchableOpacity>
         
@@ -402,6 +393,18 @@ export default function PremiumScreen() {
           <Text style={styles.restoreButtonText}>Restaurer les achats</Text>
         </TouchableOpacity>
       </View>
+      
+      <RevenueCatPaywall
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        onPurchaseComplete={handlePurchaseComplete}
+        onPurchaseError={handlePurchaseError}
+      />
+      
+      <CustomerCenter
+        visible={showCustomerCenter}
+        onClose={() => setShowCustomerCenter(false)}
+      />
     </View>
   );
 }
@@ -670,10 +673,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 12,
+    marginBottom: 16,
   },
   exploreButtonText: {
     fontSize: 16,
     fontWeight: '600' as const,
     color: COLORS.white,
+  },
+  managementButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: COLORS.premium,
+  },
+  managementButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: COLORS.premium,
   },
 });

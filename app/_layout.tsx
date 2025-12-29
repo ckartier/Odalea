@@ -25,6 +25,7 @@ import { FriendsContext } from "@/hooks/friends-store";
 import { MatchingContext } from "@/hooks/matching-store";
 import { FavoritesContext } from "@/hooks/favorites-store";
 import { ActivePetContext } from "@/hooks/active-pet-store";
+import { RevenueCatContext } from "@/hooks/revenuecat-store";
 import { trpc, trpcClient } from "@/lib/trpc";
 import AppBackground from "@/components/AppBackground";
 import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
@@ -125,6 +126,7 @@ LanguageWrapper.displayName = 'LanguageWrapper';
 const AppProviders = React.memo(({ children }: { children: React.ReactNode }) => {
   return (
     <FirebaseUserContext>
+      <RevenueCatContext>
         <NotificationsProvider>
           <EmergencyContext>
             <PetsContext>
@@ -162,7 +164,8 @@ const AppProviders = React.memo(({ children }: { children: React.ReactNode }) =>
             </PetsContext>
           </EmergencyContext>
         </NotificationsProvider>
-      </FirebaseUserContext>
+      </RevenueCatContext>
+    </FirebaseUserContext>
   );
 });
 
