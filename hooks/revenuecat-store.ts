@@ -27,6 +27,7 @@ export interface RevenueCatState {
 
 export const [RevenueCatContext, useRevenueCat] = createContextHook(() => {
   const { user } = useFirebaseUser();
+  const [isInitializing, setIsInitializing] = useState(false);
   
   const [state, setState] = useState<RevenueCatState>({
     isReady: false,
@@ -125,7 +126,13 @@ export const [RevenueCatContext, useRevenueCat] = createContextHook(() => {
   }, []);
 
   const initialize = useCallback(async () => {
+    if (isInitializing) {
+      console.log('⏳ RevenueCat initialization already in progress, skipping...');
+      return;
+    }
+
     try {
+      setIsInitializing(true);
       console.log('🚀 Initializing RevenueCat...');
       
       const apiKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY;
@@ -137,21 +144,22 @@ export const [RevenueCatContext, useRevenueCat] = createContextHook(() => {
           isLoading: false,
           error: 'RevenueCat API key not configured',
         }));
+        setIsInitializing(false);
         return;
       }
 
       await revenueCatService.configure(apiKey, user?.id);
 
       if (user?.email) {
-        revenueCatService.setEmail(user.email);
+        await revenueCatService.setEmail(user.email);
       }
 
       if (user?.phoneNumber) {
-        revenueCatService.setPhoneNumber(user.phoneNumber);
+        await revenueCatService.setPhoneNumber(user.phoneNumber);
       }
 
       if (user?.id) {
-        revenueCatService.setAttributes({
+        await revenueCatService.setAttributes({
           userId: user.id,
           displayName: user.name || null,
         });
@@ -174,8 +182,10 @@ export const [RevenueCatContext, useRevenueCat] = createContextHook(() => {
         isLoading: false,
         error: error.message || 'Failed to initialize RevenueCat',
       }));
+    } finally {
+      setIsInitializing(false);
     }
-  }, [user, loadOfferings, loadCustomerInfo]);
+  }, [user, loadOfferings, loadCustomerInfo, isInitializing]);
 
   useEffect(() => {
     initialize();
