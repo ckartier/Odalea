@@ -126,13 +126,22 @@ export class RevenueCatService {
   }
 
   async getCustomerInfo(): Promise<CustomerInfo | null> {
+    if (!this.isConfigured) {
+      console.warn('⚠️ RevenueCat not configured yet, skipping getCustomerInfo');
+      return null;
+    }
+
     try {
       const customerInfo = await Purchases.getCustomerInfo();
       console.log('👤 Customer info fetched');
       console.log('🎟️ Active entitlements:', Object.keys(customerInfo.entitlements.active));
       return customerInfo;
-    } catch (error) {
-      console.error('❌ Error fetching customer info:', error);
+    } catch (error: any) {
+      console.error('❌ Error fetching customer info:', {
+        message: error?.message || 'Unknown error',
+        code: error?.code,
+        name: error?.name,
+      });
       return null;
     }
   }

@@ -103,6 +103,12 @@ export const [RevenueCatContext, useRevenueCat] = createContextHook(() => {
       
       if (!customerInfo) {
         console.warn('⚠️ No customer info found');
+        setState(prev => ({
+          ...prev,
+          customerInfo: null,
+          isPro: false,
+          entitlement: null,
+        }));
         return;
       }
 
@@ -121,7 +127,12 @@ export const [RevenueCatContext, useRevenueCat] = createContextHook(() => {
         entitlement,
       }));
     } catch (error: any) {
-      console.error('❌ Error loading customer info:', error);
+      const errorMessage = error?.message || error?.toString() || 'Unknown error';
+      console.error('❌ Error loading customer info:', {
+        message: errorMessage,
+        code: error?.code,
+        name: error?.name,
+      });
     }
   }, []);
 
@@ -150,6 +161,8 @@ export const [RevenueCatContext, useRevenueCat] = createContextHook(() => {
 
       await revenueCatService.configure(apiKey, user?.id);
 
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       if (user?.email) {
         await revenueCatService.setEmail(user.email);
       }
@@ -165,6 +178,8 @@ export const [RevenueCatContext, useRevenueCat] = createContextHook(() => {
         });
       }
 
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       await loadOfferings();
       await loadCustomerInfo();
 
@@ -175,21 +190,28 @@ export const [RevenueCatContext, useRevenueCat] = createContextHook(() => {
 
       console.log('✅ RevenueCat initialization complete');
     } catch (error: any) {
-      console.error('❌ RevenueCat initialization error:', error);
+      const errorMessage = error?.message || error?.toString() || 'Failed to initialize RevenueCat';
+      console.error('❌ RevenueCat initialization error:', {
+        message: errorMessage,
+        code: error?.code,
+        name: error?.name,
+      });
       setState(prev => ({
         ...prev,
         isReady: false,
         isLoading: false,
-        error: error.message || 'Failed to initialize RevenueCat',
+        error: errorMessage,
       }));
     } finally {
       setIsInitializing(false);
     }
-  }, [user, loadOfferings, loadCustomerInfo, isInitializing]);
+  }, [user?.id, user?.email, user?.phoneNumber, user?.name, loadOfferings, loadCustomerInfo, isInitializing]);
 
   useEffect(() => {
-    initialize();
-  }, [initialize]);
+    if (user) {
+      initialize();
+    }
+  }, [user, initialize]);
 
   const purchasePackage = useCallback(async (pkg: PurchasesPackage): Promise<{
     success: boolean;
