@@ -22,11 +22,14 @@ import { useSocial } from '@/hooks/social-store';
 import { usePremium } from '@/hooks/premium-store';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { PostCard } from '@/components/PostCard';
+import ProCard from '@/components/ProCard';
 import { SegmentedControl, SegmentOption } from '@/components/SegmentedControl';
 import EmptyState from '@/components/EmptyState';
 import { Plus, Filter } from 'lucide-react-native';
-import { realtimeService } from '@/services/database';
-import { Post } from '@/types';
+import { realtimeService, userService } from '@/services/database';
+import { Post, User } from '@/types';
+import { useQuery } from '@tanstack/react-query';
+import { calculateDistance } from '@/services/location-privacy';
 
 interface LocalComment {
   id: string;
@@ -247,6 +250,22 @@ export default function CommunityScreen() {
     setActiveFilter(filterKey);
   }, [isPremium, showPremiumPrompt]);
 
+  const professionalsQuery = useQuery({
+    queryKey: ['community', 'professionals'],
+    enabled: activeFilter === 'all' || activeFilter === 'pros',
+    queryFn: async () => {
+      const users = await userService.getAllUsers(200);
+      return users.filter(u => 
+        u.isProfessional && 
+        u.location?.latitude && 
+        u.location?.longitude &&
+        !u.id.includes('paris-') && 
+        !u.id.includes('test')
+      ) as User[];
+    },
+    staleTime: 60000,
+  });
+
   const filteredPosts = useMemo(() => {
     let filtered = posts;
 
@@ -269,7 +288,43 @@ export default function CommunityScreen() {
     return filtered;
   }, [posts, activeFilter, isPremium, petId]);
 
-  const renderPost: ListRenderItem<Post> = useCallback(({ item: post }) => {
+  const itemsToRender = useMemo(() => {
+    const professionals = professionalsQuery.data ?? [];
+    if (activeFilter === 'pros') return filteredPosts;
+    if (activeFilter !== 'all' || petId) return filteredPosts;
+    if (filteredPosts.length < 10) {
+      const items: (Post | { type: 'pro'; professional: User })[] = [];
+      let proIndex = 0;
+      filteredPosts.forEach((post, i) => {
+        items.push(post);
+        if ((i + 1) % 6 === 0 && proIndex < professionals.length) {
+          items.push({ type: 'pro', professional: professionals[proIndex] });
+          proIndex++;
+        }
+      });
+      return items;
+    }
+    return filteredPosts;
+  }, [filteredPosts, activeFilter, petId, professionalsQuery.data]);
+
+  const getDistance = useCallback((proLocation?: { latitude: number; longitude: number }) => {
+    if (!user?.location || !proLocation) return undefined;
+    const dist = calculateDistance(user.location, proLocation);
+    return dist < 1 ? `${Math.round(dist * 1000)}m` : `${dist.toFixed(1)}km`;
+  }, [user?.location]);
+
+  const renderPost: ListRenderItem<Post | { type: 'pro'; professional: User }> = useCallback(({ item }) => {
+    if ('type' in item && item.type === 'pro') {
+      const distance = getDistance(item.professional.location);
+      return (
+        <ProCard 
+          key={`pro-${item.professional.id}`}
+          professional={item.professional} 
+          distance={distance}
+        />
+      );
+    }
+    const post = item as Post;
     const postComments = comments[post.id] || [];
     const isCommentsExpanded = expandedPostId === post.id;
     
@@ -293,7 +348,7 @@ export default function CommunityScreen() {
         onToggleComments={handleToggleComments}
       />
     );
-  }, [comments, expandedPostId, user?.id, handleLike, handleSubmitComment, handleShare, handleDeletePost, handleReportPost, handleBlockUser, isTogglingLike, isAddingComment, isDeletingPost, isCommentsLoading, isPostLiked, handleToggleComments]);
+  }, [comments, expandedPostId, user?.id, handleLike, handleSubmitComment, handleShare, handleDeletePost, handleReportPost, handleBlockUser, isTogglingLike, isAddingComment, isDeletingPost, isCommentsLoading, isPostLiked, handleToggleComments, getDistance]);
 
   const renderHeader = useCallback(() => (
     <View style={styles.headerContainer}>
@@ -355,21 +410,21 @@ export default function CommunityScreen() {
   }, [isLoading, posts.length, isError, onRefresh, activeFilter, handleCreatePost]);
 
   const renderFooter = useCallback(() => {
-    if (filteredPosts.length === 0) return null;
+    if (itemsToRender.length === 0) return null;
     
     return (
       <View style={styles.endOfFeed}>
         <Text style={styles.endOfFeedText}>Vous êtes à jour !</Text>
       </View>
     );
-  }, [filteredPosts.length]);
+  }, [itemsToRender.length]);
 
   return (
     <View style={styles.screen}>
       <FlatList
-        data={filteredPosts}
+        data={itemsToRender}
         renderItem={renderPost}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => 'type' in item && item.type === 'pro' ? `pro-${item.professional.id}` : (item as Post).id}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}

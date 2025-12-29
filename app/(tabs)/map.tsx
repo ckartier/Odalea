@@ -350,8 +350,16 @@ export default function MapScreen() {
       
       const catSittersWithUsers = await Promise.all(
         profiles.map(async (profile) => {
+          if (!profile.userId || profile.userId.includes('paris-') || profile.userId.includes('test')) {
+            console.log(`🚫 Skipping mock cat sitter: ${profile.userId}`);
+            return null;
+          }
           try {
             const user = await userService.getUser(profile.userId);
+            if (user?.id.includes('paris-') || user?.id.includes('test')) {
+              console.log(`🚫 Skipping mock user: ${user.id}`);
+              return null;
+            }
             return { ...profile, user };
           } catch (error) {
             console.error(`❌ Error fetching user for cat sitter ${profile.userId}:`, error);
@@ -433,7 +441,11 @@ export default function MapScreen() {
   const professionals = usersWithLocation.filter((u) => {
     if (!u.isProfessional || !u.professionalData?.activityType) return false;
     if (u.id.includes('paris-') || u.id.includes('test')) return false;
-    return activeFilters.has('pros');
+    
+    const hasProsFilter = activeFilters.has('pros');
+    const hasSpecificFilter = activeFilters.has(u.professionalData.activityType as any);
+    
+    return hasProsFilter || hasSpecificFilter;
   });
 
   const filteredUsers = usersWithLocation.filter((u) => {
