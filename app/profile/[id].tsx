@@ -15,8 +15,9 @@ import Button from '@/components/Button';
 import PetCard from '@/components/PetCard';
 import { useAuth } from '@/hooks/auth-store';
 import { useMessaging } from '@/hooks/messaging-store';
+import { useCatSitter } from '@/hooks/cat-sitter-store';
 import type { Gender, Pet, User } from '@/types';
-import { MapPin, MessageSquare, Phone, Shield, UserCheck, UserPlus } from 'lucide-react-native';
+import { MapPin, MessageSquare, Phone, Shield, UserCheck, UserPlus, Calendar, Clock, Euro } from 'lucide-react-native';
 import { db } from '@/services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -103,9 +104,11 @@ export default function UserProfileScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { areFriends, hasPendingRequest, sendFriendRequest } = useMessaging();
+  const { loadProfile: loadCatSitterProfile } = useCatSitter();
 
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [catSitterProfile, setCatSitterProfile] = useState<any>(null);
 
   const canSeePhone = useMemo(() => (profileUser ? areFriends(profileUser.id) : false), [profileUser, areFriends]);
 
@@ -131,13 +134,22 @@ export default function UserProfileScreen() {
         return;
       }
       setProfileUser(parsed);
+      
+      if (parsed.isCatSitter) {
+        try {
+          const csProfile = await loadCatSitterProfile(parsed.id);
+          setCatSitterProfile(csProfile);
+        } catch (err) {
+          console.error('Failed to load cat sitter profile', err);
+        }
+      }
     } catch (e) {
       console.error('Failed to load profile', e);
       Alert.alert('Erreur', 'Impossible de charger le profil.');
     } finally {
       setLoading(false);
     }
-  }, [id, user, router]);
+  }, [id, user, router, loadCatSitterProfile]);
 
   useEffect(() => {
     load();
@@ -162,6 +174,11 @@ export default function UserProfileScreen() {
       setLoading(false);
     }
   }, [profileUser, sendFriendRequest]);
+
+  const handleBookService = useCallback(() => {
+    if (!profileUser) return;
+    router.push(`/booking/${profileUser.id}`);
+  }, [profileUser, router]);
 
   if (loading) {
     return (
@@ -253,12 +270,45 @@ export default function UserProfileScreen() {
             <View style={[styles.membershipCard, SHADOWS.medium]}>
               <View style={styles.membershipInfo}>
                 <Shield size={24} color={COLORS.maleAccent} />
-                <View>
+                <View style={{ flex: 1 }}>
                   <Text style={styles.membershipTitle}>Cat Sitter vérifié</Text>
                   <Text style={styles.membershipSubtitle}>Profil vérifié sur la plateforme</Text>
                 </View>
               </View>
+              <Button
+                title="Réserver"
+                onPress={handleBookService}
+                icon={<Calendar size={18} color={COLORS.white} />}
+                style={styles.bookButton}
+                testID="btn-book-service"
+              />
             </View>
+
+            {catSitterProfile?.customServices && catSitterProfile.customServices.length > 0 && (
+              <View style={styles.servicesContainer}>
+                <Text style={styles.servicesTitle}>Prestations proposées</Text>
+                {catSitterProfile.customServices
+                  .filter((s: any) => s.isActive)
+                  .map((service: any) => (
+                    <View key={service.id} style={styles.serviceItem}>
+                      <View style={styles.serviceInfo}>
+                        <Text style={styles.serviceName}>{service.name}</Text>
+                        <Text style={styles.serviceDescription}>{service.description}</Text>
+                        <View style={styles.serviceDetails}>
+                          <View style={styles.serviceDetail}>
+                            <Clock size={14} color={COLORS.darkGray} />
+                            <Text style={styles.serviceDetailText}>{service.duration} min</Text>
+                          </View>
+                          <View style={styles.serviceDetail}>
+                            <Euro size={14} color={COLORS.darkGray} />
+                            <Text style={styles.serviceDetailText}>{service.price}€</Text>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+              </View>
+            )}
           </View>
         )}
 
@@ -357,16 +407,58 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   membershipCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  membershipInfo: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  membershipTitle: { fontSize: 16, fontWeight: '600' as const, color: COLORS.black, marginBottom: 2 },
+  membershipSubtitle: { fontSize: 12, color: COLORS.darkGray },
+  bookButton: { width: '100%' },
+  servicesContainer: {
     backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 16,
   },
-  membershipInfo: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  membershipTitle: { fontSize: 16, fontWeight: '600' as const, color: COLORS.black, marginBottom: 2 },
-  membershipSubtitle: { fontSize: 12, color: COLORS.darkGray },
+  servicesTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: COLORS.black,
+    marginBottom: 12,
+  },
+  serviceItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightGray,
+  },
+  serviceInfo: {
+    flex: 1,
+  },
+  serviceName: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: COLORS.black,
+    marginBottom: 4,
+  },
+  serviceDescription: {
+    fontSize: 13,
+    color: COLORS.darkGray,
+    marginBottom: 8,
+  },
+  serviceDetails: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  serviceDetail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  serviceDetailText: {
+    fontSize: 13,
+    color: COLORS.darkGray,
+  },
   petsSection: {
     backgroundColor: '#FFF8E1',
     paddingHorizontal: 16,
