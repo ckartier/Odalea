@@ -18,6 +18,8 @@ export const PRODUCT_IDS = {
 export class RevenueCatService {
   private static instance: RevenueCatService;
   private isConfigured = false;
+  private attributeQueue: Promise<void> = Promise.resolve();
+  private isSettingAttributes = false;
 
   private constructor() {}
 
@@ -195,31 +197,84 @@ export class RevenueCatService {
     }
   }
 
-  setAttributes(attributes: Record<string, string | null>): void {
-    try {
-      Purchases.setAttributes(attributes);
-      console.log('✅ Attributes set:', Object.keys(attributes));
-    } catch (error) {
-      console.error('❌ Error setting attributes:', error);
-    }
+  async setAttributes(attributes: Record<string, string | null>): Promise<void> {
+    this.attributeQueue = this.attributeQueue.then(async () => {
+      if (this.isSettingAttributes) {
+        console.log('⏳ Attributes update already in progress, queuing...');
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      try {
+        this.isSettingAttributes = true;
+        await Purchases.setAttributes(attributes);
+        console.log('✅ Attributes set:', Object.keys(attributes));
+      } catch (error: any) {
+        if (error?.code === 16 || error?.info?.statusCode === 529) {
+          console.log('⏳ Concurrent request detected, retrying in 500ms...');
+          await new Promise(resolve => setTimeout(resolve, 500));
+          try {
+            await Purchases.setAttributes(attributes);
+            console.log('✅ Attributes set (retry):', Object.keys(attributes));
+          } catch (retryError) {
+            console.error('❌ Error setting attributes (retry failed):', retryError);
+          }
+        } else {
+          console.error('❌ Error setting attributes:', error);
+        }
+      } finally {
+        this.isSettingAttributes = false;
+      }
+    });
+    
+    return this.attributeQueue;
   }
 
-  setEmail(email: string): void {
-    try {
-      Purchases.setEmail(email);
-      console.log('✅ Email set');
-    } catch (error) {
-      console.error('❌ Error setting email:', error);
-    }
+  async setEmail(email: string): Promise<void> {
+    this.attributeQueue = this.attributeQueue.then(async () => {
+      try {
+        await Purchases.setEmail(email);
+        console.log('✅ Email set');
+      } catch (error: any) {
+        if (error?.code === 16 || error?.info?.statusCode === 529) {
+          console.log('⏳ Concurrent email request detected, retrying in 500ms...');
+          await new Promise(resolve => setTimeout(resolve, 500));
+          try {
+            await Purchases.setEmail(email);
+            console.log('✅ Email set (retry)');
+          } catch (retryError) {
+            console.error('❌ Error setting email (retry failed):', retryError);
+          }
+        } else {
+          console.error('❌ Error setting email:', error);
+        }
+      }
+    });
+    
+    return this.attributeQueue;
   }
 
-  setPhoneNumber(phoneNumber: string): void {
-    try {
-      Purchases.setPhoneNumber(phoneNumber);
-      console.log('✅ Phone number set');
-    } catch (error) {
-      console.error('❌ Error setting phone number:', error);
-    }
+  async setPhoneNumber(phoneNumber: string): Promise<void> {
+    this.attributeQueue = this.attributeQueue.then(async () => {
+      try {
+        await Purchases.setPhoneNumber(phoneNumber);
+        console.log('✅ Phone number set');
+      } catch (error: any) {
+        if (error?.code === 16 || error?.info?.statusCode === 529) {
+          console.log('⏳ Concurrent phone request detected, retrying in 500ms...');
+          await new Promise(resolve => setTimeout(resolve, 500));
+          try {
+            await Purchases.setPhoneNumber(phoneNumber);
+            console.log('✅ Phone number set (retry)');
+          } catch (retryError) {
+            console.error('❌ Error setting phone number (retry failed):', retryError);
+          }
+        } else {
+          console.error('❌ Error setting phone number:', error);
+        }
+      }
+    });
+    
+    return this.attributeQueue;
   }
 
   async presentCodeRedemptionSheet(): Promise<void> {
