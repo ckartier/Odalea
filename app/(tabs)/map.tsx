@@ -83,7 +83,7 @@ export default function MapScreen() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedGooglePlace, setSelectedGooglePlace] = useState<GooglePlace | null>(null);
   const [locationPermission, setLocationPermission] = useState<boolean>(false);
-  const [activeFilters, setActiveFilters] = useState<Set<MapFilterType>>(new Set(['pets']));
+  const [activeFilters, setActiveFilters] = useState<Set<MapFilterType>>(new Set(['pets', 'googleVet', 'googleShop', 'googleZoo', 'googleShelter']));
   const [popup, setPopup] = useState<PopupConfig | null>(null);
   const popupAnim = useRef(new Animated.Value(0)).current;
 
