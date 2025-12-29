@@ -52,6 +52,7 @@ service firebase.storage {
     }
     
     // Pet photos: users/{userId}/pets/{petId}/{filename}
+    // Supports both real petIds and temporary uploads (temp-{timestamp})
     match /users/{userId}/pets/{petId}/{filename} {
       allow read: if isAuthenticated(); // Authenticated read for pet pictures
       allow write: if isOwner(userId) && isValidImageUpload();

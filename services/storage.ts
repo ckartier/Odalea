@@ -154,9 +154,9 @@ export class StorageService {
       console.error('  - Stack:', error?.stack?.substring(0, 500));
       
       if (error?.code === 'storage/unauthorized') {
-        const detailMsg = 'Accès refusé. Vérifiez vos règles Firebase Storage.';
-        console.error('💡 Suggestion:', detailMsg);
-        throw new Error(detailMsg);
+        const detailMsg = `Accès refusé au Storage Firebase.\n\nPath: ${path}\nUtilisateur: ${auth.currentUser?.uid || 'non connecté'}\n\nVérifiez que:\n1. Vous êtes bien connecté\n2. Le path correspond à votre UID\n3. Les règles Storage autorisent l'accès`;
+        console.error('💡 [STORAGE/UNAUTHORIZED]:', detailMsg);
+        throw new Error('Accès refusé. Vérifiez votre connexion et réessayez.');
       } else if (error?.code === 'storage/canceled') {
         throw new Error('Upload annulé.');
       } else if (error?.code === 'storage/unknown') {
@@ -187,8 +187,17 @@ export class StorageService {
     uri: string,
     options?: UploadOptions
   ): Promise<string> {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('Non authentifié. Connectez-vous pour uploader des images.');
+    }
+    
+    if (currentUser.uid !== userId) {
+      console.warn(`⚠️ userId mismatch: store=${userId}, auth=${currentUser.uid}. Using auth UID.`);
+    }
+    
     const timestamp = Date.now();
-    const path = `users/${userId}/profile/${timestamp}.jpg`;
+    const path = `users/${currentUser.uid}/profile/${timestamp}.jpg`;
     return this.uploadImage(uri, path, options);
   }
 
@@ -198,8 +207,18 @@ export class StorageService {
     uri: string,
     options?: UploadOptions
   ): Promise<string> {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('Non authentifié. Connectez-vous pour uploader des images.');
+    }
+    
+    if (currentUser.uid !== userId) {
+      console.warn(`⚠️ userId mismatch: store=${userId}, auth=${currentUser.uid}. Using auth UID.`);
+    }
+    
     const timestamp = Date.now();
-    const path = `users/${userId}/pets/${petId}/${timestamp}.jpg`;
+    const path = `users/${currentUser.uid}/pets/${petId}/${timestamp}.jpg`;
+    console.log('📤 [PET PHOTO] Upload path:', path);
     return this.uploadImage(uri, path, options);
   }
 
@@ -209,8 +228,17 @@ export class StorageService {
     uri: string,
     options?: UploadOptions
   ): Promise<string> {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('Non authentifié. Connectez-vous pour uploader des images.');
+    }
+    
+    if (currentUser.uid !== userId) {
+      console.warn(`⚠️ userId mismatch: store=${userId}, auth=${currentUser.uid}. Using auth UID.`);
+    }
+    
     const timestamp = Date.now();
-    const path = `users/${userId}/products/${productId}/${timestamp}.jpg`;
+    const path = `users/${currentUser.uid}/products/${productId}/${timestamp}.jpg`;
     return this.uploadImage(uri, path, options);
   }
 
@@ -220,8 +248,17 @@ export class StorageService {
     uri: string,
     options?: UploadOptions
   ): Promise<string> {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('Non authentifié. Connectez-vous pour uploader des images.');
+    }
+    
+    if (currentUser.uid !== userId) {
+      console.warn(`⚠️ userId mismatch: store=${userId}, auth=${currentUser.uid}. Using auth UID.`);
+    }
+    
     const timestamp = Date.now();
-    const path = `users/${userId}/posts/${postId}/${timestamp}.jpg`;
+    const path = `users/${currentUser.uid}/posts/${postId}/${timestamp}.jpg`;
     return this.uploadImage(uri, path, options);
   }
 
@@ -231,8 +268,17 @@ export class StorageService {
     uri: string,
     options?: UploadOptions
   ): Promise<string> {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('Non authentifié. Connectez-vous pour uploader des images.');
+    }
+    
+    if (currentUser.uid !== userId) {
+      console.warn(`⚠️ userId mismatch: store=${userId}, auth=${currentUser.uid}. Using auth UID.`);
+    }
+    
     const timestamp = Date.now();
-    const path = `users/${userId}/lost-found/${reportId}/${timestamp}.jpg`;
+    const path = `users/${currentUser.uid}/lost-found/${reportId}/${timestamp}.jpg`;
     return this.uploadImage(uri, path, options);
   }
 
