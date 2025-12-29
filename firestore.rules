@@ -28,12 +28,8 @@ service cloud.firestore {
     }
     
     match /posts/{postId} {
-      allow read: if isAuthenticated() && 
-                     (resource.data.visibility == 'public' || 
-                      resource.data.authorId == request.auth.uid);
-      allow create: if isAuthenticated() && 
-                       request.resource.data.authorId == request.auth.uid &&
-                       request.resource.data.visibility in ['public', 'pending', 'hidden'];
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
       allow update: if isAuthenticated() && resource.data.authorId == request.auth.uid;
       allow delete: if isAuthenticated() && resource.data.authorId == request.auth.uid;
     }
@@ -76,15 +72,17 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && resource.data.sellerId == request.auth.uid;
     }
     
+    match /orders/{orderId} {
+      allow read: if isAuthenticated() && resource.data.customerId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.customerId == request.auth.uid;
+      allow update, delete: if false;
+    }
+    
     match /bookings/{bookingId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && 
-                       request.resource.data.clientId == request.auth.uid;
-      allow update: if isAuthenticated() && 
-                       (resource.data.clientId == request.auth.uid || 
-                        resource.data.catSitterId == request.auth.uid);
-      allow delete: if isAuthenticated() && 
-                       resource.data.clientId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.clientId == request.auth.uid;
+      allow update: if isAuthenticated() && (resource.data.clientId == request.auth.uid || resource.data.catSitterId == request.auth.uid);
+      allow delete: if isAuthenticated() && resource.data.clientId == request.auth.uid;
     }
     
     match /reviews/{reviewId} {
@@ -106,6 +104,12 @@ service cloud.firestore {
       allow write: if false;
     }
     
+    match /userChallenges/{userChallengeId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow delete: if false;
+    }
+    
     match /challengeParticipations/{participationId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
@@ -113,10 +117,18 @@ service cloud.firestore {
       allow delete: if false;
     }
     
+    match /badges/{badgeId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+    
+    match /userBadges/{userBadgeId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+    
     match /friendRequests/{requestId} {
-      allow read: if isAuthenticated() && 
-                     (resource.data.senderId == request.auth.uid || 
-                      resource.data.receiverId == request.auth.uid);
+      allow read: if isAuthenticated() && (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
       allow create: if isAuthenticated() && request.resource.data.senderId == request.auth.uid;
       allow update: if isAuthenticated() && resource.data.receiverId == request.auth.uid;
       allow delete: if false;
@@ -145,6 +157,19 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow update: if false;
+    }
+    
+    match /reports/{reportId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.reporterId == request.auth.uid;
+      allow update, delete: if false;
+    }
+    
+    match /blockedUsers/{blockId} {
+      allow read: if isAuthenticated() && resource.data.blockerId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.blockerId == request.auth.uid;
+      allow update: if false;
+      allow delete: if isAuthenticated() && resource.data.blockerId == request.auth.uid;
     }
     
     match /{document=**} {
