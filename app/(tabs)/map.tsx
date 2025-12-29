@@ -417,7 +417,9 @@ export default function MapScreen() {
   const allUsersNormalized = useMemo(() => allUsersRaw.map(normalizeUser), [allUsersRaw, normalizeUser]);
 
   const usersWithLocation = useMemo(() => {
-    return allUsersNormalized.filter((u) => u.location?.latitude != null && u.location?.longitude != null);
+    const filtered = allUsersNormalized.filter((u) => u.location?.latitude != null && u.location?.longitude != null);
+    console.log(`📍 Users with location: ${filtered.length} (from ${allUsersNormalized.length} total users)`);
+    return filtered;
   }, [allUsersNormalized]);
 
   const userPetsWithLocation: AllPet[] = user?.pets?.filter((p) => p.location).map((p) => ({
@@ -449,6 +451,7 @@ export default function MapScreen() {
     
     return hasProsFilter || hasSpecificFilter;
   });
+  console.log(`👔 Professionals to display: ${professionals.length}`, professionals.map(p => ({ name: p.name || p.pseudo, type: p.professionalData?.activityType })));
 
   const filteredUsers = usersWithLocation.filter((u) => {
     if (u.email?.includes('test') || u.pseudo?.toLowerCase().includes('test') || u.id.includes('paris-')) {
@@ -457,14 +460,16 @@ export default function MapScreen() {
     if (u.isProfessional || u.isCatSitter) return false;
     
     if (activeFilters.size === 0) return false;
-    return activeFilters.has('users');
+    return activeFilters.has('pets');
   });
+  console.log(`👥 Regular users to display: ${filteredUsers.length}`, filteredUsers.map(u => ({ name: u.name || u.pseudo, hasPets: u.pets?.length || 0 })));
 
   const filteredCatSitters = catSittersWithLocation.filter((cs) => {
     if (activeFilters.size === 0) return false;
     if (activeFilters.has('catSitters')) return true;
     return false;
   });
+  console.log(`🏠 Cat sitters to display: ${filteredCatSitters.length}`, filteredCatSitters.map(cs => ({ name: cs.user.name || cs.user.pseudo })));
 
   const projectPoint = useCallback(
     (lat: number, lng: number) => {
@@ -570,6 +575,117 @@ export default function MapScreen() {
                   )}
                 </View>
                 <View style={[styles.webPetTriangle, { borderTopColor: markerColor }]} />
+              </TouchableOpacity>
+            );
+          })}
+          {filteredUsers.map((u) => {
+            if (!u.location) return null;
+            const pos = projectPoint(u.location.latitude, u.location.longitude);
+            const left = Math.max(24, Math.min(width - 24, pos.left));
+            const top = Math.max(24, Math.min(height - 24, pos.top));
+            return (
+              <TouchableOpacity
+                key={`overlay-user-${u.id}`}
+                style={[styles.webUserMarker, { left, top }]}
+                onPress={() => {
+                  setSelectedUser(u);
+                  router.push(`/profile/${u.id}`);
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.webUserMarkerCircle, { backgroundColor: '#6366f1', borderColor: COLORS.white }]}>
+                  {u.photo ? (
+                    <img
+                      src={u.photo}
+                      alt={u.name || u.pseudo}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ) : (
+                    <Text style={styles.webUserEmoji}>👤</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+          {professionals.map((pro) => {
+            if (!pro.location) return null;
+            const pos = projectPoint(pro.location.latitude, pro.location.longitude);
+            const left = Math.max(24, Math.min(width - 24, pos.left));
+            const top = Math.max(24, Math.min(height - 24, pos.top));
+            const activityType = pro.professionalData?.activityType || 'pro';
+            const proColors: Record<string, string> = {
+              vet: '#10b981',
+              boutique: '#f59e0b',
+              educator: '#06b6d4',
+              shelter: '#8b5cf6',
+              breeder: '#f59e0b',
+            };
+            const proColor = proColors[activityType] || '#10b981';
+            return (
+              <TouchableOpacity
+                key={`overlay-pro-${pro.id}`}
+                style={[styles.webUserMarker, { left, top }]}
+                onPress={() => {
+                  setSelectedUser(pro);
+                  router.push(`/profile/${pro.id}`);
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.webUserMarkerCircle, { backgroundColor: proColor, borderColor: COLORS.white }]}>
+                  {pro.photo ? (
+                    <img
+                      src={pro.photo}
+                      alt={pro.professionalData?.companyName || pro.name || pro.pseudo}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ) : (
+                    <Text style={styles.webUserEmoji}>🏢</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+          {filteredCatSitters.map((cs) => {
+            if (!cs.user.location) return null;
+            const pos = projectPoint(cs.user.location.latitude, cs.user.location.longitude);
+            const left = Math.max(24, Math.min(width - 24, pos.left));
+            const top = Math.max(24, Math.min(height - 24, pos.top));
+            return (
+              <TouchableOpacity
+                key={`overlay-cs-${cs.user.id}`}
+                style={[styles.webUserMarker, { left, top }]}
+                onPress={() => {
+                  setSelectedUser(cs.user);
+                  router.push(`/profile/${cs.user.id}`);
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.webUserMarkerCircle, { backgroundColor: '#6366f1', borderColor: COLORS.white }]}>
+                  {cs.user.photo ? (
+                    <img
+                      src={cs.user.photo}
+                      alt={cs.user.name || cs.user.pseudo}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ) : (
+                    <Text style={styles.webUserEmoji}>🏠</Text>
+                  )}
+                </View>
               </TouchableOpacity>
             );
           })}
@@ -679,6 +795,26 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     marginTop: -2,
+  },
+  webUserMarker: {
+    position: 'absolute',
+    alignItems: 'center',
+    transform: [{ translateX: -20 }, { translateY: -40 }],
+  },
+  webUserMarkerCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  webUserEmoji: {
+    fontSize: 18,
   },
   popupContainer: {
     position: 'absolute',
