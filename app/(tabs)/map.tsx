@@ -34,7 +34,6 @@ import { getBlurredPetLocation, calculateDistance } from '@/services/location-pr
 import { track } from '@/services/tracking';
 import { useFriends } from '@/hooks/friends-store';
 import { useFavorites } from '@/hooks/favorites-store';
-import * as Haptics from 'expo-haptics';
 
 interface Region {
   latitude: number;
@@ -70,7 +69,7 @@ export default function MapScreen() {
   const { incrementActionCount, shouldShowInterstitialAd } = usePremium();
   const insets = useSafeAreaInsets();
   const { sendFriendRequest, isFriend, isRequestSent } = useFriends();
-  const { toggleFavorite, isFavorite } = useFavorites();
+  const { isFavorite } = useFavorites();
 
   const [region, setRegion] = useState<Region>({
     latitude: DEFAULT_LAT,
@@ -259,27 +258,23 @@ export default function MapScreen() {
     }
   };
 
-  const handleViewPosts = () => {
-    if (!selectedPet) return;
-    incrementActionCount();
-    router.push(`/community?petId=${selectedPet.id}`);
+  const handleMessage = async () => {
+    if (!selectedPet?.ownerId || !user?.id) return;
+    if (selectedPet.ownerId === user.id) {
+      showPopup({ type: 'error', title: 'Erreur', message: 'Vous ne pouvez pas vous envoyer un message' });
+      return;
+    }
+    if (!isFriend(selectedPet.ownerId)) {
+      showPopup({ type: 'info', title: 'Non autorisé', message: 'Vous devez être amis pour envoyer un message' });
+      return;
+    }
+    router.push(`/messages/${selectedPet.ownerId}`);
   };
 
-  const handleToggleFavorite = async () => {
+  const handleCreatePost = () => {
     if (!selectedPet) return;
-    try {
-      if (Platform.OS !== 'web') {
-        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      }
-      await toggleFavorite(selectedPet.id);
-      showPopup({ 
-        type: 'success', 
-        title: isFavorite(selectedPet.id) ? 'Retiré des favoris' : 'Ajouté aux favoris',
-        message: isFavorite(selectedPet.id) ? 'Animal retiré de vos favoris' : 'Animal ajouté à vos favoris'
-      });
-    } catch (error: any) {
-      showPopup({ type: 'error', title: 'Erreur', message: error?.message || 'Impossible de modifier les favoris' });
-    }
+    incrementActionCount();
+    router.push(`/community/create?petId=${selectedPet.id}`);
   };
 
   const handleFilterToggle = async (filter: MapFilterType) => {
@@ -430,9 +425,7 @@ export default function MapScreen() {
 
   const filteredPets = allPetsIncludingUser.filter((pet: AllPet) => {
     if (activeFilters.size === 0) return false;
-    if (activeFilters.has('pets')) return true;
-    if (activeFilters.has('catSitters') && Boolean(pet.owner?.isCatSitter || pet.owner?.isProfessional)) return true;
-    return false;
+    return activeFilters.has('pets');
   });
 
   const catSittersWithLocation = catSittersQuery.data ?? [];
@@ -440,24 +433,14 @@ export default function MapScreen() {
   const professionals = usersWithLocation.filter((u) => {
     if (!u.isProfessional || !u.professionalData?.activityType) return false;
     if (u.id.includes('paris-') || u.id.includes('test')) return false;
-    
-    const activityType = u.professionalData.activityType;
-    if (activeFilters.has('vets') && activityType === 'vet') return true;
-    if (activeFilters.has('stores') && (activityType === 'boutique' || activityType === 'breeder')) return true;
-    if (activeFilters.has('shelters') && activityType === 'shelter') return true;
-    return false;
+    return activeFilters.has('pros');
   });
 
   const filteredUsers = usersWithLocation.filter((u) => {
     if (u.email?.includes('test') || u.pseudo?.toLowerCase().includes('test') || u.id.includes('paris-')) {
       return false;
     }
-    if (u.isProfessional) return false;
-    if (u.isCatSitter && activeFilters.has('catSitters')) {
-      return false;
-    }
-    if (activeFilters.size === 0) return false;
-    if (activeFilters.has('friends')) return true;
+    if (u.isProfessional || u.isCatSitter) return false;
     return false;
   });
 
@@ -596,8 +579,8 @@ export default function MapScreen() {
           professionalType={getProfessionalType(selectedUser)}
           onViewProfile={handleViewProfile}
           onAddFriend={handleAddFriend}
-          onViewPosts={handleViewPosts}
-          onToggleFavorite={handleToggleFavorite}
+          onMessage={handleMessage}
+          onCreatePost={handleCreatePost}
           onClose={() => setSelectedPet(null)}
         />
       )}

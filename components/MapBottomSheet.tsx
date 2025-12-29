@@ -13,7 +13,7 @@ import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
 import { Pet, User } from '@/types';
-import { FileText, UserPlus, MessageCircle, Heart, X, MapPin, Phone } from 'lucide-react-native';
+import { FileText, UserPlus, MessageCircle, Plus, X, MapPin } from 'lucide-react-native';
 import { getPetImageUrl, DEFAULT_PET_PLACEHOLDER } from '@/lib/image-helpers';
 import * as Haptics from 'expo-haptics';
 
@@ -35,9 +35,8 @@ interface MapBottomSheetProps {
   professionalType?: 'catSitter' | 'vet' | 'breeder' | 'shelter' | 'educator';
   onViewProfile: () => void;
   onAddFriend: () => void;
-  onViewPosts: () => void;
-  onToggleFavorite: () => void;
-  onCall?: () => void;
+  onMessage: () => void;
+  onCreatePost: () => void;
   onClose: () => void;
 }
 
@@ -52,9 +51,8 @@ export default function MapBottomSheet({
   professionalType,
   onViewProfile,
   onAddFriend,
-  onViewPosts,
-  onToggleFavorite,
-  onCall,
+  onMessage,
+  onCreatePost,
   onClose,
 }: MapBottomSheetProps) {
   const insets = useSafeAreaInsets();
@@ -192,75 +190,53 @@ export default function MapBottomSheet({
 
         <View style={styles.actions}>
           <TouchableOpacity style={styles.actionButton} onPress={onViewProfile}>
-            <View style={[styles.actionIcon, { backgroundColor: '#f1f5f9' }]}>
-              <FileText size={20} color={COLORS.primary} />
+            <View style={[styles.actionIcon, { backgroundColor: '#7C3AED' }]}>
+              <FileText size={20} color="#ffffff" />
             </View>
             <Text style={styles.actionLabel}>Fiche</Text>
           </TouchableOpacity>
 
-          {!isProfessional && (
-            <TouchableOpacity
-              style={[
-                styles.actionButton,
-                (isFriend || isRequestSent) && styles.actionButtonDisabled,
-              ]}
-              onPress={onAddFriend}
-              disabled={isFriend || isRequestSent}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: '#f1f5f9' }]}>
-                <UserPlus
-                  size={20}
-                  color={isFriend || isRequestSent ? '#94a3b8' : COLORS.primary}
-                />
-              </View>
-              <Text
-                style={[
-                  styles.actionLabel,
-                  (isFriend || isRequestSent) && styles.actionLabelDisabled,
-                ]}
-              >
-                {isFriend ? 'Ami' : isRequestSent ? 'Envoyée' : 'Ajouter'}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity style={styles.actionButton} onPress={onViewPosts}>
-            <View style={[styles.actionIcon, { backgroundColor: '#f1f5f9' }]}>
-              <MessageCircle size={20} color={COLORS.primary} />
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={onMessage}
+            disabled={!isFriend}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: isFriend ? '#7C3AED' : '#e2e8f0' }]}>
+              <MessageCircle size={20} color={isFriend ? '#ffffff' : '#94a3b8'} />
             </View>
-            <Text style={styles.actionLabel}>Posts</Text>
+            <Text style={[styles.actionLabel, !isFriend && { color: '#94a3b8' }]}>Message</Text>
           </TouchableOpacity>
 
-          {!isProfessional && (
-            <TouchableOpacity style={styles.actionButton} onPress={onToggleFavorite}>
-              <View
-                style={[
-                  styles.actionIcon,
-                  { backgroundColor: isFavorite ? '#fee2e2' : '#f1f5f9' },
-                ]}
-              >
-                <Heart
-                  size={20}
-                  color={isFavorite ? COLORS.error : COLORS.primary}
-                  fill={isFavorite ? COLORS.error : 'none'}
-                />
-              </View>
-              <Text
-                style={[styles.actionLabel, isFavorite && { color: COLORS.error }]}
-              >
-                Favori
-              </Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              (isFriend || isRequestSent) && styles.actionButtonDisabled,
+            ]}
+            onPress={onAddFriend}
+            disabled={isFriend || isRequestSent}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: (isFriend || isRequestSent) ? '#e2e8f0' : '#7C3AED' }]}>
+              <UserPlus
+                size={20}
+                color={isFriend || isRequestSent ? '#94a3b8' : '#ffffff'}
+              />
+            </View>
+            <Text
+              style={[
+                styles.actionLabel,
+                (isFriend || isRequestSent) && styles.actionLabelDisabled,
+              ]}
+            >
+              {isFriend ? 'Ami' : isRequestSent ? 'En attente' : 'Ami'}
+            </Text>
+          </TouchableOpacity>
 
-          {isProfessional && onCall && (
-            <TouchableOpacity style={styles.actionButton} onPress={onCall}>
-              <View style={[styles.actionIcon, { backgroundColor: '#dcfce7' }]}>
-                <Phone size={20} color="#10b981" />
-              </View>
-              <Text style={[styles.actionLabel, { color: '#10b981' }]}>Appeler</Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity style={styles.actionButton} onPress={onCreatePost}>
+            <View style={[styles.actionIcon, { backgroundColor: '#7C3AED' }]}>
+              <Plus size={20} color="#ffffff" />
+            </View>
+            <Text style={styles.actionLabel}>Post</Text>
+          </TouchableOpacity>
         </View>
 
         {owner && (

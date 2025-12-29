@@ -1,8 +1,8 @@
 import React from 'react';
 import { Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { Heart, Users, AlertCircle, Stethoscope, ShoppingBag, Home, GraduationCap } from 'lucide-react-native';
+import { Heart, Briefcase, Home } from 'lucide-react-native';
 
-export type MapFilterType = 'pets' | 'friends' | 'lost' | 'catSitters' | 'vets' | 'stores' | 'shelters' | 'educators';
+export type MapFilterType = 'pets' | 'pros' | 'catSitters';
 
 interface MapFilterChipsProps {
   activeFilters: Set<MapFilterType>;
@@ -15,14 +15,9 @@ const FILTERS: {
   Icon: typeof Heart;
   color: string;
 }[] = [
-  { key: 'pets', label: 'Animaux', Icon: Heart, color: '#f472b6' },
-  { key: 'friends', label: 'Amis', Icon: Users, color: '#fb923c' },
-  { key: 'lost', label: 'Perdus', Icon: AlertCircle, color: '#f43f5e' },
+  { key: 'pets', label: 'Animaux', Icon: Heart, color: '#7C3AED' },
+  { key: 'pros', label: 'Pros', Icon: Briefcase, color: '#10b981' },
   { key: 'catSitters', label: 'Cat Sitters', Icon: Home, color: '#6366f1' },
-  { key: 'vets', label: 'Vétérinaires', Icon: Stethoscope, color: '#10b981' },
-  { key: 'stores', label: 'Boutiques', Icon: ShoppingBag, color: '#f59e0b' },
-  { key: 'shelters', label: 'Refuges', Icon: Home, color: '#8b5cf6' },
-  { key: 'educators', label: 'Éducateurs', Icon: GraduationCap, color: '#06b6d4' },
 ];
 
 export default function MapFilterChips({ activeFilters, onFilterToggle }: MapFilterChipsProps) {
