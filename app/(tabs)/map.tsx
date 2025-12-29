@@ -83,7 +83,7 @@ export default function MapScreen() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedGooglePlace, setSelectedGooglePlace] = useState<GooglePlace | null>(null);
   const [locationPermission, setLocationPermission] = useState<boolean>(false);
-  const [activeFilters, setActiveFilters] = useState<Set<MapFilterType>>(new Set(['pets', 'googleVet', 'googleShop', 'googleZoo', 'googleShelter']));
+  const [activeFilters, setActiveFilters] = useState<Set<MapFilterType>>(new Set(['users', 'googleVet', 'googleShop', 'googleZoo', 'googleShelter']));
   const [popup, setPopup] = useState<PopupConfig | null>(null);
   const popupAnim = useRef(new Animated.Value(0)).current;
 
@@ -481,7 +481,7 @@ export default function MapScreen() {
 
   const filteredPets = allPetsIncludingUser.filter((pet: AllPet) => {
     if (activeFilters.size === 0) return false;
-    return activeFilters.has('pets');
+    return activeFilters.has('users');
   });
 
   const catSittersWithLocation = catSittersQuery.data ?? [];
@@ -505,8 +505,9 @@ export default function MapScreen() {
     }
     if (u.isProfessional || u.isCatSitter) return false;
     
+    if (u.privacySettings?.hideLocationOnMap) return false;
     if (activeFilters.size === 0) return false;
-    return activeFilters.has('pets');
+    return activeFilters.has('users');
   });
   console.log(`👥 Regular users to display: ${filteredUsers.length}`, filteredUsers.map(u => ({ name: u.name || u.pseudo, hasPets: u.pets?.length || 0 })));
 

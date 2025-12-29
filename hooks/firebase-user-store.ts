@@ -315,6 +315,7 @@ export const [FirebaseUserContext, useFirebaseUser] = createContextHook(() => {
         shareActivity: true,
         allowPhotoTagging: true,
         publicProfile: true,
+        hideLocationOnMap: false,
       };
       const updatedSettings = { ...defaultSettings, ...authState.user.privacySettings, ...settings };
       return await updateUser({ privacySettings: updatedSettings });

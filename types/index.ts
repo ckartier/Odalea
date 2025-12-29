@@ -9,6 +9,7 @@ export interface PrivacySettings {
   shareActivity: boolean;
   allowPhotoTagging: boolean;
   publicProfile: boolean;
+  hideLocationOnMap: boolean;
 }
 
 export interface NotificationSettings {

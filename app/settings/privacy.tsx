@@ -30,6 +30,7 @@ export default function PrivacySettingsScreen() {
     shareActivity: true,
     allowPhotoTagging: true,
     publicProfile: true,
+    hideLocationOnMap: false,
   });
 
   useEffect(() => {
@@ -72,6 +73,12 @@ export default function PrivacySettingsScreen() {
       title: 'Afficher ma localisation',
       description: 'Votre ville est visible sur votre profil',
       icon: <MapPin size={20} color={COLORS.primary} />,
+    },
+    {
+      key: 'hideLocationOnMap',
+      title: 'Masquer sur la carte',
+      description: 'Votre position ne sera pas visible sur la carte interactive',
+      icon: <EyeOff size={20} color={COLORS.primary} />,
     },
     {
       key: 'showPhone',

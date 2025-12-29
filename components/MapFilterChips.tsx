@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { Text, StyleSheet, TouchableOpacity, ScrollView, View } from 'react-native';
-import { Heart, Briefcase, Home, ChevronDown, MapPin } from 'lucide-react-native';
+import React from 'react';
+import { Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Heart, Briefcase, Home, Stethoscope, ShoppingBag, Trees, Building2 } from 'lucide-react-native';
 
-export type MapFilterType = 'pets' | 'pros' | 'catSitters' | 'users' | 'vet' | 'shelter' | 'breeder' | 'boutique' | 'educator' | 'googlePlaces' | 'googleVet' | 'googleShop' | 'googleZoo' | 'googleShelter';
+export type MapFilterType = 'users' | 'catSitters' | 'pros' | 'googleVet' | 'googleShop' | 'googleZoo' | 'googleShelter';
 
 interface MapFilterChipsProps {
   activeFilters: Set<MapFilterType>;
@@ -12,175 +12,56 @@ interface MapFilterChipsProps {
 const FILTERS: {
   key: MapFilterType;
   label: string;
-  Icon: typeof Heart;
+  Icon: any;
   color: string;
-  children?: MapFilterType[];
 }[] = [
-  { key: 'pets', label: 'Animaux', Icon: Heart, color: '#7C3AED' },
-  { 
-    key: 'pros', 
-    label: 'Pros', 
-    Icon: Briefcase, 
-    color: '#10b981',
-    children: ['vet', 'shelter', 'breeder', 'boutique', 'educator']
-  },
+  { key: 'users', label: 'Utilisateurs', Icon: Heart, color: '#7C3AED' },
   { key: 'catSitters', label: 'Cat Sitters', Icon: Home, color: '#6366f1' },
-  { 
-    key: 'googlePlaces', 
-    label: 'Lieux', 
-    Icon: MapPin, 
-    color: '#f59e0b',
-    children: ['googleVet', 'googleShop', 'googleZoo', 'googleShelter']
-  },
+  { key: 'pros', label: 'Professionnels', Icon: Briefcase, color: '#10b981' },
+  { key: 'googleVet', label: 'Vétérinaires', Icon: Stethoscope, color: '#10b981' },
+  { key: 'googleShop', label: 'Animaleries', Icon: ShoppingBag, color: '#f59e0b' },
+  { key: 'googleZoo', label: 'Zoos', Icon: Trees, color: '#8b5cf6' },
+  { key: 'googleShelter', label: 'Refuges', Icon: Building2, color: '#06b6d4' },
 ];
 
-const PRO_SUB_FILTERS: Record<string, { label: string; emoji: string }> = {
-  vet: { label: 'Vétérinaires', emoji: '🩺' },
-  boutique: { label: 'Boutiques', emoji: '🛍️' },
-  educator: { label: 'Éducateurs', emoji: '🎓' },
-  shelter: { label: 'Refuges', emoji: '🏠' },
-  breeder: { label: 'Éleveurs', emoji: '🐱' },
-};
-
-const GOOGLE_PLACES_SUB_FILTERS: Record<string, { label: string; emoji: string }> = {
-  googleVet: { label: 'Vétos', emoji: '🏥' },
-  googleShop: { label: 'Boutiques', emoji: '🛒' },
-  googleZoo: { label: 'Zoos', emoji: '🦁' },
-  googleShelter: { label: 'Refuges', emoji: '🏘️' },
-};
-
 export default function MapFilterChips({ activeFilters, onFilterToggle }: MapFilterChipsProps) {
-  const [showProSubFilters, setShowProSubFilters] = useState(false);
-  const [showGooglePlacesSubFilters, setShowGooglePlacesSubFilters] = useState(false);
-
-  const isProsActive = activeFilters.has('pros');
-  const hasAnyProSubFilter = ['vet', 'shelter', 'breeder', 'boutique', 'educator'].some(f => activeFilters.has(f as MapFilterType));
-  
-  const isGooglePlacesActive = activeFilters.has('googlePlaces');
-  const hasAnyGooglePlacesSubFilter = ['googleVet', 'googleShop', 'googleZoo', 'googleShelter'].some(f => activeFilters.has(f as MapFilterType));
-
   return (
-    <View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        style={styles.container}
-      >
-        {FILTERS.map(({ key, label, Icon, color, children }) => {
-          const isActive = activeFilters.has(key);
-          const hasChildren = children && children.length > 0;
-          
-          return (
-            <TouchableOpacity
-              key={key}
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.scrollContent}
+      style={styles.container}
+    >
+      {FILTERS.map(({ key, label, Icon, color }) => {
+        const isActive = activeFilters.has(key);
+        
+        return (
+          <TouchableOpacity
+            key={key}
+            style={[
+              styles.chip,
+              isActive && { backgroundColor: color, borderColor: color },
+            ]}
+            onPress={() => onFilterToggle(key)}
+            activeOpacity={0.7}
+          >
+            <Icon
+              size={16}
+              color={isActive ? '#ffffff' : color}
+              strokeWidth={2.5}
+            />
+            <Text
               style={[
-                styles.chip,
-                isActive && { backgroundColor: color, borderColor: color },
+                styles.chipText,
+                isActive && styles.chipTextActive,
               ]}
-              onPress={() => {
-                if (hasChildren && key === 'pros') {
-                  setShowProSubFilters(!showProSubFilters);
-                } else if (hasChildren && key === 'googlePlaces') {
-                  setShowGooglePlacesSubFilters(!showGooglePlacesSubFilters);
-                }
-                onFilterToggle(key);
-              }}
-              activeOpacity={0.7}
             >
-              <Icon
-                size={16}
-                color={isActive ? '#ffffff' : color}
-                strokeWidth={2.5}
-              />
-              <Text
-                style={[
-                  styles.chipText,
-                  isActive && styles.chipTextActive,
-                ]}
-              >
-                {label}
-              </Text>
-              {hasChildren && (
-                <ChevronDown
-                  size={14}
-                  color={isActive ? '#ffffff' : color}
-                  style={{ transform: [{ rotate: showProSubFilters ? '180deg' : '0deg' }] }}
-                />
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-
-      {(showProSubFilters || hasAnyProSubFilter) && (isProsActive || hasAnyProSubFilter) && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.scrollContent, styles.subScrollContent]}
-          style={styles.subContainer}
-        >
-          {Object.entries(PRO_SUB_FILTERS).map(([key, { label, emoji }]) => {
-            const isActive = activeFilters.has(key as MapFilterType);
-            return (
-              <TouchableOpacity
-                key={key}
-                style={[
-                  styles.subChip,
-                  isActive && styles.subChipActive,
-                ]}
-                onPress={() => onFilterToggle(key as MapFilterType)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.subChipEmoji}>{emoji}</Text>
-                <Text
-                  style={[
-                    styles.subChipText,
-                    isActive && styles.subChipTextActive,
-                  ]}
-                >
-                  {label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      )}
-
-      {(showGooglePlacesSubFilters || hasAnyGooglePlacesSubFilter) && (isGooglePlacesActive || hasAnyGooglePlacesSubFilter) && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.scrollContent, styles.subScrollContent]}
-          style={styles.subContainer}
-        >
-          {Object.entries(GOOGLE_PLACES_SUB_FILTERS).map(([key, { label, emoji }]) => {
-            const isActive = activeFilters.has(key as MapFilterType);
-            return (
-              <TouchableOpacity
-                key={key}
-                style={[
-                  styles.subChip,
-                  isActive && styles.subChipActiveOrange,
-                ]}
-                onPress={() => onFilterToggle(key as MapFilterType)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.subChipEmoji}>{emoji}</Text>
-                <Text
-                  style={[
-                    styles.subChipText,
-                    isActive && styles.subChipTextActive,
-                  ]}
-                >
-                  {label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      )}
-    </View>
+              {label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
   );
 }
 
@@ -190,15 +71,15 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    gap: 10,
+    gap: 8,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 18,
     backgroundColor: '#ffffff',
     borderWidth: 1.5,
     borderColor: '#e2e8f0',
@@ -209,49 +90,11 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   chipText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#0f172a',
   },
   chipTextActive: {
-    color: '#ffffff',
-  },
-  subContainer: {
-    flexGrow: 0,
-    marginTop: 8,
-  },
-  subScrollContent: {
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  subChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-    backgroundColor: '#f1f5f9',
-    borderWidth: 1.5,
-    borderColor: '#e2e8f0',
-  },
-  subChipActive: {
-    backgroundColor: '#10b981',
-    borderColor: '#10b981',
-  },
-  subChipActiveOrange: {
-    backgroundColor: '#f59e0b',
-    borderColor: '#f59e0b',
-  },
-  subChipEmoji: {
-    fontSize: 14,
-  },
-  subChipText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#475569',
-  },
-  subChipTextActive: {
     color: '#ffffff',
   },
 });
