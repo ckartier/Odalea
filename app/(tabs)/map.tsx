@@ -23,8 +23,11 @@ import { COLORS } from '@/constants/colors';
 import MapView, { PROVIDER_GOOGLE } from '@/components/MapView';
 import MapMarker from '@/components/MapMarker';
 import UserMarker from '@/components/UserMarker';
+import GooglePlaceMarker from '@/components/GooglePlaceMarker';
 import MapBottomSheet from '@/components/MapBottomSheet';
-import MapFilterChips, { MapFilterType } from '@/components/MapFilterChips';
+import type { MapFilterType } from '@/components/MapFilterChips';
+import ResponsiveModal from '@/components/ResponsiveModal';
+import { Check, SlidersHorizontal, X } from 'lucide-react-native';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { usePremium } from '@/hooks/premium-store';
 import { Pet, User } from '@/types';
@@ -83,9 +86,12 @@ export default function MapScreen() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedGooglePlace, setSelectedGooglePlace] = useState<GooglePlace | null>(null);
   const [locationPermission, setLocationPermission] = useState<boolean>(false);
-  const [activeFilters, setActiveFilters] = useState<Set<MapFilterType>>(new Set(['users', 'googleVet', 'googleShop', 'googleZoo', 'googleShelter']));
+  const [activeFilters, setActiveFilters] = useState<Set<MapFilterType>>(
+    new Set(['users', 'catSitters', 'googleVet', 'googleShop', 'googleZoo', 'googleShelter']),
+  );
   const [popup, setPopup] = useState<PopupConfig | null>(null);
   const popupAnim = useRef(new Animated.Value(0)).current;
+  const [isFiltersOpen, setIsFiltersOpen] = useState<boolean>(false);
 
   const userLat = userLocation?.latitude ?? DEFAULT_LAT;
   const userLng = userLocation?.longitude ?? DEFAULT_LNG;
@@ -588,10 +594,15 @@ export default function MapScreen() {
           }} />
         ))}
         {Platform.OS !== 'web' && filteredCatSitters.map((cs) => (
-          <UserMarker key={`cat-sitter-${cs.user.id}`} user={cs.user} isCatSitter onPress={() => {
-            setSelectedUser(cs.user);
-            router.push(`/profile/${cs.user.id}`);
-          }} />
+          <UserMarker
+            key={`cat-sitter-${cs.user.id}`}
+            user={cs.user}
+            isCatSitter
+            onPress={() => {
+              setSelectedUser(cs.user);
+              router.push(`/cat-sitter/${cs.user.id}`);
+            }}
+          />
         ))}
         {Platform.OS !== 'web' && professionals.map((pro) => (
           <UserMarker key={`pro-${pro.id}`} user={pro} isProfessional onPress={() => {
@@ -600,17 +611,10 @@ export default function MapScreen() {
           }} />
         ))}
         {Platform.OS !== 'web' && filteredGooglePlaces.map((place) => (
-          <MapMarker 
-            key={`google-${place.id}`} 
-            pet={{
-              id: `google-${place.id}`,
-              name: place.name,
-              breed: place.types[0] || 'place',
-              gender: 'male',
-              location: place.location,
-              mainPhoto: place.photos?.[0],
-            } as Pet}
-            onPress={() => handleGooglePlacePress(place)} 
+          <GooglePlaceMarker
+            key={`google-${place.id}`}
+            place={place}
+            onPress={() => handleGooglePlacePress(place)}
           />
         ))}
       </MapView>
@@ -740,9 +744,10 @@ export default function MapScreen() {
                 style={[styles.webUserMarker, { left, top }]}
                 onPress={() => {
                   setSelectedUser(cs.user);
-                  router.push(`/profile/${cs.user.id}`);
+                  router.push(`/cat-sitter/${cs.user.id}`);
                 }}
                 activeOpacity={0.8}
+                testID={`web-cat-sitter-${cs.user.id}`}
               >
                 <View style={[styles.webUserMarkerCircle, { backgroundColor: '#6366f1', borderColor: COLORS.white }]}>
                   {cs.user.photo ? (
@@ -768,29 +773,30 @@ export default function MapScreen() {
             const pos = projectPoint(place.location.latitude, place.location.longitude);
             const left = Math.max(24, Math.min(width - 24, pos.left));
             const top = Math.max(24, Math.min(height - 24, pos.top));
-            const placeColor = place.types.includes('veterinary_care') ? '#10b981' : place.types.includes('pet_store') ? '#f59e0b' : place.types.includes('zoo') ? '#8b5cf6' : '#06b6d4';
+            const placeColor = place.types.includes('veterinary_care')
+              ? '#10b981'
+              : place.types.includes('pet_store')
+                ? '#f59e0b'
+                : place.types.includes('zoo')
+                  ? '#8b5cf6'
+                  : '#06b6d4';
+            const placeEmoji = place.types.includes('veterinary_care')
+              ? '🏥'
+              : place.types.includes('pet_store')
+                ? '🛒'
+                : place.types.includes('zoo')
+                  ? '🦁'
+                  : '🏠';
             return (
               <TouchableOpacity
                 key={`overlay-google-${place.id}`}
                 style={[styles.webUserMarker, { left, top }]}
                 onPress={() => handleGooglePlacePress(place)}
                 activeOpacity={0.8}
+                testID={`web-google-place-${place.id}`}
               >
                 <View style={[styles.webUserMarkerCircle, { backgroundColor: placeColor, borderColor: COLORS.white }]}>
-                  {place.photos?.[0] ? (
-                    <img
-                      src={place.photos[0]}
-                      alt={place.name}
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 18,
-                        objectFit: 'cover',
-                      }}
-                    />
-                  ) : (
-                    <Text style={styles.webUserEmoji}>📍</Text>
-                  )}
+                  <Text style={styles.webUserEmoji}>{placeEmoji}</Text>
                 </View>
               </TouchableOpacity>
             );
@@ -798,12 +804,74 @@ export default function MapScreen() {
         </View>
       )}
 
-      <View style={[styles.filtersContainer, { top: insets.top + 16 }]}>
-        <MapFilterChips 
-          activeFilters={activeFilters} 
-          onFilterToggle={handleFilterToggle} 
-        />
+      <View style={[styles.filterButtonContainer, { top: insets.top + 14, right: 14 }]} pointerEvents="box-none">
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => setIsFiltersOpen(true)}
+          activeOpacity={0.85}
+          testID="map-open-filters"
+        >
+          <SlidersHorizontal size={18} color="#0f172a" />
+        </TouchableOpacity>
       </View>
+
+      <ResponsiveModal
+        isVisible={isFiltersOpen}
+        onClose={() => setIsFiltersOpen(false)}
+        size={Platform.OS === 'web' ? 'medium' : 'large'}
+        tint="neutral"
+        closeOnBackdrop
+      >
+        <View style={styles.filtersModalContent} testID="map-filters-modal">
+          <View style={styles.filtersModalHeader}>
+            <Text style={styles.filtersModalTitle}>Filtres</Text>
+            <TouchableOpacity
+              onPress={() => setIsFiltersOpen(false)}
+              style={styles.filtersModalClose}
+              activeOpacity={0.85}
+              testID="map-close-filters"
+            >
+              <X size={18} color="#0f172a" />
+            </TouchableOpacity>
+          </View>
+
+          {([
+            { key: 'users', label: 'Utilisateurs', color: '#7C3AED' },
+            { key: 'catSitters', label: 'Cat Sitters', color: '#6366f1' },
+            { key: 'pros', label: 'Professionnels', color: '#10b981' },
+            { key: 'googleVet', label: 'Vétérinaires', color: '#10b981' },
+            { key: 'googleShop', label: 'Animaleries', color: '#f59e0b' },
+            { key: 'googleZoo', label: 'Zoos', color: '#8b5cf6' },
+            { key: 'googleShelter', label: 'Refuges', color: '#06b6d4' },
+          ] as const).map((item) => {
+            const isActive = activeFilters.has(item.key);
+            return (
+              <TouchableOpacity
+                key={item.key}
+                style={[styles.filterRow, isActive && { borderColor: item.color }]}
+                onPress={() => handleFilterToggle(item.key)}
+                activeOpacity={0.85}
+                testID={`map-filter-${item.key}`}
+              >
+                <View style={[styles.filterDot, { backgroundColor: item.color }]} />
+                <Text style={styles.filterLabel}>{item.label}</Text>
+                <View style={[styles.filterCheck, isActive && { backgroundColor: item.color, borderColor: item.color }]}>
+                  {isActive && <Check size={14} color="#ffffff" />}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+
+          <TouchableOpacity
+            style={styles.filtersDoneButton}
+            onPress={() => setIsFiltersOpen(false)}
+            activeOpacity={0.9}
+            testID="map-filters-done"
+          >
+            <Text style={styles.filtersDoneText}>Terminer</Text>
+          </TouchableOpacity>
+        </View>
+      </ResponsiveModal>
 
       {selectedPet && !selectedGooglePlace && (
         <MapBottomSheet
@@ -873,14 +941,94 @@ const styles = StyleSheet.create({
   map: {
     ...StyleSheet.absoluteFillObject,
   },
-  filtersContainer: {
+  filterButtonContainer: {
     position: 'absolute',
-    left: 0,
-    right: 0,
+  },
+  filterButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderWidth: 1,
+    borderColor: 'rgba(15, 23, 42, 0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 6,
   },
   webOverlay: {
     ...StyleSheet.absoluteFillObject,
     pointerEvents: 'box-none',
+  },
+  filtersModalContent: {
+    paddingTop: 10,
+    gap: 10,
+  },
+  filtersModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  filtersModalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  filtersModalClose: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(15, 23, 42, 0.06)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderWidth: 1,
+    borderColor: 'rgba(148,163,184,0.28)',
+  },
+  filterDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  filterLabel: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  filterCheck: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 2,
+    borderColor: 'rgba(148,163,184,0.5)',
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filtersDoneButton: {
+    marginTop: 6,
+    backgroundColor: '#0f172a',
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  filtersDoneText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '800',
   },
   webPetMarker: {
     position: 'absolute',

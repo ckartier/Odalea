@@ -8,6 +8,7 @@ import {
   Dimensions,
   PanResponder,
   Platform,
+  Linking,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -204,28 +205,51 @@ export default function MapBottomSheet({
             <Text style={styles.ownerLabel}>Informations</Text>
             <View style={styles.contactInfo}>
               {googlePlace.phoneNumber && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.contactRow}
-                  onPress={() => {
-                    if (Platform.OS !== 'web') {
-                      // Linking.openURL(`tel:${googlePlace.phoneNumber}`);
+                  onPress={async () => {
+                    try {
+                      const raw = googlePlace.phoneNumber ?? '';
+                      const sanitized = raw.replace(/\s+/g, '');
+                      const telUrl = `tel:${sanitized}`;
+                      console.log('[MapBottomSheet] open phone', telUrl);
+                      if (Platform.OS === 'web') {
+                        window.open(telUrl, '_blank');
+                      } else {
+                        const can = await Linking.canOpenURL(telUrl);
+                        if (can) await Linking.openURL(telUrl);
+                      }
+                    } catch (e) {
+                      console.log('[MapBottomSheet] failed open phone', e);
                     }
                   }}
+                  activeOpacity={0.75}
+                  testID="google-place-phone"
                 >
                   <Phone size={16} color="#64748b" />
                   <Text style={styles.contactText}>{googlePlace.phoneNumber}</Text>
                 </TouchableOpacity>
               )}
               {googlePlace.website && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.contactRow}
-                  onPress={() => {
-                    if (Platform.OS !== 'web') {
-                      // Linking.openURL(googlePlace.website!);
-                    } else {
-                      window.open(googlePlace.website!, '_blank');
+                  onPress={async () => {
+                    try {
+                      const url = googlePlace.website ?? '';
+                      const finalUrl = url.startsWith('http') ? url : `https://${url}`;
+                      console.log('[MapBottomSheet] open website', finalUrl);
+                      if (Platform.OS === 'web') {
+                        window.open(finalUrl, '_blank');
+                      } else {
+                        const can = await Linking.canOpenURL(finalUrl);
+                        if (can) await Linking.openURL(finalUrl);
+                      }
+                    } catch (e) {
+                      console.log('[MapBottomSheet] failed open website', e);
                     }
                   }}
+                  activeOpacity={0.75}
+                  testID="google-place-website"
                 >
                   <Globe size={16} color="#64748b" />
                   <Text style={styles.contactText} numberOfLines={1}>
@@ -364,18 +388,57 @@ export default function MapBottomSheet({
             {isProfessional && (
               <View style={styles.contactInfo}>
                 {owner.phoneNumber && (
-                  <View style={styles.contactRow}>
+                  <TouchableOpacity
+                    style={styles.contactRow}
+                    onPress={async () => {
+                      try {
+                        const raw = owner.phoneNumber ?? '';
+                        const sanitized = raw.replace(/\s+/g, '');
+                        const telUrl = `tel:${sanitized}`;
+                        console.log('[MapBottomSheet] open pro phone', telUrl);
+                        if (Platform.OS === 'web') {
+                          window.open(telUrl, '_blank');
+                        } else {
+                          const can = await Linking.canOpenURL(telUrl);
+                          if (can) await Linking.openURL(telUrl);
+                        }
+                      } catch (e) {
+                        console.log('[MapBottomSheet] failed open pro phone', e);
+                      }
+                    }}
+                    activeOpacity={0.75}
+                    testID="pro-phone"
+                  >
                     <Phone size={16} color="#64748b" />
                     <Text style={styles.contactText}>{owner.phoneNumber}</Text>
-                  </View>
+                  </TouchableOpacity>
                 )}
                 {owner.professionalData?.website && (
-                  <View style={styles.contactRow}>
+                  <TouchableOpacity
+                    style={styles.contactRow}
+                    onPress={async () => {
+                      try {
+                        const url = owner.professionalData?.website ?? '';
+                        const finalUrl = url.startsWith('http') ? url : `https://${url}`;
+                        console.log('[MapBottomSheet] open pro website', finalUrl);
+                        if (Platform.OS === 'web') {
+                          window.open(finalUrl, '_blank');
+                        } else {
+                          const can = await Linking.canOpenURL(finalUrl);
+                          if (can) await Linking.openURL(finalUrl);
+                        }
+                      } catch (e) {
+                        console.log('[MapBottomSheet] failed open pro website', e);
+                      }
+                    }}
+                    activeOpacity={0.75}
+                    testID="pro-website"
+                  >
                     <Globe size={16} color="#64748b" />
                     <Text style={styles.contactText} numberOfLines={1}>
                       {owner.professionalData.website}
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                 )}
                 {owner.professionalData?.businessDescription && (
                   <Text style={styles.businessDescription} numberOfLines={3}>
@@ -581,9 +644,10 @@ const styles = StyleSheet.create({
   },
   contactText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#475569',
+    fontWeight: '600',
+    color: '#2563eb',
     flex: 1,
+    textDecorationLine: 'underline',
   },
   businessDescription: {
     fontSize: 13,

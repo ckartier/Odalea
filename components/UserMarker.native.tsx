@@ -5,7 +5,7 @@ import { COLORS, SHADOWS } from '@/constants/colors';
 import { User } from '@/types';
 import { Marker } from 'react-native-maps';
 import { getBlurredUserLocation } from '@/services/location-privacy';
-import { Stethoscope, Users } from 'lucide-react-native';
+import { Stethoscope, Users, Home } from 'lucide-react-native';
 
 interface UserMarkerProps {
   user: User;
@@ -24,7 +24,9 @@ const UserMarker: React.FC<UserMarkerProps> = ({ user, isCatSitter = false, isPr
 
   const primaryPet = user.pets?.find((p) => p.isPrimary) || user.pets?.[0];
   const markerColor = primaryPet?.gender === 'male' ? COLORS.male : primaryPet?.gender === 'female' ? COLORS.female : COLORS.primary;
-  const isVetProfessional = (isProfessional || user.isProfessional) && user.professionalData?.activityType === 'vet';
+  const activityType = user.professionalData?.activityType;
+  const isVetProfessional = (isProfessional || user.isProfessional) && activityType === 'vet';
+  const isShelterProfessional = (isProfessional || user.isProfessional) && activityType === 'shelter';
 
   return (
     <Marker
@@ -58,6 +60,11 @@ const UserMarker: React.FC<UserMarkerProps> = ({ user, isCatSitter = false, isPr
       {isVetProfessional && (
         <View style={styles.vetBadge}>
           <Stethoscope size={12} color="#fff" />
+        </View>
+      )}
+      {isShelterProfessional && (
+        <View style={styles.shelterBadge}>
+          <Home size={12} color="#fff" />
         </View>
       )}
       {isCatSitter && (
@@ -108,6 +115,19 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     backgroundColor: '#10b981',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.white,
+  },
+  shelterBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#06b6d4',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,

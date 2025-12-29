@@ -89,7 +89,7 @@ export default function RevenueCatPaywall({
   onPurchaseComplete,
   onPurchaseError,
 }: RevenueCatPaywallProps) {
-  const { packages, isLoading, purchasePackage, isPro } = useRevenueCat();
+  const { packages, isLoading, purchasePackage } = useRevenueCat();
   const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
   const [purchasing, setPurchasing] = useState(false);
 
@@ -250,7 +250,7 @@ export default function RevenueCatPaywall({
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              L'abonnement se renouvelle automatiquement. Vous pouvez annuler à tout moment dans les paramètres de votre compte.
+              L\u2019abonnement se renouvelle automatiquement. Vous pouvez annuler à tout moment dans les paramètres de votre compte.
             </Text>
           </View>
         </ScrollView>
@@ -279,7 +279,7 @@ export default function RevenueCatPaywall({
           </TouchableOpacity>
           
           <Text style={styles.termsText}>
-            En continuant, vous acceptez nos conditions d'utilisation et notre politique de confidentialité
+            En continuant, vous acceptez nos conditions d\u2019utilisation et notre politique de confidentialité
           </Text>
         </View>
       </View>

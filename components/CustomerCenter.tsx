@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -242,7 +242,7 @@ export default function CustomerCenter({ visible, onClose }: CustomerCenterProps
                 {!isPro && (
                   <View style={styles.noSubscriptionContainer}>
                     <Text style={styles.noSubscriptionText}>
-                      Vous n'avez pas d'abonnement actif. Passez à Odalea Pro pour profiter de toutes les fonctionnalités premium !
+                      Vous n\u2019avez pas d\u2019abonnement actif. Passez à Odalea Pro pour profiter de toutes les fonctionnalités premium !
                     </Text>
                   </View>
                 )}
@@ -260,7 +260,7 @@ export default function CustomerCenter({ visible, onClose }: CustomerCenterProps
                       <CreditCard size={24} color={COLORS.primary} />
                     </View>
                     <View style={styles.actionContent}>
-                      <Text style={styles.actionTitle}>Gérer l'Abonnement</Text>
+                      <Text style={styles.actionTitle}>Gérer l\u2019Abonnement</Text>
                       <Text style={styles.actionDescription}>
                         Modifier ou annuler votre abonnement
                       </Text>
@@ -323,7 +323,7 @@ export default function CustomerCenter({ visible, onClose }: CustomerCenterProps
                   <View style={styles.actionContent}>
                     <Text style={styles.actionTitle}>Contacter le Support</Text>
                     <Text style={styles.actionDescription}>
-                      Besoin d'aide ? Contactez-nous
+                      Besoin d\u2019aide ? Contactez-nous
                     </Text>
                   </View>
                   <ExternalLink size={20} color={COLORS.darkGray} />
@@ -353,7 +353,7 @@ export default function CustomerCenter({ visible, onClose }: CustomerCenterProps
                     <FileText size={24} color={COLORS.accent} />
                   </View>
                   <View style={styles.actionContent}>
-                    <Text style={styles.actionTitle}>Conditions d'Utilisation</Text>
+                    <Text style={styles.actionTitle}>Conditions d\u2019Utilisation</Text>
                     <Text style={styles.actionDescription}>
                       Lire nos conditions générales
                     </Text>
