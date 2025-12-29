@@ -424,6 +424,7 @@ export const postService = {
         
         const docRef = await addDoc(postsRef, {
           ...cleanPost,
+          visibility: cleanPost.visibility || 'public',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           likesCount: 0,
@@ -468,6 +469,7 @@ export const postService = {
         const postsRef = collection(db, COLLECTIONS.POSTS);
         let q = query(
           postsRef,
+          where('visibility', '==', 'public'),
           orderBy('createdAt', 'desc'),
           limit(limitCount)
         );

@@ -67,8 +67,16 @@ service firebase.storage {
     
     // Post photos/videos: users/{userId}/posts/{postId}/{filename}
     // Note: Moderation happens at Firestore level (visibility field)
+    // Support both final paths and temporary uploads (temp_*)
     match /users/{userId}/posts/{postId}/{filename} {
       allow read: if isAuthenticated(); // Authenticated read for community posts
+      allow write: if isOwner(userId) && isValidMediaUpload();
+      allow delete: if isOwner(userId);
+    }
+    
+    // Temporary post uploads before Firestore doc is created
+    match /users/{userId}/posts/{tempFolder}/{filename} {
+      allow read: if isOwner(userId);
       allow write: if isOwner(userId) && isValidMediaUpload();
       allow delete: if isOwner(userId);
     }
