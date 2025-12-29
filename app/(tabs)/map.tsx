@@ -34,6 +34,7 @@ import { getBlurredPetLocation, calculateDistance } from '@/services/location-pr
 import { track } from '@/services/tracking';
 import { useFriends } from '@/hooks/friends-store';
 import { useFavorites } from '@/hooks/favorites-store';
+import { googlePlacesService, GooglePlace, PlaceType } from '@/services/google-places';
 
 interface Region {
   latitude: number;
@@ -80,6 +81,7 @@ export default function MapScreen() {
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedGooglePlace, setSelectedGooglePlace] = useState<GooglePlace | null>(null);
   const [locationPermission, setLocationPermission] = useState<boolean>(false);
   const [activeFilters, setActiveFilters] = useState<Set<MapFilterType>>(new Set(['pets']));
   const [popup, setPopup] = useState<PopupConfig | null>(null);
@@ -212,6 +214,7 @@ export default function MapScreen() {
   const handleMarkerPress = useCallback(async (pet: Pet & { owner?: User }) => {
     console.log('📍 Marker pressed:', pet.id, pet.name);
     setSelectedPet(pet);
+    setSelectedGooglePlace(null);
     
     if (pet.owner) {
       setSelectedUser(pet.owner);
@@ -225,6 +228,22 @@ export default function MapScreen() {
       }
     } else {
       setSelectedUser(null);
+    }
+    
+    incrementActionCount();
+  }, [incrementActionCount]);
+
+  const handleGooglePlacePress = useCallback(async (place: GooglePlace) => {
+    console.log('📍 Google Place pressed:', place.id, place.name);
+    setSelectedPet(null);
+    setSelectedUser(null);
+    
+    try {
+      const details = await googlePlacesService.getPlaceDetails(place.id);
+      setSelectedGooglePlace(details || place);
+    } catch (error) {
+      console.error('❌ Error fetching place details:', error);
+      setSelectedGooglePlace(place);
     }
     
     incrementActionCount();
@@ -339,6 +358,33 @@ export default function MapScreen() {
     },
     refetchInterval: 30000,
     staleTime: 10000,
+  });
+
+  const googlePlacesQuery = useQuery({
+    queryKey: ['map', 'googlePlaces', userLat, userLng, Array.from(activeFilters).join(',')],
+    enabled: activeFilters.has('googleVet') || activeFilters.has('googleShop') || activeFilters.has('googleZoo') || activeFilters.has('googleShelter'),
+    queryFn: async () => {
+      console.log('🔄 Fetching Google Places');
+      const types: PlaceType[] = [];
+      
+      if (activeFilters.has('googleVet')) types.push('veterinary_care');
+      if (activeFilters.has('googleShop')) types.push('pet_store');
+      if (activeFilters.has('googleZoo')) types.push('zoo');
+      if (activeFilters.has('googleShelter')) types.push('animal_shelter');
+      
+      if (types.length === 0) return [];
+      
+      const places = await googlePlacesService.searchMultipleTypes(
+        { latitude: userLat, longitude: userLng },
+        types,
+        10000
+      );
+      
+      console.log(`✅ Loaded ${places.length} Google Places`);
+      return places;
+    },
+    refetchInterval: 60000,
+    staleTime: 30000,
   });
 
   const catSittersQuery = useQuery({
@@ -471,6 +517,19 @@ export default function MapScreen() {
   });
   console.log(`🏠 Cat sitters to display: ${filteredCatSitters.length}`, filteredCatSitters.map(cs => ({ name: cs.user.name || cs.user.pseudo })));
 
+  const googlePlaces = googlePlacesQuery.data ?? [];
+  const filteredGooglePlaces = googlePlaces.filter((place) => {
+    if (activeFilters.size === 0) return false;
+    
+    if (activeFilters.has('googleVet') && place.types.includes('veterinary_care')) return true;
+    if (activeFilters.has('googleShop') && place.types.includes('pet_store')) return true;
+    if (activeFilters.has('googleZoo') && place.types.includes('zoo')) return true;
+    if (activeFilters.has('googleShelter') && place.types.includes('animal_shelter')) return true;
+    
+    return false;
+  });
+  console.log(`📍 Google Places to display: ${filteredGooglePlaces.length}`, filteredGooglePlaces.map(p => ({ name: p.name, types: p.types })));
+
   const projectPoint = useCallback(
     (lat: number, lng: number) => {
       const dx = (lng - region.longitude) / region.longitudeDelta + 0.5;
@@ -538,6 +597,20 @@ export default function MapScreen() {
             setSelectedUser(pro);
             router.push(`/profile/${pro.id}`);
           }} />
+        ))}
+        {Platform.OS !== 'web' && filteredGooglePlaces.map((place) => (
+          <MapMarker 
+            key={`google-${place.id}`} 
+            pet={{
+              id: `google-${place.id}`,
+              name: place.name,
+              breed: place.types[0] || 'place',
+              gender: 'male',
+              location: place.location,
+              mainPhoto: place.photos?.[0],
+            } as Pet}
+            onPress={() => handleGooglePlacePress(place)} 
+          />
         ))}
       </MapView>
 
@@ -689,6 +762,38 @@ export default function MapScreen() {
               </TouchableOpacity>
             );
           })}
+          {filteredGooglePlaces.map((place) => {
+            if (!place.location) return null;
+            const pos = projectPoint(place.location.latitude, place.location.longitude);
+            const left = Math.max(24, Math.min(width - 24, pos.left));
+            const top = Math.max(24, Math.min(height - 24, pos.top));
+            const placeColor = place.types.includes('veterinary_care') ? '#10b981' : place.types.includes('pet_store') ? '#f59e0b' : place.types.includes('zoo') ? '#8b5cf6' : '#06b6d4';
+            return (
+              <TouchableOpacity
+                key={`overlay-google-${place.id}`}
+                style={[styles.webUserMarker, { left, top }]}
+                onPress={() => handleGooglePlacePress(place)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.webUserMarkerCircle, { backgroundColor: placeColor, borderColor: COLORS.white }]}>
+                  {place.photos?.[0] ? (
+                    <img
+                      src={place.photos[0]}
+                      alt={place.name}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ) : (
+                    <Text style={styles.webUserEmoji}>📍</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       )}
 
@@ -699,7 +804,7 @@ export default function MapScreen() {
         />
       </View>
 
-      {selectedPet && (
+      {selectedPet && !selectedGooglePlace && (
         <MapBottomSheet
           pet={selectedPet}
           owner={selectedUser}
@@ -714,6 +819,18 @@ export default function MapScreen() {
           onMessage={handleMessage}
           onCreatePost={handleCreatePost}
           onClose={() => setSelectedPet(null)}
+        />
+      )}
+
+      {selectedGooglePlace && (
+        <MapBottomSheet
+          googlePlace={selectedGooglePlace}
+          distance={getDistance(selectedGooglePlace.location)}
+          onClose={() => setSelectedGooglePlace(null)}
+          onViewProfile={() => {}}
+          onAddFriend={() => {}}
+          onMessage={() => {}}
+          onCreatePost={() => {}}
         />
       )}
 

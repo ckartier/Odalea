@@ -13,7 +13,8 @@ import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
 import { Pet, User } from '@/types';
-import { FileText, UserPlus, MessageCircle, Plus, X, MapPin, Phone, Globe } from 'lucide-react-native';
+import { GooglePlace } from '@/services/google-places';
+import { FileText, UserPlus, MessageCircle, Plus, X, MapPin, Phone, Globe, Star } from 'lucide-react-native';
 import { getPetImageUrl, DEFAULT_PET_PLACEHOLDER } from '@/lib/image-helpers';
 import * as Haptics from 'expo-haptics';
 
@@ -25,7 +26,8 @@ const SNAP_POINTS = {
 };
 
 interface MapBottomSheetProps {
-  pet: Pet;
+  pet?: Pet;
+  googlePlace?: GooglePlace;
   owner?: User | null;
   distance?: string;
   isFriend?: boolean;
@@ -42,6 +44,7 @@ interface MapBottomSheetProps {
 
 export default function MapBottomSheet({
   pet,
+  googlePlace,
   owner,
   distance,
   isFriend,
@@ -114,8 +117,8 @@ export default function MapBottomSheet({
     }).start(() => onClose());
   };
 
-  const petImageUrl = getPetImageUrl(pet) || DEFAULT_PET_PLACEHOLDER;
-  const genderColor = pet.gender === 'female' ? COLORS.female : COLORS.male;
+  const petImageUrl = pet ? (getPetImageUrl(pet) || DEFAULT_PET_PLACEHOLDER) : (googlePlace?.photos?.[0] || DEFAULT_PET_PLACEHOLDER);
+  const genderColor = pet ? (pet.gender === 'female' ? COLORS.female : COLORS.male) : '#f59e0b';
 
   const getProfessionalBadge = () => {
     if (!isProfessional || !professionalType) return null;
@@ -138,6 +141,106 @@ export default function MapBottomSheet({
       </View>
     );
   };
+
+  if (googlePlace) {
+    return (
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            transform: [{ translateY }],
+            paddingBottom: insets.bottom + 16,
+          },
+        ]}
+        {...panResponder.panHandlers}
+      >
+        <View style={styles.handle} />
+
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <View style={styles.imageContainer}>
+              <Image
+                source={{ uri: petImageUrl }}
+                style={styles.image}
+                contentFit="cover"
+                placeholder={require('@/assets/images/icon.png')}
+              />
+            </View>
+
+            <View style={styles.info}>
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.name}>{googlePlace.name}</Text>
+                  <Text style={styles.breed}>{googlePlace.address}</Text>
+                </View>
+                <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+                  <X size={20} color="#64748b" />
+                </TouchableOpacity>
+              </View>
+
+              {distance && (
+                <View style={styles.locationRow}>
+                  <MapPin size={14} color="#64748b" />
+                  <Text style={styles.distance}>{distance}</Text>
+                </View>
+              )}
+
+              {googlePlace.rating && (
+                <View style={styles.locationRow}>
+                  <Star size={14} color="#f59e0b" fill="#f59e0b" />
+                  <Text style={styles.distance}>{googlePlace.rating.toFixed(1)}</Text>
+                </View>
+              )}
+
+              {googlePlace.openingHours?.openNow !== undefined && (
+                <View style={[styles.proBadge, { backgroundColor: googlePlace.openingHours.openNow ? '#10b981' : '#ef4444' }]}>
+                  <Text style={styles.proBadgeText}>{googlePlace.openingHours.openNow ? 'Ouvert' : 'Fermé'}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.ownerSection}>
+            <Text style={styles.ownerLabel}>Informations</Text>
+            <View style={styles.contactInfo}>
+              {googlePlace.phoneNumber && (
+                <TouchableOpacity 
+                  style={styles.contactRow}
+                  onPress={() => {
+                    if (Platform.OS !== 'web') {
+                      // Linking.openURL(`tel:${googlePlace.phoneNumber}`);
+                    }
+                  }}
+                >
+                  <Phone size={16} color="#64748b" />
+                  <Text style={styles.contactText}>{googlePlace.phoneNumber}</Text>
+                </TouchableOpacity>
+              )}
+              {googlePlace.website && (
+                <TouchableOpacity 
+                  style={styles.contactRow}
+                  onPress={() => {
+                    if (Platform.OS !== 'web') {
+                      // Linking.openURL(googlePlace.website!);
+                    } else {
+                      window.open(googlePlace.website!, '_blank');
+                    }
+                  }}
+                >
+                  <Globe size={16} color="#64748b" />
+                  <Text style={styles.contactText} numberOfLines={1}>
+                    {googlePlace.website}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </View>
+      </Animated.View>
+    );
+  }
+
+  if (!pet) return null;
 
   return (
     <Animated.View

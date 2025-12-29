@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Text, StyleSheet, TouchableOpacity, ScrollView, View } from 'react-native';
-import { Heart, Briefcase, Home, ChevronDown } from 'lucide-react-native';
+import { Heart, Briefcase, Home, ChevronDown, MapPin } from 'lucide-react-native';
 
-export type MapFilterType = 'pets' | 'pros' | 'catSitters' | 'users' | 'vet' | 'shelter' | 'breeder' | 'boutique' | 'educator';
+export type MapFilterType = 'pets' | 'pros' | 'catSitters' | 'users' | 'vet' | 'shelter' | 'breeder' | 'boutique' | 'educator' | 'googlePlaces' | 'googleVet' | 'googleShop' | 'googleZoo' | 'googleShelter';
 
 interface MapFilterChipsProps {
   activeFilters: Set<MapFilterType>;
@@ -25,6 +25,13 @@ const FILTERS: {
     children: ['vet', 'shelter', 'breeder', 'boutique', 'educator']
   },
   { key: 'catSitters', label: 'Cat Sitters', Icon: Home, color: '#6366f1' },
+  { 
+    key: 'googlePlaces', 
+    label: 'Lieux', 
+    Icon: MapPin, 
+    color: '#f59e0b',
+    children: ['googleVet', 'googleShop', 'googleZoo', 'googleShelter']
+  },
 ];
 
 const PRO_SUB_FILTERS: Record<string, { label: string; emoji: string }> = {
@@ -35,11 +42,22 @@ const PRO_SUB_FILTERS: Record<string, { label: string; emoji: string }> = {
   breeder: { label: 'Éleveurs', emoji: '🐱' },
 };
 
+const GOOGLE_PLACES_SUB_FILTERS: Record<string, { label: string; emoji: string }> = {
+  googleVet: { label: 'Vétos', emoji: '🏥' },
+  googleShop: { label: 'Boutiques', emoji: '🛒' },
+  googleZoo: { label: 'Zoos', emoji: '🦁' },
+  googleShelter: { label: 'Refuges', emoji: '🏘️' },
+};
+
 export default function MapFilterChips({ activeFilters, onFilterToggle }: MapFilterChipsProps) {
   const [showProSubFilters, setShowProSubFilters] = useState(false);
+  const [showGooglePlacesSubFilters, setShowGooglePlacesSubFilters] = useState(false);
 
   const isProsActive = activeFilters.has('pros');
   const hasAnyProSubFilter = ['vet', 'shelter', 'breeder', 'boutique', 'educator'].some(f => activeFilters.has(f as MapFilterType));
+  
+  const isGooglePlacesActive = activeFilters.has('googlePlaces');
+  const hasAnyGooglePlacesSubFilter = ['googleVet', 'googleShop', 'googleZoo', 'googleShelter'].some(f => activeFilters.has(f as MapFilterType));
 
   return (
     <View>
@@ -63,6 +81,8 @@ export default function MapFilterChips({ activeFilters, onFilterToggle }: MapFil
               onPress={() => {
                 if (hasChildren && key === 'pros') {
                   setShowProSubFilters(!showProSubFilters);
+                } else if (hasChildren && key === 'googlePlaces') {
+                  setShowGooglePlacesSubFilters(!showGooglePlacesSubFilters);
                 }
                 onFilterToggle(key);
               }}
@@ -108,6 +128,40 @@ export default function MapFilterChips({ activeFilters, onFilterToggle }: MapFil
                 style={[
                   styles.subChip,
                   isActive && styles.subChipActive,
+                ]}
+                onPress={() => onFilterToggle(key as MapFilterType)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.subChipEmoji}>{emoji}</Text>
+                <Text
+                  style={[
+                    styles.subChipText,
+                    isActive && styles.subChipTextActive,
+                  ]}
+                >
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      )}
+
+      {(showGooglePlacesSubFilters || hasAnyGooglePlacesSubFilter) && (isGooglePlacesActive || hasAnyGooglePlacesSubFilter) && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={[styles.scrollContent, styles.subScrollContent]}
+          style={styles.subContainer}
+        >
+          {Object.entries(GOOGLE_PLACES_SUB_FILTERS).map(([key, { label, emoji }]) => {
+            const isActive = activeFilters.has(key as MapFilterType);
+            return (
+              <TouchableOpacity
+                key={key}
+                style={[
+                  styles.subChip,
+                  isActive && styles.subChipActiveOrange,
                 ]}
                 onPress={() => onFilterToggle(key as MapFilterType)}
                 activeOpacity={0.7}
@@ -184,6 +238,10 @@ const styles = StyleSheet.create({
   subChipActive: {
     backgroundColor: '#10b981',
     borderColor: '#10b981',
+  },
+  subChipActiveOrange: {
+    backgroundColor: '#f59e0b',
+    borderColor: '#f59e0b',
   },
   subChipEmoji: {
     fontSize: 14,

@@ -95,13 +95,7 @@ const MapView: React.FC<MapViewProps> = ({
       center: { lat: centerLat, lng: centerLng },
       zoom: 13,
       mapTypeId: window.google.maps.MapTypeId.ROADMAP,
-      styles: [
-        {
-          featureType: 'poi',
-          elementType: 'labels',
-          stylers: [{ visibility: 'off' }],
-        },
-      ],
+      styles: [],
       disableDefaultUI: false,
       clickableIcons: true,
     };
