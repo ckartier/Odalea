@@ -103,9 +103,13 @@ service cloud.firestore {
       // Tout utilisateur authentifié peut lire les likes
       allow read: if isAuthenticated();
       
-      // Seul l'utilisateur peut créer/supprimer ses propres likes
-      allow create, delete: if isAuthenticated() && 
-                               request.resource.data.userId == request.auth.uid;
+      // Seul l'utilisateur peut créer ses propres likes
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      
+      // Seul l'utilisateur peut supprimer ses propres likes
+      allow delete: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid;
     }
     
     // Conversations Collection
