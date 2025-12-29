@@ -476,6 +476,123 @@ export const PROFESSIONAL_ACTIVITY_CONFIG: Record<ProfessionalActivityType, Acti
       },
     ],
   },
+  educator: {
+    id: 'educator',
+    label: 'Éducateur',
+    chipLabel: 'Éducateur',
+    description: 'Éducateurs et comportementalistes félins certifiés.',
+    sections: [
+      {
+        key: 'identity',
+        title: 'Identité professionnelle',
+        subtitle: 'Présentez votre activité et vos certifications.',
+        fields: [
+          {
+            key: 'fullName',
+            label: 'Nom complet',
+            placeholder: 'Marie Dubois',
+            inputType: 'text',
+            validation: { required: true, minLength: 4 },
+          },
+          {
+            key: 'businessName',
+            label: 'Nom de l\'activité',
+            placeholder: 'Éducation Féline Paris',
+            inputType: 'text',
+            validation: { required: true },
+          },
+          {
+            key: 'certificationNumber',
+            label: 'Numéro de certification',
+            placeholder: 'CERT-EDU-2024-001',
+            inputType: 'text',
+            validation: { required: true },
+          },
+          {
+            key: 'businessEmail',
+            label: 'Email professionnel',
+            placeholder: 'contact@education-feline.fr',
+            inputType: 'email',
+            validation: {
+              required: true,
+              pattern: EMAIL_PATTERN,
+              patternMessage: 'Email professionnel invalide',
+            },
+          },
+          {
+            key: 'businessPhone',
+            label: 'Téléphone professionnel',
+            placeholder: '+33143070106',
+            inputType: 'phone',
+            validation: {
+              required: true,
+              pattern: PHONE_PATTERN,
+              patternMessage: 'Téléphone au format international',
+            },
+          },
+        ],
+      },
+      {
+        key: 'expertise',
+        title: 'Expertises & méthodes',
+        subtitle: 'Spécialités et approches éducatives.',
+        fields: [
+          {
+            key: 'specialties',
+            label: 'Spécialités',
+            placeholder: 'Sélectionnez vos spécialités',
+            inputType: 'multiselect',
+            options: ['Comportement', 'Éducation chaton', 'Problèmes de propreté', 'Agressivité', 'Anxiété', 'Socialisation'],
+            validation: { required: true, minLength: 1 },
+          },
+          {
+            key: 'methods',
+            label: 'Méthodes utilisées',
+            placeholder: 'Décrivez vos approches',
+            inputType: 'text',
+            multiline: true,
+            validation: { required: true, minLength: 20 },
+          },
+          {
+            key: 'website',
+            label: 'Site web',
+            placeholder: 'https://...',
+            inputType: 'url',
+            validation: {
+              required: false,
+              pattern: URL_PATTERN,
+              patternMessage: 'URL invalide',
+            },
+          },
+          {
+            key: 'certificationProofUrl',
+            label: 'Justificatif de certification',
+            placeholder: 'https://...',
+            inputType: 'url',
+            validation: {
+              required: true,
+              pattern: URL_PATTERN,
+              patternMessage: 'URL invalide',
+            },
+          },
+        ],
+      },
+    ],
+    documents: [
+      {
+        key: 'certification',
+        label: 'Certificat de formation',
+        description: 'Diplôme ou certification d\'éducateur/comportementaliste.',
+        mandatory: true,
+      },
+      {
+        key: 'insurance',
+        label: 'Assurance RC Pro',
+        description: 'Attestation d\'assurance responsabilité civile professionnelle.',
+        mandatory: true,
+      },
+    ],
+  },
 };
 
 export type ActivityFormValues = Record<string, FieldValue>;

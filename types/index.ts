@@ -80,7 +80,7 @@ export interface User {
   pushTokenUpdatedAt?: string;
 }
 
-export type ProfessionalActivityType = 'vet' | 'shelter' | 'breeder' | 'boutique';
+export type ProfessionalActivityType = 'vet' | 'shelter' | 'breeder' | 'boutique' | 'educator';
 
 export interface ProfessionalCommonInfo {
   displayName: string;
@@ -153,6 +153,7 @@ export interface ProfessionalData {
   businessEmail: string;
   businessPhone: string;
   businessDescription: string;
+  website?: string;
   companyLogo?: string;
   iban: string;
   acceptedTerms: boolean;

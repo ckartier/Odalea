@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Text, StyleSheet, TouchableOpacity, ScrollView, View } from 'react-native';
 import { Heart, Briefcase, Home, ChevronDown } from 'lucide-react-native';
 
-export type MapFilterType = 'pets' | 'pros' | 'catSitters' | 'vet' | 'shelter' | 'breeder' | 'boutique';
+export type MapFilterType = 'pets' | 'pros' | 'catSitters' | 'users' | 'vet' | 'shelter' | 'breeder' | 'boutique' | 'educator';
 
 interface MapFilterChipsProps {
   activeFilters: Set<MapFilterType>;
@@ -22,23 +22,24 @@ const FILTERS: {
     label: 'Pros', 
     Icon: Briefcase, 
     color: '#10b981',
-    children: ['vet', 'shelter', 'breeder', 'boutique']
+    children: ['vet', 'shelter', 'breeder', 'boutique', 'educator']
   },
   { key: 'catSitters', label: 'Cat Sitters', Icon: Home, color: '#6366f1' },
 ];
 
 const PRO_SUB_FILTERS: Record<string, { label: string; emoji: string }> = {
   vet: { label: 'Vétérinaires', emoji: '🩺' },
+  boutique: { label: 'Boutiques', emoji: '🛍️' },
+  educator: { label: 'Éducateurs', emoji: '🎓' },
   shelter: { label: 'Refuges', emoji: '🏠' },
   breeder: { label: 'Éleveurs', emoji: '🐱' },
-  boutique: { label: 'Boutiques', emoji: '🛍️' },
 };
 
 export default function MapFilterChips({ activeFilters, onFilterToggle }: MapFilterChipsProps) {
   const [showProSubFilters, setShowProSubFilters] = useState(false);
 
   const isProsActive = activeFilters.has('pros');
-  const hasAnyProSubFilter = ['vet', 'shelter', 'breeder', 'boutique'].some(f => activeFilters.has(f as MapFilterType));
+  const hasAnyProSubFilter = ['vet', 'shelter', 'breeder', 'boutique', 'educator'].some(f => activeFilters.has(f as MapFilterType));
 
   return (
     <View>

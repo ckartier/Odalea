@@ -13,7 +13,7 @@ import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
 import { Pet, User } from '@/types';
-import { FileText, UserPlus, MessageCircle, Plus, X, MapPin } from 'lucide-react-native';
+import { FileText, UserPlus, MessageCircle, Plus, X, MapPin, Phone, Globe } from 'lucide-react-native';
 import { getPetImageUrl, DEFAULT_PET_PLACEHOLDER } from '@/lib/image-helpers';
 import * as Haptics from 'expo-haptics';
 
@@ -241,15 +241,46 @@ export default function MapBottomSheet({
 
         {owner && (
           <View style={styles.ownerSection}>
-            <Text style={styles.ownerLabel}>Propriétaire</Text>
+            <Text style={styles.ownerLabel}>
+              {isProfessional ? 'Professionnel' : 'Propriétaire'}
+            </Text>
             <TouchableOpacity style={styles.ownerRow} onPress={onViewProfile}>
               {owner.photo && (
                 <Image source={{ uri: owner.photo }} style={styles.ownerAvatar} contentFit="cover" />
               )}
-              <Text style={styles.ownerName}>
-                {owner.pseudo || owner.name || 'Anonyme'}
-              </Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.ownerName}>
+                  {owner.professionalData?.companyName || owner.pseudo || owner.name || 'Anonyme'}
+                </Text>
+                {isProfessional && owner.city && (
+                  <Text style={styles.ownerCity}>{owner.city}</Text>
+                )}
+              </View>
             </TouchableOpacity>
+            
+            {isProfessional && (
+              <View style={styles.contactInfo}>
+                {owner.phoneNumber && (
+                  <View style={styles.contactRow}>
+                    <Phone size={16} color="#64748b" />
+                    <Text style={styles.contactText}>{owner.phoneNumber}</Text>
+                  </View>
+                )}
+                {owner.professionalData?.website && (
+                  <View style={styles.contactRow}>
+                    <Globe size={16} color="#64748b" />
+                    <Text style={styles.contactText} numberOfLines={1}>
+                      {owner.professionalData.website}
+                    </Text>
+                  </View>
+                )}
+                {owner.professionalData?.businessDescription && (
+                  <Text style={styles.businessDescription} numberOfLines={3}>
+                    {owner.professionalData.businessDescription}
+                  </Text>
+                )}
+              </View>
+            )}
           </View>
         )}
       </View>
@@ -429,5 +460,33 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#0f172a',
+  },
+  ownerCity: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#64748b',
+    marginTop: 2,
+  },
+  contactInfo: {
+    marginTop: 12,
+    gap: 8,
+  },
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  contactText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#475569',
+    flex: 1,
+  },
+  businessDescription: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#64748b',
+    lineHeight: 18,
+    marginTop: 4,
   },
 });

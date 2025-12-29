@@ -442,6 +442,8 @@ export default function MapScreen() {
     if (!u.isProfessional || !u.professionalData?.activityType) return false;
     if (u.id.includes('paris-') || u.id.includes('test')) return false;
     
+    if (activeFilters.size === 0) return false;
+    
     const hasProsFilter = activeFilters.has('pros');
     const hasSpecificFilter = activeFilters.has(u.professionalData.activityType as any);
     
@@ -453,7 +455,9 @@ export default function MapScreen() {
       return false;
     }
     if (u.isProfessional || u.isCatSitter) return false;
-    return false;
+    
+    if (activeFilters.size === 0) return false;
+    return activeFilters.has('users');
   });
 
   const filteredCatSitters = catSittersWithLocation.filter((cs) => {
