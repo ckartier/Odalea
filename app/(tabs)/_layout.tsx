@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import { Tabs } from "expo-router";
+import React, { useMemo, useCallback } from "react";
+import { Tabs, useRouter } from "expo-router";
 import { View, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IS_TABLET, RESPONSIVE_LAYOUT, COLORS } from "@/constants/colors";
@@ -8,10 +8,15 @@ import { Map, MessageCircle, Users, User } from "lucide-react-native";
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
-
-
+  const router = useRouter();
 
   const headerHeight = useAppHeaderHeight();
+
+  const showMenu = true;
+
+  const handleMenuPress = useCallback(() => {
+    router.push('/menu' as any);
+  }, [router]);
 
   const containerStyle = useMemo(() => ([
     styles.container,
@@ -24,7 +29,12 @@ export default function TabLayout() {
 
   return (
     <>
-      <AppHeader showMenu={false} showNotifications={false} />
+      <AppHeader 
+        showMenu={showMenu} 
+        showNotifications={true}
+        notificationCount={0}
+        onMenuPress={handleMenuPress}
+      />
 
       <View style={containerStyle}>
         <Tabs
