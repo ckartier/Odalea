@@ -8,6 +8,7 @@ import { useUser } from './user-store';
 import { usePremium } from './premium-store';
 import { StorageService } from '@/services/storage';
 import { Alert } from 'react-native';
+import { ModerationService } from '@/services/moderation';
 
 export const [SocialContext, useSocial] = createContextHook(() => {
   const { user: firebaseUser } = useFirebaseUser();
@@ -426,6 +427,18 @@ export const [SocialContext, useSocial] = createContextHook(() => {
     location?: { name: string; latitude: number; longitude: number };
     tags?: string[];
   }) => {
+    if (user) {
+      const isBanned = await ModerationService.isUserBanned(user.id);
+      if (isBanned) {
+        throw new Error('Votre compte a été suspendu. Contactez le support.');
+      }
+      
+      const canPost = await ModerationService.checkRateLimit(user.id, 'post', 10);
+      if (!canPost) {
+        throw new Error('Limite de publications atteinte. Veuillez réessayer plus tard.');
+      }
+    }
+    
     return createPostMutation.mutateAsync({
       type: 'text',
       ...postData

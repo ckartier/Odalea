@@ -72,16 +72,29 @@ service cloud.firestore {
     
     // Posts Collection
     match /posts/{postId} {
-      // Tout utilisateur authentifié peut lire les posts
-      allow read: if isAuthenticated();
+      // Tout utilisateur authentifié peut lire les posts publics et pending (pour modération)
+      // Les posts hidden ne sont visibles que par l'auteur et les admins
+      allow read: if isAuthenticated() && 
+                     (resource.data.visibility == 'public' || 
+                      resource.data.visibility == 'pending' ||
+                      resource.data.authorId == request.auth.uid ||
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
       
-      // Tout utilisateur authentifié peut créer un post
+      // Tout utilisateur authentifié peut créer un post (visibility par défaut: public)
       allow create: if isAuthenticated() && 
-                       request.resource.data.authorId == request.auth.uid;
+                       request.resource.data.authorId == request.auth.uid &&
+                       request.resource.data.keys().hasAll(['authorId', 'content', 'type']) &&
+                       (!request.resource.data.keys().hasAny(['visibility']) || 
+                        request.resource.data.visibility == 'public');
       
-      // Seul l'auteur peut modifier/supprimer son post
-      allow update, delete: if isAuthenticated() && 
-                               resource.data.authorId == request.auth.uid;
+      // Seul l'auteur peut modifier son post (sauf visibility qui est géré par modération)
+      allow update: if isAuthenticated() && 
+                       resource.data.authorId == request.auth.uid &&
+                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['visibility', 'flags', 'moderatedAt', 'moderatedBy']);
+      
+      // Seul l'auteur peut supprimer son post
+      allow delete: if isAuthenticated() && 
+                       resource.data.authorId == request.auth.uid;
     }
     
     // Comments Collection
@@ -103,9 +116,13 @@ service cloud.firestore {
       // Tout utilisateur authentifié peut lire les likes
       allow read: if isAuthenticated();
       
-      // Seul l'utilisateur peut créer ses propres likes
+      // Seul l'utilisateur peut créer ses propres likes (docId format: postId_userId)
       allow create: if isAuthenticated() && 
-                       request.resource.data.userId == request.auth.uid;
+                       request.resource.data.userId == request.auth.uid &&
+                       request.resource.data.keys().hasAll(['userId', 'postId']);
+      
+      // Pas de modification
+      allow update: if false;
       
       // Seul l'utilisateur peut supprimer ses propres likes
       allow delete: if isAuthenticated() && 
@@ -700,15 +717,65 @@ service cloud.firestore {
     
     // Reports Collection (Signalements de contenu)
     match /reports/{reportId} {
-      // Seuls les admins peuvent lire (géré côté serveur)
-      allow read: if false;
+      // Le reporter et les admins peuvent lire
+      allow read: if isAuthenticated() && 
+                     (resource.data.reporterId == request.auth.uid || 
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
       
       // Tout utilisateur authentifié peut créer un signalement
       allow create: if isAuthenticated() && 
-                       request.resource.data.reporterId == request.auth.uid;
+                       request.resource.data.reporterId == request.auth.uid &&
+                       request.resource.data.keys().hasAll(['reporterId', 'targetType', 'targetId', 'reason', 'status']) &&
+                       request.resource.data.status == 'pending';
       
-      // Seuls les admins peuvent modifier/supprimer (géré côté serveur)
+      // Seuls les admins peuvent modifier/supprimer
+      allow update: if isAuthenticated() && 
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow delete: if false;
+    }
+    
+    // Moderation Actions Collection (Audit log)
+    match /moderationActions/{actionId} {
+      // Seuls les admins peuvent lire
+      allow read: if isAuthenticated() && 
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      
+      // Seul le système et les admins peuvent créer
+      allow create: if isAuthenticated() && 
+                       (request.resource.data.actorId == request.auth.uid || 
+                        request.resource.data.actorId == 'system') &&
+                       request.resource.data.keys().hasAll(['actorId', 'action', 'targetType', 'targetId', 'reason']);
+      
+      // Pas de modification/suppression
       allow update, delete: if false;
+    }
+    
+    // User Flags Collection (Strikes and bans)
+    match /userFlags/{userId} {
+      // L'utilisateur peut lire ses propres flags, les admins peuvent lire tous
+      allow read: if isAuthenticated() && 
+                     (userId == request.auth.uid || 
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+      
+      // Seul le système et les admins peuvent créer/modifier
+      allow create, update: if isAuthenticated() && 
+                               (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+                                request.auth.uid == 'system');
+      
+      // Pas de suppression
+      allow delete: if false;
+    }
+    
+    // Content Settings (User preferences for sensitive content)
+    match /contentSettings/{userId} {
+      // Seul l'utilisateur peut lire ses paramètres
+      allow read: if isOwner(userId);
+      
+      // Seul l'utilisateur peut créer/modifier
+      allow create, update: if isOwner(userId);
+      
+      // Pas de suppression
+      allow delete: if false;
     }
   }
 }

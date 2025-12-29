@@ -15,11 +15,29 @@ service firebase.storage {
       return isAuthenticated() && request.auth.uid == userId;
     }
     
-    function isValidImageUpload() {
+    function isImage() {
       return request.resource != null
-          && request.resource.size < 10 * 1024 * 1024 // 10MB max
           && request.resource.contentType != null
           && request.resource.contentType.matches('image/.*');
+    }
+    
+    function isVideo() {
+      return request.resource != null
+          && request.resource.contentType != null
+          && request.resource.contentType.matches('video/.*');
+    }
+    
+    function isValidImageUpload() {
+      return isImage() && request.resource.size < 10 * 1024 * 1024; // 10MB max
+    }
+    
+    function isValidVideoUpload() {
+      return isVideo() && request.resource.size < 50 * 1024 * 1024; // 50MB max
+    }
+    
+    function isValidMediaUpload() {
+      return (isImage() && request.resource.size < 10 * 1024 * 1024) ||
+             (isVideo() && request.resource.size < 50 * 1024 * 1024);
     }
     
     // =============================================================================
@@ -28,43 +46,44 @@ service firebase.storage {
     
     // User profile photos: users/{userId}/profile/{filename}
     match /users/{userId}/profile/{filename} {
-      allow read: if true; // Public read for profile pictures
+      allow read: if isAuthenticated(); // Authenticated read for profile pictures
       allow write: if isOwner(userId) && isValidImageUpload();
       allow delete: if isOwner(userId);
     }
     
     // Pet photos: users/{userId}/pets/{petId}/{filename}
     match /users/{userId}/pets/{petId}/{filename} {
-      allow read: if true; // Public read for pet pictures
+      allow read: if isAuthenticated(); // Authenticated read for pet pictures
       allow write: if isOwner(userId) && isValidImageUpload();
       allow delete: if isOwner(userId);
     }
     
     // Product photos: users/{userId}/products/{productId}/{filename}
     match /users/{userId}/products/{productId}/{filename} {
-      allow read: if true; // Public read for products
+      allow read: if isAuthenticated(); // Authenticated read for products
       allow write: if isOwner(userId) && isValidImageUpload();
       allow delete: if isOwner(userId);
     }
     
-    // Post photos: users/{userId}/posts/{postId}/{filename}
+    // Post photos/videos: users/{userId}/posts/{postId}/{filename}
+    // Note: Moderation happens at Firestore level (visibility field)
     match /users/{userId}/posts/{postId}/{filename} {
-      allow read: if true; // Public read for community posts
-      allow write: if isOwner(userId) && isValidImageUpload();
+      allow read: if isAuthenticated(); // Authenticated read for community posts
+      allow write: if isOwner(userId) && isValidMediaUpload();
       allow delete: if isOwner(userId);
     }
     
     // Lost & Found photos: users/{userId}/lost-found/{reportId}/{filename}
     match /users/{userId}/lost-found/{reportId}/{filename} {
-      allow read: if true; // Public read for lost/found reports
+      allow read: if isAuthenticated(); // Authenticated read for lost/found reports
       allow write: if isOwner(userId) && isValidImageUpload();
       allow delete: if isOwner(userId);
     }
     
     // Challenge submission photos: users/{userId}/challenges/{challengeId}/{filename}
     match /users/{userId}/challenges/{challengeId}/{filename} {
-      allow read: if true; // Public read for challenge submissions
-      allow write: if isOwner(userId) && isValidImageUpload();
+      allow read: if isAuthenticated(); // Authenticated read for challenge submissions
+      allow write: if isOwner(userId) && isValidMediaUpload();
       allow delete: if isOwner(userId);
     }
     

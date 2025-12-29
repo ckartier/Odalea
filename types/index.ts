@@ -376,6 +376,15 @@ export interface AnimalSpecies {
 }
 
 // Social Media Types
+export type PostVisibility = 'public' | 'pending' | 'hidden';
+
+export interface PostFlags {
+  nsfw?: boolean;
+  violence?: boolean;
+  childRisk?: boolean;
+  moderationScore?: number;
+}
+
 export interface Post {
   id: string;
   authorId: string;
@@ -393,6 +402,7 @@ export interface Post {
   };
   likesCount: number;
   commentsCount: number;
+  savesCount?: number;
   createdAt: Date;
   updatedAt: Date;
   tags?: string[];
@@ -408,6 +418,10 @@ export interface Post {
   };
   status?: 'lost' | 'found' | 'reunited';
   reward?: number;
+  visibility?: PostVisibility;
+  flags?: PostFlags;
+  moderatedAt?: Date;
+  moderatedBy?: string;
 }
 
 export interface Comment {
@@ -434,7 +448,7 @@ export interface Like {
 export interface Notification {
   id: string;
   userId: string;
-  type: 'like' | 'comment' | 'follow' | 'message' | 'friend_request' | 'post_mention';
+  type: 'like' | 'comment' | 'follow' | 'message' | 'friend_request' | 'post_mention' | 'moderation' | 'content_approved' | 'content_rejected';
   title: string;
   message: string;
   data?: any;
@@ -443,4 +457,56 @@ export interface Notification {
   actionUserId?: string;
   actionUserName?: string;
   actionUserPhoto?: string;
+}
+
+// Moderation Types
+export type ReportReason = 'spam' | 'harassment' | 'hate_speech' | 'violence' | 'sexual_content' | 'self_harm' | 'child_safety' | 'false_info' | 'other';
+export type ReportTargetType = 'post' | 'comment' | 'user';
+export type ReportStatus = 'pending' | 'reviewing' | 'actioned' | 'dismissed';
+
+export interface Report {
+  id: string;
+  reporterId: string;
+  reporterName?: string;
+  targetType: ReportTargetType;
+  targetId: string;
+  reason: ReportReason;
+  details?: string;
+  status: ReportStatus;
+  createdAt: Date;
+  reviewedAt?: Date;
+  reviewedBy?: string;
+  actionTaken?: string;
+}
+
+export type ModerationActionType = 'hide' | 'delete' | 'warn' | 'ban' | 'unban' | 'approve' | 'flag';
+
+export interface ModerationAction {
+  id: string;
+  actorId: string;
+  actorName?: string;
+  action: ModerationActionType;
+  targetType: ReportTargetType;
+  targetId: string;
+  reason: string;
+  details?: string;
+  automated?: boolean;
+  createdAt: Date;
+}
+
+export interface UserFlags {
+  userId: string;
+  strikes: number;
+  isBanned: boolean;
+  bannedUntil?: Date;
+  bannedReason?: string;
+  lastActions: ModerationAction[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ContentSettings {
+  hideSensitiveContent: boolean;
+  blurSensitiveImages: boolean;
+  autoPlayVideos: boolean;
 }
