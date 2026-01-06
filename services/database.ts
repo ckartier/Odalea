@@ -289,13 +289,14 @@ export const petService = {
         id: doc.id,
         ...doc.data()
       })) as Pet[];
-    } catch (error) {
-      console.error('❌ Error getting nearby pets:', error);
+    } catch (error: any) {
+      const errorMessage = error?.message || error?.toString() || 'Unknown error';
+      console.error('❌ Error getting nearby pets:', errorMessage);
       if (isPermissionDenied(error)) {
         console.log('🔒 Returning empty pets due to permission rules');
         return [];
       }
-      throw error;
+      return [];
     }
   },
 

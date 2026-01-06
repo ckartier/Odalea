@@ -161,14 +161,16 @@ export const [RevenueCatContext, useRevenueCat] = createContextHook(() => {
 
       await revenueCatService.configure(apiKey, user?.id);
 
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       if (user?.email) {
         await revenueCatService.setEmail(user.email);
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
 
       if (user?.phoneNumber) {
         await revenueCatService.setPhoneNumber(user.phoneNumber);
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
 
       if (user?.id) {
@@ -176,9 +178,8 @@ export const [RevenueCatContext, useRevenueCat] = createContextHook(() => {
           userId: user.id,
           displayName: user.name || null,
         });
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
-
-      await new Promise(resolve => setTimeout(resolve, 300));
 
       await loadOfferings();
       await loadCustomerInfo();

@@ -209,8 +209,8 @@ export class RevenueCatService {
   async setAttributes(attributes: Record<string, string | null>): Promise<void> {
     this.attributeQueue = this.attributeQueue.then(async () => {
       if (this.isSettingAttributes) {
-        console.log('⏳ Attributes update already in progress, queuing...');
-        await new Promise(resolve => setTimeout(resolve, 100));
+        console.log('⏳ Attributes update already in progress, waiting...');
+        await new Promise(resolve => setTimeout(resolve, 600));
       }
       
       try {
@@ -218,20 +218,25 @@ export class RevenueCatService {
         await Purchases.setAttributes(attributes);
         console.log('✅ Attributes set:', Object.keys(attributes));
       } catch (error: any) {
-        if (error?.code === 16 || error?.info?.statusCode === 529) {
-          console.log('⏳ Concurrent request detected, retrying in 500ms...');
-          await new Promise(resolve => setTimeout(resolve, 500));
+        if (error?.code === 16 || error?.info?.statusCode === 529 || error?.underlyingErrorMessage?.includes('another request in flight')) {
+          console.log('⏳ Concurrent request detected, retrying in 1000ms...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
           try {
             await Purchases.setAttributes(attributes);
             console.log('✅ Attributes set (retry):', Object.keys(attributes));
-          } catch (retryError) {
-            console.error('❌ Error setting attributes (retry failed):', retryError);
+          } catch (retryError: any) {
+            if (retryError?.code !== 16 && retryError?.info?.statusCode !== 529) {
+              console.error('❌ Error setting attributes (retry failed):', retryError);
+            } else {
+              console.log('⚠️ Skipping attribute update due to concurrent requests');
+            }
           }
         } else {
           console.error('❌ Error setting attributes:', error);
         }
       } finally {
         this.isSettingAttributes = false;
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
     });
     
@@ -244,19 +249,24 @@ export class RevenueCatService {
         await Purchases.setEmail(email);
         console.log('✅ Email set');
       } catch (error: any) {
-        if (error?.code === 16 || error?.info?.statusCode === 529) {
-          console.log('⏳ Concurrent email request detected, retrying in 500ms...');
-          await new Promise(resolve => setTimeout(resolve, 500));
+        if (error?.code === 16 || error?.info?.statusCode === 529 || error?.underlyingErrorMessage?.includes('another request in flight')) {
+          console.log('⏳ Concurrent email request detected, retrying in 1000ms...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
           try {
             await Purchases.setEmail(email);
             console.log('✅ Email set (retry)');
-          } catch (retryError) {
-            console.error('❌ Error setting email (retry failed):', retryError);
+          } catch (retryError: any) {
+            if (retryError?.code !== 16 && retryError?.info?.statusCode !== 529) {
+              console.error('❌ Error setting email (retry failed):', retryError);
+            } else {
+              console.log('⚠️ Skipping email update due to concurrent requests');
+            }
           }
         } else {
           console.error('❌ Error setting email:', error);
         }
       }
+      await new Promise(resolve => setTimeout(resolve, 200));
     });
     
     return this.attributeQueue;
@@ -268,19 +278,24 @@ export class RevenueCatService {
         await Purchases.setPhoneNumber(phoneNumber);
         console.log('✅ Phone number set');
       } catch (error: any) {
-        if (error?.code === 16 || error?.info?.statusCode === 529) {
-          console.log('⏳ Concurrent phone request detected, retrying in 500ms...');
-          await new Promise(resolve => setTimeout(resolve, 500));
+        if (error?.code === 16 || error?.info?.statusCode === 529 || error?.underlyingErrorMessage?.includes('another request in flight')) {
+          console.log('⏳ Concurrent phone request detected, retrying in 1000ms...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
           try {
             await Purchases.setPhoneNumber(phoneNumber);
             console.log('✅ Phone number set (retry)');
-          } catch (retryError) {
-            console.error('❌ Error setting phone number (retry failed):', retryError);
+          } catch (retryError: any) {
+            if (retryError?.code !== 16 && retryError?.info?.statusCode !== 529) {
+              console.error('❌ Error setting phone number (retry failed):', retryError);
+            } else {
+              console.log('⚠️ Skipping phone number update due to concurrent requests');
+            }
           }
         } else {
           console.error('❌ Error setting phone number:', error);
         }
       }
+      await new Promise(resolve => setTimeout(resolve, 200));
     });
     
     return this.attributeQueue;
