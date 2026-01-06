@@ -9,16 +9,21 @@ import {
 } from './responsive';
 
 export const COLORS = {
+  // Primary accent (violet unique)
   primary: '#7C3AED',
   primaryDark: '#6D28D9',
   primaryLight: '#A78BFA',
-  secondary: '#FFB3E6',
-  secondaryDark: '#EC4899',
-  secondaryLight: '#FDE2F3',
+  primarySoft: 'rgba(124, 58, 237, 0.08)',
   accent: '#7C3AED',
   accentDark: '#6D28D9',
   accentLight: '#DDD6FE',
   
+  // Secondary (legacy support)
+  secondary: '#FFB3E6',
+  secondaryDark: '#EC4899',
+  secondaryLight: '#FDE2F3',
+  
+  // Gender colors
   male: '#6BB6FF',
   maleVivid: '#4A9FFF',
   female: '#D884FC',
@@ -29,69 +34,97 @@ export const COLORS = {
   neutralLight: '#E0F2FE',
   neutralVivid: '#BAE6FD',
   
+  // Core colors
   white: '#FFFFFF',
   black: '#111111',
+  
+  // Text hierarchy
   text: '#111111',
   textSecondary: '#6B7280',
+  textTertiary: '#9CA3AF',
+  textInverse: '#FFFFFF',
+  
+  // Grays
   gray: '#6B7280',
   lightGray: '#F3F4F6',
   mediumGray: '#E5E7EB',
   darkGray: '#6B7280',
   
+  // Surfaces (2025 design - fond blanc)
+  background: '#FFFFFF',
+  surface: '#FFFFFF',
+  surfaceSecondary: '#F9FAFB',
+  surfaceTertiary: '#F3F4F6',
+  cardBackground: '#FFFFFF',
+  screenBackground: '#FFFFFF',
+  surfaceBackground: '#FFFFFF',
+  
+  // Dark mode (legacy support)
   darkBackground: '#0F172A',
   darkCard: '#1E293B',
   darkBorder: '#334155',
   darkText: '#F1F5F9',
   
+  // Semantic colors
   success: '#10B981',
   successLight: '#D1FAE5',
+  successSoft: 'rgba(16, 185, 129, 0.08)',
   error: '#EF4444',
   errorLight: '#FEE2E2',
+  errorSoft: 'rgba(239, 68, 68, 0.08)',
   warning: '#F59E0B',
   warningLight: '#FEF3C7',
+  warningSoft: 'rgba(245, 158, 11, 0.08)',
   info: '#3B82F6',
   infoLight: '#DBEAFE',
+  infoSoft: 'rgba(59, 130, 246, 0.08)',
   
+  // Status colors
   emergency: '#DC2626',
   lost: '#EF4444',
-  found: '#059669',
+  found: '#10B981',
   available: '#10B981',
   busy: '#F59E0B',
   premium: '#A855F7',
   gold: '#FFD700',
-  catSitter: '#FFB3E6',
+  catSitter: '#F0A5C9',
   
+  // Transparency
   transparent: 'transparent',
   shadow: 'rgba(17, 17, 17, 0.04)',
   shadowMedium: 'rgba(17, 17, 17, 0.08)',
   shadowStrong: 'rgba(17, 17, 17, 0.12)',
   overlay: 'rgba(15, 23, 42, 0.6)',
   overlayLight: 'rgba(15, 23, 42, 0.4)',
-  cardBackground: '#FFFFFF',
-  screenBackground: '#FFFFFF',
-  surfaceBackground: '#FFFFFF',
-  neutral: '#E2E8F0',
+  
+  // Borders
   border: '#E5E7EB',
   borderLight: '#F3F4F6',
+  borderFocus: '#7C3AED',
+  neutral: '#E2E8F0',
   
+  // Map markers
   mapPet: '#7DD4EE',
   mapSitter: '#F0A5C9',
-  mapVet: '#28A745',
-  mapShop: '#FFC107',
-  mapLost: '#FF6B6B',
-  mapFound: '#4ECDC4',
+  mapVet: '#10B981',
+  mapShop: '#F59E0B',
+  mapLost: '#EF4444',
+  mapFound: '#10B981',
+  mapEducator: '#3B82F6',
+  mapShelter: '#8B5CF6',
+  mapBreeder: '#EC4899',
   
-  menuBackground: 'rgba(255, 255, 255, 0.95)',
-  menuShadow: 'rgba(0, 0, 0, 0.15)',
-  
+  // Menu
+  menuBackground: 'rgba(255, 255, 255, 0.98)',
+  menuShadow: 'rgba(0, 0, 0, 0.12)',
   alertBackground: '#F8F9FA',
 
+  // Glass effects (use sparingly - map overlay only)
   glassTintLight: 'rgba(255, 255, 255, 0.7)',
   glassTintDark: 'rgba(0, 0, 0, 0.5)',
   glassTintMale: 'rgba(107, 182, 255, 0.4)',
   glassTintFemale: 'rgba(192, 132, 252, 0.4)',
   glassTintNeutral: 'rgba(224, 242, 254, 0.5)',
-  
   liquidGlassMale: 'rgba(107, 182, 255, 0.25)',
   liquidGlassFemale: 'rgba(192, 132, 252, 0.25)',
   liquidGlassNeutral: 'rgba(255, 255, 255, 0.25)',
