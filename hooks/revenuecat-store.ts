@@ -161,24 +161,36 @@ export const [RevenueCatContext, useRevenueCat] = createContextHook(() => {
 
       await revenueCatService.configure(apiKey, user?.id);
 
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 800));
 
-      if (user?.email) {
-        await revenueCatService.setEmail(user.email);
-        await new Promise(resolve => setTimeout(resolve, 300));
+      try {
+        if (user?.email) {
+          await revenueCatService.setEmail(user.email);
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      } catch (err) {
+        console.log('⚠️ Failed to set email, continuing...', err);
       }
 
-      if (user?.phoneNumber) {
-        await revenueCatService.setPhoneNumber(user.phoneNumber);
-        await new Promise(resolve => setTimeout(resolve, 300));
+      try {
+        if (user?.phoneNumber) {
+          await revenueCatService.setPhoneNumber(user.phoneNumber);
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      } catch (err) {
+        console.log('⚠️ Failed to set phone number, continuing...', err);
       }
 
-      if (user?.id) {
-        await revenueCatService.setAttributes({
-          userId: user.id,
-          displayName: user.name || null,
-        });
-        await new Promise(resolve => setTimeout(resolve, 300));
+      try {
+        if (user?.id) {
+          await revenueCatService.setAttributes({
+            userId: user.id,
+            displayName: user.name || null,
+          });
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      } catch (err) {
+        console.log('⚠️ Failed to set attributes, continuing...', err);
       }
 
       await loadOfferings();
@@ -199,7 +211,7 @@ export const [RevenueCatContext, useRevenueCat] = createContextHook(() => {
       });
       setState(prev => ({
         ...prev,
-        isReady: false,
+        isReady: true,
         isLoading: false,
         error: errorMessage,
       }));
@@ -209,10 +221,11 @@ export const [RevenueCatContext, useRevenueCat] = createContextHook(() => {
   }, [user?.id, user?.email, user?.phoneNumber, user?.name, loadOfferings, loadCustomerInfo, isInitializing]);
 
   useEffect(() => {
-    if (user) {
+    if (user?.id && !isInitializing && !state.isReady) {
       initialize();
     }
-  }, [user, initialize]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, isInitializing, state.isReady]);
 
   const purchasePackage = useCallback(async (pkg: PurchasesPackage): Promise<{
     success: boolean;

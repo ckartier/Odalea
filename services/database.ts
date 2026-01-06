@@ -285,25 +285,17 @@ export const petService = {
       const q = query(petsRef, limit(50));
       
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
+      const pets = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Pet[];
+      
+      console.log(`✅ Loaded ${pets.length} nearby pets`);
+      return pets;
     } catch (error: any) {
-      let errorMessage = 'Unknown error';
-      try {
-        if (error?.message) {
-          errorMessage = String(error.message);
-        } else if (error?.code) {
-          errorMessage = `Firebase error: ${String(error.code)}`;
-        }
-      } catch {
-        errorMessage = 'Error parsing error message';
-      }
-      console.error('❌ Error getting nearby pets:', errorMessage);
+      console.error('❌ Error getting nearby pets:', error);
       if (isPermissionDenied(error)) {
         console.log('🔒 Returning empty pets due to permission rules');
-        return [];
       }
       return [];
     }
