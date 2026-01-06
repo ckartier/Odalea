@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Pet, User } from '@/types';
 import { collection, getDocs, limit, query, doc, getDoc } from 'firebase/firestore';
-import { db } from '@/services/firebase';
+import { db, auth } from '@/services/firebase';
 import { safeJsonParse } from '@/lib/safe-json';
 
 export const [PetsContext, usePets] = createContextHook(() => {
@@ -32,39 +32,51 @@ export const [PetsContext, usePets] = createContextHook(() => {
   }, []);
 
   const allPetsQuery = useQuery({
-    queryKey: ['allPets-firestore'],
+    queryKey: ['allPets-firestore', auth.currentUser?.uid],
     queryFn: async () => {
-      const petsRef = collection(db, 'pets');
-      const q = query(petsRef, limit(50));
-      const snap = await getDocs(q);
-      const items: Pet[] = snap.docs.map(d => {
-        const data: any = d.data();
-        const pet: Pet = {
-          id: String(d.id),
-          ownerId: String(data?.ownerId ?? ''),
-          name: String(data?.name ?? 'Animal'),
-          type: String(data?.type ?? data?.species ?? 'cat'),
-          breed: String(data?.breed ?? ''),
-          gender: (data?.gender === 'male' || data?.gender === 'female') ? data.gender : 'male',
-          dateOfBirth: String(data?.dateOfBirth ?? '2018-01-01'),
-          color: String(data?.color ?? ''),
-          character: Array.isArray(data?.character) ? data.character : [],
-          distinctiveSign: data?.distinctiveSign,
-          vaccinationDates: Array.isArray(data?.vaccinationDates) ? data.vaccinationDates : [],
-          microchipNumber: data?.microchipNumber,
-          mainPhoto: String(data?.mainPhoto ?? data?.photoURL ?? 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131'),
-          galleryPhotos: Array.isArray(data?.galleryPhotos) ? data.galleryPhotos : [],
-          vet: data?.vet,
-          walkTimes: Array.isArray(data?.walkTimes) ? data.walkTimes : [],
-          isPrimary: Boolean(data?.isPrimary ?? false),
-          location: data?.location && typeof data.location.latitude === 'number' && typeof data.location.longitude === 'number'
-            ? { latitude: data.location.latitude, longitude: data.location.longitude }
-            : undefined,
-        };
-        return pet;
-      });
-      return items;
+      if (!auth.currentUser) {
+        console.log('⚠️ Skipping pets query - user not authenticated');
+        return [];
+      }
+
+      try {
+        const petsRef = collection(db, 'pets');
+        const q = query(petsRef, limit(50));
+        const snap = await getDocs(q);
+        const items: Pet[] = snap.docs.map(d => {
+          const data: any = d.data();
+          const pet: Pet = {
+            id: String(d.id),
+            ownerId: String(data?.ownerId ?? ''),
+            name: String(data?.name ?? 'Animal'),
+            type: String(data?.type ?? data?.species ?? 'cat'),
+            breed: String(data?.breed ?? ''),
+            gender: (data?.gender === 'male' || data?.gender === 'female') ? data.gender : 'male',
+            dateOfBirth: String(data?.dateOfBirth ?? '2018-01-01'),
+            color: String(data?.color ?? ''),
+            character: Array.isArray(data?.character) ? data.character : [],
+            distinctiveSign: data?.distinctiveSign,
+            vaccinationDates: Array.isArray(data?.vaccinationDates) ? data.vaccinationDates : [],
+            microchipNumber: data?.microchipNumber,
+            mainPhoto: String(data?.mainPhoto ?? data?.photoURL ?? 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131'),
+            galleryPhotos: Array.isArray(data?.galleryPhotos) ? data.galleryPhotos : [],
+            vet: data?.vet,
+            walkTimes: Array.isArray(data?.walkTimes) ? data.walkTimes : [],
+            isPrimary: Boolean(data?.isPrimary ?? false),
+            location: data?.location && typeof data.location.latitude === 'number' && typeof data.location.longitude === 'number'
+              ? { latitude: data.location.latitude, longitude: data.location.longitude }
+              : undefined,
+          };
+          return pet;
+        });
+        console.log(`✅ Loaded ${items.length} pets from Firestore`);
+        return items;
+      } catch (error) {
+        console.error('❌ Error getting nearby pets:', error);
+        return [];
+      }
     },
+    enabled: !!auth.currentUser,
   });
 
   useEffect(() => {

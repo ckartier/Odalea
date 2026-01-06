@@ -33,6 +33,7 @@ import { usePremium } from '@/hooks/premium-store';
 import { Pet, User } from '@/types';
 import { useQuery } from '@tanstack/react-query';
 import { petService, userService, petSitterService } from '@/services/database';
+import { auth } from '@/services/firebase';
 import { getBlurredPetLocation, calculateDistance } from '@/services/location-privacy';
 import { track } from '@/services/tracking';
 import { useFriends } from '@/hooks/friends-store';
@@ -394,36 +395,47 @@ export default function MapScreen() {
   });
 
   const catSittersQuery = useQuery({
-    queryKey: ['map', 'catSitters'],
+    queryKey: ['map', 'catSitters', auth.currentUser?.uid],
     queryFn: async () => {
-      console.log('🔄 Fetching cat sitters from Firestore');
-      const profiles = await petSitterService.getAllProfiles(100);
-      console.log(`✅ Loaded ${profiles.length} cat sitters from Firestore`);
-      
-      const catSittersWithUsers = await Promise.all(
-        profiles.map(async (profile) => {
-          if (!profile.userId || profile.userId.includes('paris-') || profile.userId.includes('test')) {
-            console.log(`🚫 Skipping mock cat sitter: ${profile.userId}`);
-            return null;
-          }
-          try {
-            const user = await userService.getUser(profile.userId);
-            if (user?.id.includes('paris-') || user?.id.includes('test')) {
-              console.log(`🚫 Skipping mock user: ${user.id}`);
+      if (!auth.currentUser) {
+        console.log('⚠️ Skipping cat sitters query - user not authenticated');
+        return [];
+      }
+
+      try {
+        console.log('🔄 Fetching cat sitters from Firestore');
+        const profiles = await petSitterService.getAllProfiles(100);
+        console.log(`✅ Loaded ${profiles.length} cat sitters from Firestore`);
+        
+        const catSittersWithUsers = await Promise.all(
+          profiles.map(async (profile) => {
+            if (!profile.userId || profile.userId.includes('paris-') || profile.userId.includes('test')) {
+              console.log(`🚫 Skipping mock cat sitter: ${profile.userId}`);
               return null;
             }
-            return { ...profile, user };
-          } catch (error) {
-            console.error(`❌ Error fetching user for cat sitter ${profile.userId}:`, error);
-            return null;
-          }
-        })
-      );
-      
-      return catSittersWithUsers.filter(
-        (cs) => cs && cs.user && cs.user.location?.latitude && cs.user.location?.longitude
-      ) as { user: User; isActive: boolean; radiusKm: number }[];
+            try {
+              const user = await userService.getUser(profile.userId);
+              if (user?.id.includes('paris-') || user?.id.includes('test')) {
+                console.log(`🚫 Skipping mock user: ${user.id}`);
+                return null;
+              }
+              return { ...profile, user };
+            } catch (error) {
+              console.error(`❌ Error fetching user for cat sitter ${profile.userId}:`, error);
+              return null;
+            }
+          })
+        );
+        
+        return catSittersWithUsers.filter(
+          (cs) => cs && cs.user && cs.user.location?.latitude && cs.user.location?.longitude
+        ) as { user: User; isActive: boolean; radiusKm: number }[];
+      } catch (error) {
+        console.error('❌ Error fetching cat sitters:', error);
+        return [];
+      }
     },
+    enabled: !!auth.currentUser,
     refetchInterval: 30000,
     staleTime: 10000,
   });
