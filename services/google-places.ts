@@ -44,26 +44,48 @@ class GooglePlacesService {
     radiusMeters: number = 5000
   ): Promise<GooglePlace[]> {
     if (!this.apiKey) {
-      console.error('[GooglePlaces] API key not configured');
+      console.error('[GooglePlaces] ❌ EXPO_PUBLIC_GOOGLE_PLACES_API_KEY is missing!');
+      console.error('[GooglePlaces] Configure it in your .env file');
       return [];
     }
 
     try {
       const placeType = PLACE_TYPE_MAPPING[type];
-      console.log(`[GooglePlaces] Searching for ${placeType} near ${location.latitude},${location.longitude}`);
+      console.log(`[GooglePlaces] 🔍 Searching for ${placeType} near ${location.latitude},${location.longitude}`);
 
       const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${location.latitude},${location.longitude}&radius=${radiusMeters}&type=${placeType}&key=${this.apiKey}`;
 
+      console.log(`[GooglePlaces] 📡 Request URL: ${url.replace(this.apiKey, 'API_KEY_HIDDEN')}`);
       const response = await fetch(url);
+      
+      if (!response.ok) {
+        console.error(`[GooglePlaces] ❌ HTTP error: ${response.status} ${response.statusText}`);
+        return [];
+      }
+      
       const data = await response.json();
+      
+      console.log(`[GooglePlaces] 📊 API Response:`, {
+        status: data.status,
+        error_message: data.error_message || 'none',
+        results_count: data.results?.length || 0,
+        html_attributions: data.html_attributions?.length || 0
+      });
 
       if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-        console.error('[GooglePlaces] API error:', data.status, data.error_message);
+        console.error('[GooglePlaces] ❌ API error:', data.status, data.error_message);
+        if (data.status === 'REQUEST_DENIED') {
+          console.error('[GooglePlaces] 💡 Possible causes:');
+          console.error('  - API key invalid or expired');
+          console.error('  - Places API not enabled in Google Cloud Console');
+          console.error('  - API key restrictions (HTTP referrers, bundle IDs)');
+        }
         return [];
       }
 
       if (!data.results || data.results.length === 0) {
-        console.log(`[GooglePlaces] No results found for ${placeType}`);
+        console.log(`[GooglePlaces] ⚠️ No results found for ${placeType}`);
+        console.log(`[GooglePlaces] 💡 Try increasing radius or checking location`);
         return [];
       }
 
@@ -84,10 +106,11 @@ class GooglePlacesService {
         } : undefined,
       }));
 
-      console.log(`[GooglePlaces] Found ${places.length} ${placeType} places`);
+      console.log(`[GooglePlaces] ✅ Found ${places.length} ${placeType} places`);
       return places;
-    } catch (error) {
-      console.error('[GooglePlaces] Search error:', error);
+    } catch (error: any) {
+      console.error('[GooglePlaces] ❌ Search error:', error?.message || error);
+      console.error('[GooglePlaces] Stack:', error?.stack?.substring(0, 300));
       return [];
     }
   }

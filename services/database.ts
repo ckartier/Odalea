@@ -1627,19 +1627,39 @@ export const messagingService = {
 
 // Friend Request Services
 export const friendRequestService = {
-  // Send friend request
+  // Send friend request (idempotent)
   async sendFriendRequest(senderId: string, receiverId: string): Promise<string> {
     try {
-      const friendRequestsRef = collection(db, COLLECTIONS.FRIEND_REQUESTS);
-      const docRef = await addDoc(friendRequestsRef, {
+      // Create idempotent docId: alphabetically sorted UIDs
+      const docId = [senderId, receiverId].sort().join('_');
+      const friendRequestRef = doc(db, COLLECTIONS.FRIEND_REQUESTS, docId);
+      
+      console.log('🔄 Sending friend request with docId:', docId);
+      
+      // Check if request already exists
+      const existingRequest = await getDoc(friendRequestRef);
+      if (existingRequest.exists()) {
+        const data = existingRequest.data();
+        if (data.status === 'pending') {
+          console.log('⚠️ Friend request already exists (pending)');
+          throw new Error('Demande d\'ami déjà envoyée');
+        } else if (data.status === 'accepted') {
+          console.log('⚠️ Users are already friends');
+          throw new Error('Vous êtes déjà amis');
+        }
+        // If rejected, allow to re-send by updating
+      }
+      
+      // Create or update request
+      await setDoc(friendRequestRef, {
         senderId,
         receiverId,
         status: 'pending',
         timestamp: serverTimestamp()
-      });
+      }, { merge: true });
       
-      console.log('✅ Friend request sent successfully');
-      return docRef.id;
+      console.log('✅ Friend request sent successfully (idempotent)');
+      return docId;
     } catch (error) {
       console.error('❌ Error sending friend request:', error);
       throw error;

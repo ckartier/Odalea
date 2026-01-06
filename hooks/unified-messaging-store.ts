@@ -1,7 +1,6 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useMessaging } from '@/hooks/messaging-store';
-import { useCatSitter, CatSitterMessage } from '@/hooks/cat-sitter-store';
-import { useAuth } from '@/hooks/user-store';
+import { useCatSitter } from '@/hooks/cat-sitter-store';
 
 export interface UnifiedMessage {
   id: string;
@@ -28,7 +27,6 @@ export interface UnifiedConversation {
 }
 
 export const [UnifiedMessagingContext, useUnifiedMessaging] = createContextHook(() => {
-  const { user } = useAuth();
   const { conversations, getConversationUser } = useMessaging();
   const { messages: catSitterMessages, markMessageAsRead } = useCatSitter();
 
@@ -116,7 +114,9 @@ export const [UnifiedMessagingContext, useUnifiedMessaging] = createContextHook(
         .sort((a, b) => a.timestamp - b.timestamp);
     }
     
-    // Handle regular conversations here if needed
+    // Handle regular conversations from messaging store
+    // Note: messagesByConv should be exposed from useMessaging
+    // For now, return empty until messaging-store exposes messages
     return [];
   };
 
