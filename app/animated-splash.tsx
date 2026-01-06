@@ -83,9 +83,11 @@ export default function AnimatedSplashScreen() {
   const hideNativeSplash = useCallback(async () => {
     try {
       console.log('[AnimatedSplash] hide native splash');
-      await SplashScreen.hideAsync();
+      if (Platform.OS !== 'web') {
+        await SplashScreen.hideAsync();
+      }
     } catch (e: unknown) {
-      console.log('[AnimatedSplash] hideAsync failed', e);
+      console.log('[AnimatedSplash] hideAsync failed (safe to ignore)', e);
     }
   }, []);
 
