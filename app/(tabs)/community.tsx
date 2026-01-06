@@ -10,22 +10,30 @@ import {
   Platform,
   Alert,
   ListRenderItem,
+  TextInput,
+  ScrollView,
+  Image,
 } from 'react-native';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
-import { COLORS, SHADOWS, DIMENSIONS } from '@/constants/colors';
+import { COLORS, DIMENSIONS } from '@/constants/colors';
 import { TYPOGRAPHY } from '@/constants/typography';
 
 import { useSocial } from '@/hooks/social-store';
 import { usePremium } from '@/hooks/premium-store';
+import { usePets } from '@/hooks/pets-store';
+import { useUnifiedMessaging } from '@/hooks/unified-messaging-store';
+import { useActivePet } from '@/hooks/active-pet-store';
+import BottomSheet from '@/components/BottomSheet';
+import { ENDEL } from '@/constants/endel';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { PostCard } from '@/components/PostCard';
 import ProCard from '@/components/ProCard';
-import { SegmentedControl, SegmentOption } from '@/components/SegmentedControl';
+
 import EmptyState from '@/components/EmptyState';
-import { Plus, Filter } from 'lucide-react-native';
+import { Plus, Filter, Search, Inbox, X } from 'lucide-react-native';
 import { realtimeService, userService } from '@/services/database';
 import { Post, User } from '@/types';
 import { useQuery } from '@tanstack/react-query';
@@ -39,22 +47,15 @@ interface LocalComment {
   createdAt: Date;
 }
 
-interface FilterCount {
-  all: number;
-  lost: number;
-  found: number;
-  challenges: number;
-  pros: number;
-}
+type FilterType = 'all' | 'lost' | 'found' | 'challenges' | 'pros' | 'friends';
 
-type FilterType = 'all' | 'lost' | 'found' | 'challenges' | 'pros';
-
-const FILTER_OPTIONS: SegmentOption<FilterType>[] = [
+const FILTER_OPTIONS: { key: FilterType; label: string }[] = [
   { key: 'all', label: 'Tout' },
   { key: 'lost', label: 'Perdus' },
   { key: 'found', label: 'Trouvés' },
   { key: 'challenges', label: 'Défis' },
   { key: 'pros', label: 'Pros' },
+  { key: 'friends', label: 'Amis' },
 ];
 
 export default function CommunityScreen() {
@@ -62,6 +63,11 @@ export default function CommunityScreen() {
   const insets = useSafeAreaInsets();
   const { petId } = useLocalSearchParams<{ petId?: string }>();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState<boolean>(false);
+  const { userPets } = usePets();
+  const { getUnreadCount } = useUnifiedMessaging();
+  const { activePet } = useActivePet();
   const {
     posts,
     isLoading,
@@ -214,40 +220,16 @@ export default function CommunityScreen() {
     );
   }, [deletePost]);
 
-  const filterCounts = useMemo<FilterCount>(() => {
-    const counts: FilterCount = {
-      all: posts.length,
-      lost: 0,
-      found: 0,
-      challenges: 0,
-      pros: 0,
-    };
-    
-    posts.forEach(post => {
-      if (post.type === 'lost') counts.lost++;
-      if (post.type === 'found') counts.found++;
-      if (post.type === 'challenge') counts.challenges++;
-      if (post.type === 'professional' || post.isProPost) counts.pros++;
-    });
-    
-    return counts;
-  }, [posts]);
-
-  const segmentOptions = useMemo<SegmentOption<FilterType>[]>(() => 
-    FILTER_OPTIONS.map(opt => ({
-      ...opt,
-      count: filterCounts[opt.key],
-      badge: opt.key === 'pros' && !isPremium ? '👑' : undefined,
-      disabled: opt.key === 'pros' && !isPremium,
-    })),
-  [filterCounts, isPremium]);
-
   const handleFilterChange = useCallback((filterKey: FilterType) => {
     if (filterKey === 'pros' && !isPremium) {
       showPremiumPrompt('filters');
       return;
     }
     setActiveFilter(filterKey);
+    setIsFilterSheetOpen(false);
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+    }
   }, [isPremium, showPremiumPrompt]);
 
   const professionalsQuery = useQuery({
@@ -279,6 +261,16 @@ export default function CommunityScreen() {
       filtered = posts.filter(p => p.type === 'challenge');
     } else if (activeFilter === 'pros') {
       filtered = posts.filter(p => p.type === 'professional' || p.isProPost);
+    } else if (activeFilter === 'friends') {
+      filtered = posts.filter(p => !p.type || p.type === 'photo' || p.type === 'text' || p.type === 'video');
+    }
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(p => 
+        p.content.toLowerCase().includes(query) ||
+        p.authorName.toLowerCase().includes(query)
+      );
     }
 
     if (!isPremium && activeFilter === 'pros') {
@@ -286,7 +278,7 @@ export default function CommunityScreen() {
     }
 
     return filtered;
-  }, [posts, activeFilter, isPremium, petId]);
+  }, [posts, activeFilter, isPremium, petId, searchQuery]);
 
   const itemsToRender = useMemo(() => {
     const professionals = professionalsQuery.data ?? [];
@@ -350,20 +342,142 @@ export default function CommunityScreen() {
     );
   }, [comments, expandedPostId, user?.id, handleLike, handleSubmitComment, handleShare, handleDeletePost, handleReportPost, handleBlockUser, isTogglingLike, isAddingComment, isDeletingPost, isCommentsLoading, isPostLiked, handleToggleComments, getDistance]);
 
+  const urgentPosts = useMemo(() => {
+    return posts.filter(p => (p.type === 'lost' || p.type === 'found') && p.location).slice(0, 5);
+  }, [posts]);
+
+  const recommendedPros = useMemo(() => {
+    return (professionalsQuery.data || []).slice(0, 3);
+  }, [professionalsQuery.data]);
+
+  const unreadCount = getUnreadCount();
+
+  const renderPetStories = useCallback(() => {
+    if (userPets.length === 0) return null;
+
+    return (
+      <View style={styles.storiesContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storiesScroll}>
+          {userPets.map(pet => (
+            <TouchableOpacity
+              key={pet.id}
+              style={styles.storyItem}
+              onPress={() => router.push(`/pet/${pet.id}`)}
+            >
+              <View style={[styles.storyRing, activePet?.id === pet.id && styles.storyRingActive]}>
+                <Image source={{ uri: pet.mainPhoto }} style={styles.storyImage} />
+              </View>
+              <Text style={styles.storyName} numberOfLines={1}>{pet.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  }, [userPets, activePet]);
+
+  const renderUrgentCarousel = useCallback(() => {
+    if (urgentPosts.length === 0 || activeFilter !== 'all') return null;
+
+    return (
+      <View style={styles.urgentSection}>
+        <Text style={styles.sectionTitle}>🚨 Urgent près de toi</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.urgentScroll}>
+          {urgentPosts.map(post => (
+            <TouchableOpacity
+              key={post.id}
+              style={styles.urgentCard}
+              onPress={() => {
+                if (post.type === 'lost' || post.type === 'found') {
+                  router.push(`/lost-found/${post.id.replace('lost-', '')}`);
+                }
+              }}
+            >
+              {post.images && post.images[0] && (
+                <Image source={{ uri: post.images[0] }} style={styles.urgentImage} />
+              )}
+              <View style={[styles.urgentBadge, post.type === 'found' && styles.foundBadge]}>
+                <Text style={styles.urgentBadgeText}>
+                  {post.type === 'found' ? 'TROUVÉ' : 'PERDU'}
+                </Text>
+              </View>
+              <View style={styles.urgentInfo}>
+                <Text style={styles.urgentName} numberOfLines={1}>{post.authorName}</Text>
+                {post.location?.name && (
+                  <Text style={styles.urgentLocation} numberOfLines={1}>{post.location.name}</Text>
+                )}
+              </View>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  }, [urgentPosts, activeFilter]);
+
+  const renderRecommendedPros = useCallback(() => {
+    if (recommendedPros.length === 0 || activeFilter !== 'all' || filteredPosts.length > 10) return null;
+
+    return (
+      <View style={styles.prosSection}>
+        <Text style={styles.sectionTitle}>💼 Professionnels recommandés</Text>
+        {recommendedPros.map((pro, idx) => {
+          const distance = getDistance(pro.location);
+          return (
+            <ProCard 
+              key={`rec-pro-${pro.id}-${idx}`}
+              professional={pro} 
+              distance={distance}
+            />
+          );
+        })}
+      </View>
+    );
+  }, [recommendedPros, activeFilter, filteredPosts.length, getDistance]);
+
   const renderHeader = useCallback(() => (
-    <View style={styles.headerContainer}>
-      <SegmentedControl<FilterType>
-        options={segmentOptions}
-        activeKey={activeFilter}
-        onChange={handleFilterChange}
-        style={styles.segmentedControl}
-      />
+    <View>
+      {renderPetStories()}
       
+      <View style={styles.filtersRow}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          contentContainerStyle={styles.chipsScroll}
+        >
+          {FILTER_OPTIONS.map(opt => (
+            <TouchableOpacity
+              key={opt.key}
+              style={[
+                styles.chip,
+                activeFilter === opt.key && styles.chipActive
+              ]}
+              onPress={() => handleFilterChange(opt.key)}
+            >
+              <Text style={[
+                styles.chipText,
+                activeFilter === opt.key && styles.chipTextActive
+              ]}>
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+        
+        <TouchableOpacity 
+          style={styles.filterButton}
+          onPress={() => setIsFilterSheetOpen(true)}
+        >
+          <Filter size={20} color={ENDEL.colors.text} />
+        </TouchableOpacity>
+      </View>
+
+      {renderUrgentCarousel()}
+      {renderRecommendedPros()}
+
       {!isPremium && activeFilter === 'pros' && (
         <View style={styles.premiumUpsellCard}>
           <Text style={styles.upsellTitle}>Contenu Premium 👑</Text>
           <Text style={styles.upsellText}>
-            Débloquez l&apos;accès illimité aux posts des professionnels et découvrez leurs offres exclusives.
+            Débloquez l&apos;accès illimité aux posts des professionnels.
           </Text>
           <TouchableOpacity 
             style={styles.upsellButton}
@@ -374,7 +488,7 @@ export default function CommunityScreen() {
         </View>
       )}
     </View>
-  ), [segmentOptions, activeFilter, isPremium, handleFilterChange]);
+  ), [activeFilter, isPremium, handleFilterChange, renderPetStories, renderUrgentCarousel, renderRecommendedPros]);
 
   const renderEmpty = useCallback(() => {
     if (isLoading && posts.length === 0) {
@@ -421,6 +535,45 @@ export default function CommunityScreen() {
 
   return (
     <View style={styles.screen}>
+      <View style={[styles.stickyHeader, { paddingTop: insets.top + 8 }]}>
+        <View style={styles.searchRow}>
+          <View style={styles.searchBar}>
+            <Search size={18} color={ENDEL.colors.textSecondary} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Rechercher..."
+              placeholderTextColor={ENDEL.colors.textSecondary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <X size={18} color={ENDEL.colors.textSecondary} />
+              </TouchableOpacity>
+            )}
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.headerIcon}
+            onPress={() => router.push('/messages')}
+          >
+            <Inbox size={24} color={ENDEL.colors.text} />
+            {unreadCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.headerIcon}
+            onPress={handleCreatePost}
+          >
+            <Plus size={24} color={ENDEL.colors.text} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <FlatList
         data={itemsToRender}
         renderItem={renderPost}
@@ -430,7 +583,7 @@ export default function CommunityScreen() {
         ListFooterComponent={renderFooter}
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingTop: 120 + insets.top }]}
         removeClippedSubviews={Platform.OS === 'android'}
         maxToRenderPerBatch={5}
         updateCellsBatchingPeriod={50}
@@ -438,19 +591,32 @@ export default function CommunityScreen() {
         windowSize={5}
       />
 
-      <TouchableOpacity
-        style={[
-          styles.fab,
-          { bottom: insets.bottom + 24 },
-        ]}
-        onPress={handleCreatePost}
-        activeOpacity={0.9}
-        testID="fab-create-post"
-        accessibilityLabel="Create post"
-        accessibilityRole="button"
+      <BottomSheet
+        isOpen={isFilterSheetOpen}
+        onClose={() => setIsFilterSheetOpen(false)}
+        size="compact"
       >
-        <Plus size={28} color={COLORS.white} />
-      </TouchableOpacity>
+        <Text style={styles.sheetTitle}>Filtres</Text>
+        <View style={styles.sheetFilters}>
+          {FILTER_OPTIONS.map(opt => (
+            <TouchableOpacity
+              key={opt.key}
+              style={[
+                styles.sheetFilterItem,
+                activeFilter === opt.key && styles.sheetFilterItemActive
+              ]}
+              onPress={() => handleFilterChange(opt.key)}
+            >
+              <Text style={[
+                styles.sheetFilterText,
+                activeFilter === opt.key && styles.sheetFilterTextActive
+              ]}>
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </BottomSheet>
     </View>
   );
 }
@@ -459,6 +625,195 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: COLORS.white,
+  },
+  stickyHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: ENDEL.colors.border,
+    paddingHorizontal: ENDEL.spacing.md,
+    paddingBottom: ENDEL.spacing.sm,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ENDEL.spacing.sm,
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: ENDEL.colors.borderSubtle,
+    borderRadius: ENDEL.radii.pill,
+    paddingHorizontal: ENDEL.spacing.md,
+    height: 44,
+    gap: ENDEL.spacing.sm,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: ENDEL.colors.text,
+  },
+  headerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: ENDEL.colors.borderSubtle,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: COLORS.error,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: COLORS.white,
+  },
+  storiesContainer: {
+    marginBottom: ENDEL.spacing.md,
+  },
+  storiesScroll: {
+    paddingHorizontal: ENDEL.spacing.md,
+    gap: ENDEL.spacing.md,
+  },
+  storyItem: {
+    alignItems: 'center',
+    width: 70,
+  },
+  storyRing: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2,
+    borderColor: ENDEL.colors.border,
+    padding: 2,
+    marginBottom: ENDEL.spacing.xs,
+  },
+  storyRingActive: {
+    borderColor: ENDEL.colors.accent,
+    borderWidth: 3,
+  },
+  storyImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 28,
+  },
+  storyName: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: ENDEL.colors.text,
+    textAlign: 'center',
+  },
+  filtersRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: ENDEL.spacing.md,
+  },
+  chipsScroll: {
+    paddingHorizontal: ENDEL.spacing.md,
+    gap: ENDEL.spacing.sm,
+  },
+  chip: {
+    paddingHorizontal: ENDEL.spacing.md,
+    paddingVertical: ENDEL.spacing.sm,
+    borderRadius: ENDEL.radii.pill,
+    backgroundColor: ENDEL.colors.borderSubtle,
+    minHeight: 36,
+    justifyContent: 'center',
+  },
+  chipActive: {
+    backgroundColor: ENDEL.colors.accent,
+  },
+  chipText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: ENDEL.colors.text,
+  },
+  chipTextActive: {
+    color: COLORS.white,
+  },
+  filterButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: ENDEL.colors.borderSubtle,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: ENDEL.spacing.md,
+  },
+  urgentSection: {
+    marginBottom: ENDEL.spacing.md,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '700' as const,
+    color: ENDEL.colors.text,
+    marginHorizontal: ENDEL.spacing.md,
+    marginBottom: ENDEL.spacing.sm,
+  },
+  urgentScroll: {
+    paddingHorizontal: ENDEL.spacing.md,
+    gap: ENDEL.spacing.sm,
+  },
+  urgentCard: {
+    width: 140,
+    borderRadius: ENDEL.radii.card,
+    backgroundColor: COLORS.white,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: ENDEL.colors.border,
+  },
+  urgentImage: {
+    width: '100%',
+    height: 140,
+    backgroundColor: ENDEL.colors.borderSubtle,
+  },
+  urgentBadge: {
+    position: 'absolute',
+    top: ENDEL.spacing.sm,
+    left: ENDEL.spacing.sm,
+    backgroundColor: COLORS.error,
+    paddingHorizontal: ENDEL.spacing.sm,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  foundBadge: {
+    backgroundColor: COLORS.success,
+  },
+  urgentBadgeText: {
+    fontSize: 10,
+    fontWeight: '700' as const,
+    color: COLORS.white,
+  },
+  urgentInfo: {
+    padding: ENDEL.spacing.sm,
+  },
+  urgentName: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: ENDEL.colors.text,
+    marginBottom: 2,
+  },
+  urgentLocation: {
+    fontSize: 12,
+    color: ENDEL.colors.textSecondary,
+  },
+  prosSection: {
+    marginBottom: ENDEL.spacing.md,
   },
   headerContainer: {
     backgroundColor: COLORS.white,
@@ -507,17 +862,31 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body3,
     color: COLORS.textSecondary,
   },
-  fab: {
-    position: 'absolute',
-    right: DIMENSIONS.SPACING.lg,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
+  sheetTitle: {
+    ...ENDEL.typography.title,
+    marginBottom: ENDEL.spacing.md,
+  },
+  sheetFilters: {
+    gap: ENDEL.spacing.sm,
+  },
+  sheetFilterItem: {
+    paddingVertical: ENDEL.spacing.md,
+    paddingHorizontal: ENDEL.spacing.lg,
+    borderRadius: ENDEL.radii.card,
+    backgroundColor: ENDEL.colors.borderSubtle,
+    minHeight: 52,
     justifyContent: 'center',
-    ...SHADOWS.large,
-    elevation: 8,
+  },
+  sheetFilterItemActive: {
+    backgroundColor: ENDEL.colors.accent,
+  },
+  sheetFilterText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: ENDEL.colors.text,
+  },
+  sheetFilterTextActive: {
+    color: COLORS.white,
   },
   loadingContainer: {
     flex: 1,
