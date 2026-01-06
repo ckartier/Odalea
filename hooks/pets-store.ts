@@ -73,16 +73,17 @@ export const [PetsContext, usePets] = createContextHook(() => {
         return items;
       } catch (error: any) {
         let errorMessage = 'Unknown error';
-        try {
-          if (error?.message) {
-            errorMessage = String(error.message);
-          } else if (error?.code) {
-            errorMessage = `Firebase error: ${String(error.code)}`;
-          }
-        } catch {
-          errorMessage = 'Error parsing error message';
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        } else if (error?.code) {
+          errorMessage = `Firebase error: ${error.code}`;
+        } else if (error?.message) {
+          errorMessage = error.message;
         }
         console.error('❌ Error getting nearby pets:', errorMessage);
+        console.error('Full error:', error);
         return [];
       }
     },
