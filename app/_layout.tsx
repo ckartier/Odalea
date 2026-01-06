@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import type { NativeStackHeaderProps } from '@react-navigation/native-stack';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -70,6 +70,7 @@ const RootLayoutNav = React.memo(() => {
   return (
     <Stack screenOptions={screenOptions}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="animated-splash" options={{ headerShown: false }} />
       <Stack.Screen name="splash" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding-setup" options={{ headerShown: false }} />
@@ -200,10 +201,6 @@ function RootLayoutInner() {
 }
 
 export default function RootLayout() {
-  useEffect(() => {
-    SplashScreen.hideAsync();
-  }, []);
-
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
