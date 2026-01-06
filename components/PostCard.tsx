@@ -454,12 +454,12 @@ const styles = StyleSheet.create({
   },
   postImage: {
     width: '100%',
-    height: 200,
+    aspectRatio: 5 / 4,
     borderRadius: DIMENSIONS.SPACING.sm + 4,
   },
   multipleImages: {
     width: '48%',
-    height: 150,
+    aspectRatio: 5 / 4,
   },
   viewAllPhotosButton: {
     paddingVertical: DIMENSIONS.SPACING.xs + 2,

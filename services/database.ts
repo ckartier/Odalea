@@ -2249,13 +2249,13 @@ export const bookingService = {
     }
   },
 
-  // Get bookings by user
+  // Get bookings by user (as client)
   async getBookingsByUser(userId: string): Promise<any[]> {
     try {
       const bookingsRef = collection(db, COLLECTIONS.BOOKINGS);
       const q = query(
         bookingsRef,
-        where('userId', '==', userId)
+        where('clientId', '==', userId)
       );
       
       const querySnapshot = await getDocs(q);

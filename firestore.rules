@@ -72,7 +72,7 @@ service cloud.firestore {
     match /messages/{messageId} {
       allow read: if isAuth();
       allow create: if isAuth() && request.resource.data.senderId == request.auth.uid;
-      allow update: if false;
+      allow update: if isAuth() && resource.data.senderId == request.auth.uid;
       allow delete: if false;
     }
     
@@ -94,10 +94,10 @@ service cloud.firestore {
     
     // Bookings collection
     match /bookings/{bookingId} {
-      allow read: if isAuth() && (resource.data.clientId == request.auth.uid || resource.data.catSitterId == request.auth.uid);
-      allow create: if isAuth() && request.resource.data.clientId == request.auth.uid;
-      allow update: if isAuth() && (resource.data.clientId == request.auth.uid || resource.data.catSitterId == request.auth.uid);
-      allow delete: if isAuth() && resource.data.clientId == request.auth.uid;
+      allow read: if isAuth() && (resource.data.clientId == request.auth.uid || resource.data.catSitterId == request.auth.uid || resource.data.userId == request.auth.uid);
+      allow create: if isAuth() && (request.resource.data.clientId == request.auth.uid || request.resource.data.userId == request.auth.uid);
+      allow update: if isAuth() && (resource.data.clientId == request.auth.uid || resource.data.catSitterId == request.auth.uid || resource.data.userId == request.auth.uid);
+      allow delete: if isAuth() && (resource.data.clientId == request.auth.uid || resource.data.userId == request.auth.uid);
     }
     
     // Reviews collection
@@ -194,8 +194,8 @@ service cloud.firestore {
     match /notifications/{notificationId} {
       allow read: if isAuth() && resource.data.userId == request.auth.uid;
       allow update: if isAuth() && resource.data.userId == request.auth.uid;
-      allow create: if false;
-      allow delete: if false;
+      allow create: if isAuth() && request.resource.data.userId != null;
+      allow delete: if isAuth() && resource.data.userId == request.auth.uid;
     }
     
     // Favorites collection
@@ -208,7 +208,7 @@ service cloud.firestore {
     
     // Reports collection (moderation)
     match /reports/{reportId} {
-      allow read: if isAuth();
+      allow read: if isAuth() && resource.data.reporterId == request.auth.uid;
       allow create: if isAuth() && request.resource.data.reporterId == request.auth.uid;
       allow update: if false;
       allow delete: if false;
