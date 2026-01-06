@@ -71,8 +71,18 @@ export const [PetsContext, usePets] = createContextHook(() => {
         });
         console.log(`✅ Loaded ${items.length} pets from Firestore`);
         return items;
-      } catch (error) {
-        console.error('❌ Error getting nearby pets:', error);
+      } catch (error: any) {
+        let errorMessage = 'Unknown error';
+        try {
+          if (error?.message) {
+            errorMessage = String(error.message);
+          } else if (error?.code) {
+            errorMessage = `Firebase error: ${String(error.code)}`;
+          }
+        } catch {
+          errorMessage = 'Error parsing error message';
+        }
+        console.error('❌ Error getting nearby pets:', errorMessage);
         return [];
       }
     },

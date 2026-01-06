@@ -290,7 +290,16 @@ export const petService = {
         ...doc.data()
       })) as Pet[];
     } catch (error: any) {
-      const errorMessage = error?.message || error?.toString() || 'Unknown error';
+      let errorMessage = 'Unknown error';
+      try {
+        if (error?.message) {
+          errorMessage = String(error.message);
+        } else if (error?.code) {
+          errorMessage = `Firebase error: ${String(error.code)}`;
+        }
+      } catch {
+        errorMessage = 'Error parsing error message';
+      }
       console.error('❌ Error getting nearby pets:', errorMessage);
       if (isPermissionDenied(error)) {
         console.log('🔒 Returning empty pets due to permission rules');
