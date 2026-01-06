@@ -274,6 +274,12 @@ export const petService = {
   // Get nearby pets
   async getNearbyPets(location: { lat: number; lng: number }, radiusKm = 10): Promise<Pet[]> {
     try {
+      const { auth } = await import('./firebase');
+      if (!auth.currentUser) {
+        console.log('⚠️ Skipping getNearbyPets - user not authenticated');
+        return [];
+      }
+      
       // For now, return all pets. In production, use geohash or similar for location queries
       const petsRef = collection(db, COLLECTIONS.PETS);
       const q = query(petsRef, limit(50));
@@ -285,6 +291,10 @@ export const petService = {
       })) as Pet[];
     } catch (error) {
       console.error('❌ Error getting nearby pets:', error);
+      if (isPermissionDenied(error)) {
+        console.log('🔒 Returning empty pets due to permission rules');
+        return [];
+      }
       throw error;
     }
   },
@@ -1337,6 +1347,12 @@ export const petSitterService = {
   },
   async getAllProfiles(limitCount = 100): Promise<any[]> {
     try {
+      const { auth } = await import('./firebase');
+      if (!auth.currentUser) {
+        console.log('⚠️ Skipping getAllProfiles - user not authenticated');
+        return [];
+      }
+      
       console.log('🔄 Fetching all cat sitter profiles');
       const profilesRef = collection(db, COLLECTIONS.PET_SITTER_PROFILES);
       const q = query(profilesRef, where('isActive', '==', true), limit(limitCount));
