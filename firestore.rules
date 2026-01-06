@@ -214,6 +214,32 @@ service cloud.firestore {
       allow delete: if false;
     }
     
+    // Moderation Actions collection (admin audit log)
+    match /moderationActions/{actionId} {
+      allow read: if isAuth();
+      allow write: if false;
+    }
+    
+    // User Flags collection (strikes, bans)
+    match /userFlags/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+    
+    // Moderation Queue collection (pending review items)
+    match /moderationQueue/{itemId} {
+      allow read: if isAuth();
+      allow write: if false;
+    }
+    
+    // Professional Verifications collection
+    match /professionalVerifications/{verificationId} {
+      allow read: if isAuth() && resource.data.userId == request.auth.uid;
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if false;
+      allow delete: if false;
+    }
+    
     // Blocked Users collection
     match /blockedUsers/{blockId} {
       allow read: if isAuth() && resource.data.blockerId == request.auth.uid;
