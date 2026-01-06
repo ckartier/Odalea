@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  FlatList, 
+import {
+  StyleSheet,
+  Text,
+  View,
+  FlatList,
   TouchableOpacity,
   RefreshControl,
   TextInput,
@@ -13,12 +13,13 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import { TYPOGRAPHY } from '@/constants/typography';
-import GlassCard from '@/components/GlassCard';
 import AppBackground from '@/components/AppBackground';
 import { useMessaging } from '@/hooks/messaging-store';
 import { useI18n } from '@/hooks/i18n-store';
-import { mockUsers } from '@/mocks/users';
 import { Bell, MessageCircle, UserCheck, UserPlus, Search, Filter } from 'lucide-react-native';
+import { useQuery } from '@tanstack/react-query';
+import { userService } from '@/services/database';
+import type { User } from '@/types';
 
 export default function MessagesScreen() {
   const router = useRouter();
@@ -31,6 +32,29 @@ export default function MessagesScreen() {
   const [unreadOnly, setUnreadOnly] = useState<boolean>(false);
   
   const pendingRequests = getPendingRequests();
+
+  const requestSenderIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const r of pendingRequests) ids.add(String(r.senderId));
+    return Array.from(ids);
+  }, [pendingRequests]);
+
+  const requestSendersQuery = useQuery({
+    queryKey: ['friendRequestSenders', requestSenderIds],
+    queryFn: async () => {
+      if (requestSenderIds.length === 0) return [] as User[];
+      console.log('[Messages] Loading friend request senders', requestSenderIds.length);
+      const data = await userService.getUsers(requestSenderIds);
+      return data;
+    },
+    enabled: requestSenderIds.length > 0,
+  });
+
+  const requestSendersById = useMemo(() => {
+    const map = new Map<string, User>();
+    for (const u of (requestSendersQuery.data ?? [])) map.set(u.id, u);
+    return map;
+  }, [requestSendersQuery.data]);
   const filteredConversations = useMemo(() => {
     const term = search.trim().toLowerCase();
     return conversations.filter(c => {
@@ -144,32 +168,36 @@ export default function MessagesScreen() {
     );
   };
   
-  const renderRequestItem = ({ item }: { item: typeof pendingRequests[0] }) => {
-    const sender = mockUsers.find(user => user.id === item.senderId) ?? { id: item.senderId, pseudo: 'User', pets: [{ mainPhoto: undefined }] } as any;
-    const avatarUri = sender.pets?.[0]?.mainPhoto || sender.photo || 'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=500';
-    
+  const renderRequestItem = ({ item }: { item: (typeof pendingRequests)[number] }) => {
+    const sender = requestSendersById.get(String(item.senderId));
+    const avatarUri =
+      sender?.pets?.[0]?.mainPhoto ||
+      sender?.photo ||
+      'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=500';
+
     return (
       <View style={styles.requestItem}>
         <View style={styles.requestLeft}>
-          <Image
-            source={{ uri: avatarUri }}
-            style={styles.requestAvatar}
-            contentFit="cover"
-          />
+          <Image source={{ uri: avatarUri }} style={styles.requestAvatar} contentFit="cover" />
           <View style={styles.requestInfo}>
-            <Text style={styles.requestName}>@{sender.pseudo}</Text>
+            <Text style={styles.requestName}>@{sender?.pseudo ?? 'Utilisateur'}</Text>
             <Text style={styles.requestTime}>{formatTime(toMillis(item.timestamp))}</Text>
             <Text style={styles.requestMessage}>Souhaite se connecter avec vous</Text>
           </View>
         </View>
-        
+
         <View style={styles.requestActions}>
           <TouchableOpacity
             testID="request-accept"
             style={styles.acceptButton}
             onPress={async () => {
               try {
-                await respondToFriendRequest.mutateAsync({ requestId: item.id, accept: true, senderId: item.senderId, receiverId: item.receiverId });
+                await respondToFriendRequest.mutateAsync({
+                  requestId: item.id,
+                  accept: true,
+                  senderId: item.senderId,
+                  receiverId: item.receiverId,
+                });
               } catch (e) {
                 console.log('[Messages] Accept request failed', e);
               }
@@ -177,13 +205,18 @@ export default function MessagesScreen() {
           >
             <UserCheck size={18} color={COLORS.white} />
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             testID="request-reject"
             style={styles.rejectButton}
             onPress={async () => {
               try {
-                await respondToFriendRequest.mutateAsync({ requestId: item.id, accept: false, senderId: item.senderId, receiverId: item.receiverId });
+                await respondToFriendRequest.mutateAsync({
+                  requestId: item.id,
+                  accept: false,
+                  senderId: item.senderId,
+                  receiverId: item.receiverId,
+                });
               } catch (e) {
                 console.log('[Messages] Reject request failed', e);
               }

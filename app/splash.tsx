@@ -1,350 +1,169 @@
-import React, { useEffect, useRef } from 'react';
-import { StyleSheet, View, Animated } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { DIMENSIONS } from '@/constants/colors';
-import { useAuth } from '@/hooks/auth-store';
+import { useRouter } from 'expo-router';
+
+import { ENDEL } from '@/constants/endel';
 import { useI18n } from '@/hooks/i18n-store';
+import { useAuth } from '@/hooks/auth-store';
+import { useOnboarding } from '@/hooks/onboarding-store';
 
-
+const LOGO_URI = 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/qg65dezpx8zrcqopuuggc';
 
 export default function SplashScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { isLoading: i18nLoading } = useI18n();
+  const { hasCompleted, isReady: onboardingReady } = useOnboarding();
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.3)).current;
-  const slideAnim = useRef(new Animated.Value(100)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const gradientAnim = useRef(new Animated.Value(0)).current;
+  const fade = useRef(new Animated.Value(0)).current;
+  const lift = useRef(new Animated.Value(10)).current;
+  const dots = useRef(new Animated.Value(0)).current;
 
-  const float1 = useRef(new Animated.Value(0)).current;
-  const float2 = useRef(new Animated.Value(0)).current;
-  const float3 = useRef(new Animated.Value(0)).current;
-  const float4 = useRef(new Animated.Value(0)).current;
-  const float5 = useRef(new Animated.Value(0)).current;
+  const canNavigate = useMemo(() => !i18nLoading && onboardingReady, [i18nLoading, onboardingReady]);
+
+  const navigateOut = useCallback(() => {
+    if (!canNavigate) return;
+
+    const target = (() => {
+      if (user?.isProfessional) return '/(pro)/dashboard' as const;
+      if (user) {
+        if (hasCompleted) return '/(tabs)/map' as const;
+        return '/onboarding' as const;
+      }
+      return '/onboarding' as const;
+    })();
+
+    Animated.timing(fade, {
+      toValue: 0,
+      duration: 220,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) {
+        router.replace(target as any);
+      }
+    });
+  }, [canNavigate, fade, hasCompleted, router, user]);
 
   useEffect(() => {
-    const logoAnimation = Animated.sequence([
-      Animated.parallel([
-        Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
-        Animated.spring(scaleAnim, { toValue: 1, tension: 40, friction: 8, useNativeDriver: true }),
-        Animated.timing(slideAnim, { toValue: 0, duration: 1000, delay: 300, useNativeDriver: true }),
-      ]),
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1.1, duration: 1500, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
-        ])
-      ),
-    ]);
+    Animated.parallel([
+      Animated.timing(fade, {
+        toValue: 1,
+        duration: 280,
+        useNativeDriver: true,
+      }),
+      Animated.timing(lift, {
+        toValue: 0,
+        duration: 280,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
-    const floatingAnimations = [
-      Animated.loop(Animated.sequence([
-        Animated.timing(float1, { toValue: 1, duration: 3000, useNativeDriver: true }),
-        Animated.timing(float1, { toValue: 0, duration: 3000, useNativeDriver: true }),
-      ])),
-      Animated.loop(Animated.sequence([
-        Animated.timing(float2, { toValue: 1, duration: 4000, useNativeDriver: true }),
-        Animated.timing(float2, { toValue: 0, duration: 4000, useNativeDriver: true }),
-      ])),
-      Animated.loop(Animated.sequence([
-        Animated.timing(float3, { toValue: 1, duration: 3500, useNativeDriver: true }),
-        Animated.timing(float3, { toValue: 0, duration: 3500, useNativeDriver: true }),
-      ])),
-      Animated.loop(Animated.sequence([
-        Animated.timing(float4, { toValue: 1, duration: 2800, useNativeDriver: true }),
-        Animated.timing(float4, { toValue: 0, duration: 2800, useNativeDriver: true }),
-      ])),
-      Animated.loop(Animated.sequence([
-        Animated.timing(float5, { toValue: 1, duration: 4500, useNativeDriver: true }),
-        Animated.timing(float5, { toValue: 0, duration: 4500, useNativeDriver: true }),
-      ])),
-    ];
-
-
-
-    const gradientLoop = Animated.loop(
+    const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(gradientAnim, { toValue: 1, duration: 4000, useNativeDriver: false }),
-        Animated.timing(gradientAnim, { toValue: 0, duration: 4000, useNativeDriver: false }),
-      ])
+        Animated.timing(dots, { toValue: 1, duration: 520, useNativeDriver: true }),
+        Animated.timing(dots, { toValue: 0, duration: 520, useNativeDriver: true }),
+      ]),
     );
-
-    logoAnimation.start();
-    floatingAnimations.forEach((anim) => anim.start());
-    gradientLoop.start();
-
-    const timer = setTimeout(() => {
-      if (!i18nLoading) {
-        if (user) {
-          if (user.isProfessional) {
-            router.replace('/(pro)/dashboard');
-          } else {
-            router.replace('/(tabs)/map');
-          }
-        } else {
-          router.replace('/onboarding');
-        }
-      }
-    }, 3000);
+    loop.start();
 
     return () => {
-      clearTimeout(timer);
-      logoAnimation.stop();
-      floatingAnimations.forEach((anim) => anim.stop());
-      gradientLoop.stop();
+      loop.stop();
     };
-  }, [user, i18nLoading, fadeAnim, scaleAnim, slideAnim, pulseAnim, float1, float2, float3, float4, float5, router, gradientAnim]);
+  }, [dots, fade, lift]);
 
-  const float1Y = float1.interpolate({ inputRange: [0, 1], outputRange: [0, -30] });
-  const float2Y = float2.interpolate({ inputRange: [0, 1], outputRange: [0, 20] });
-  const float3Y = float3.interpolate({ inputRange: [0, 1], outputRange: [0, -15] });
-  const float4Y = float4.interpolate({ inputRange: [0, 1], outputRange: [0, 25] });
-  const float5Y = float5.interpolate({ inputRange: [0, 1], outputRange: [0, -20] });
+  useEffect(() => {
+    const t = setTimeout(() => {
+      console.log('[Splash] routing', { canNavigate, hasUser: Boolean(user), hasCompleted });
+      navigateOut();
+    }, 760);
 
-  const COLOR_A = '#FFB3E6' as const;
-  const COLOR_B = '#C084FC' as const;
-  const COLOR_C = '#A855F7' as const;
-  const COLOR_D = '#60A5FA' as const;
-  const topOpacity = gradientAnim;
-  const bottomOpacity = gradientAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
+    return () => clearTimeout(t);
+  }, [canNavigate, hasCompleted, navigateOut, user]);
+
+  const dotOpacity = (i: number) =>
+    dots.interpolate({
+      inputRange: [0, 1],
+      outputRange: i === 0 ? [0.25, 1] : i === 1 ? [1, 0.25] : [0.55, 0.55],
+    });
 
   return (
-    <View style={styles.container} testID="splash-root">
-      <StatusBar style="light" />
+    <View style={styles.root} testID="splash-root">
+      <StatusBar style="dark" />
 
-      <Animated.View style={[StyleSheet.absoluteFill, { opacity: bottomOpacity }]}>
-        <LinearGradient
-          colors={[COLOR_A, COLOR_B, COLOR_C, COLOR_D]}
-          locations={[0, 0.35, 0.65, 1]}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
-      <Animated.View style={[StyleSheet.absoluteFill, { opacity: topOpacity }]}>
-        <LinearGradient
-          colors={[COLOR_C, COLOR_B, COLOR_A, COLOR_D]}
-          locations={[0, 0.35, 0.65, 1]}
-          start={{ x: 0.5, y: 1 }}
-          end={{ x: 0.5, y: 0 }}
-          style={StyleSheet.absoluteFill}
-        />
+      <Animated.View style={[styles.center, { opacity: fade, transform: [{ translateY: lift }] }]} testID="splash-content">
+        <View style={styles.logoWrap} testID="splash-logo">
+          <Animated.Image source={{ uri: LOGO_URI }} style={styles.logo} resizeMode="contain" />
+        </View>
+
+        <Text style={styles.title} testID="splash-title">Odalea</Text>
+        <Text style={styles.baseline} testID="splash-baseline">Simple. Intention-first.</Text>
       </Animated.View>
 
-      <View style={styles.particleContainer}>
-        {[...Array(20)].map((_, i) => (
-          <Animated.View
-            key={i}
-            style={[
-              styles.sparkle,
-              {
-                left: `${(i * 17 + 10) % 90}%`,
-                top: `${(i * 23 + 15) % 85}%`,
-                opacity: fadeAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, (0.3 + (i % 5) * 0.15)],
-                }),
-                transform: [
-                  {
-                    scale: pulseAnim.interpolate({
-                      inputRange: [1, 1.1],
-                      outputRange: [0.5 + (i % 4) * 0.25, 1 + (i % 4) * 0.25],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          />
-        ))}
-      </View>
-
-      <View style={styles.backgroundPattern}>
-        <Animated.View
-          style={[styles.floatingElement, styles.element1, { opacity: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.6] }), transform: [{ scale: scaleAnim }, { translateY: float1Y }, { rotate: '45deg' }] }]}
-        />
-        <Animated.View
-          style={[styles.floatingElement, styles.element2, { opacity: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.4] }), transform: [{ scale: scaleAnim }, { translateY: float2Y }, { rotate: '-30deg' }] }]}
-        />
-        <Animated.View
-          style={[styles.floatingElement, styles.element3, { opacity: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.5] }), transform: [{ scale: scaleAnim }, { translateY: float3Y }] }]}
-        />
-        <Animated.View
-          style={[styles.floatingElement, styles.element4, { opacity: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.3] }), transform: [{ scale: scaleAnim }, { translateY: float4Y }, { rotate: '15deg' }] }]}
-        />
-        <Animated.View
-          style={[styles.floatingElement, styles.element5, { opacity: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.4] }), transform: [{ scale: scaleAnim }, { translateY: float5Y }, { rotate: '-45deg' }] }]}
-        />
-      </View>
-
-      <Animated.View
-        testID="splash-content"
-        style={[styles.content, { opacity: fadeAnim, transform: [{ scale: Animated.multiply(scaleAnim, pulseAnim) }, { translateY: slideAnim }] }]}
-      >
-        <Animated.View 
-          testID="splash-logo" 
-          style={[
-            styles.logoContainer, 
-            { 
-              transform: [
-                { scale: pulseAnim },
-                { 
-                  rotateY: pulseAnim.interpolate({
-                    inputRange: [1, 1.05, 1.1],
-                    outputRange: ['0deg', '5deg', '0deg'],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <Animated.Image
-            source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/qg65dezpx8zrcqopuuggc' }}
-            style={[
-              styles.logoImage,
-              {
-                transform: [
-                  {
-                    scale: pulseAnim.interpolate({
-                      inputRange: [1, 1.1],
-                      outputRange: [1, 1.05],
-                    }),
-                  },
-                ],
-              },
-            ]}
-            resizeMode="contain"
-          />
-        </Animated.View>
-
-        <Animated.View
-          testID="splash-title"
-          style={[styles.titleContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim.interpolate({ inputRange: [0, 100], outputRange: [0, 50] }) }] }]}
-        >
-          <Animated.Text style={styles.appTitle}>Odalea</Animated.Text>
-        </Animated.View>
+      <Animated.View style={[styles.loaderRow, { opacity: fade }]} testID="splash-loader">
+        <Animated.View style={[styles.dot, { opacity: dotOpacity(0) }]} />
+        <Animated.View style={[styles.dot, { opacity: dotOpacity(1) }]} />
+        <Animated.View style={[styles.dot, { opacity: dotOpacity(2) }]} />
       </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    justifyContent: 'center',
+    backgroundColor: ENDEL.colors.bg,
+  },
+  center: {
+    flex: 1,
     alignItems: 'center',
-    overflow: 'hidden',
+    justifyContent: 'center',
+    paddingHorizontal: ENDEL.spacing.xl,
   },
-  particleContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 0,
-  },
-  sparkle: {
-    position: 'absolute',
-    width: 4,
-    height: 4,
+  logoWrap: {
+    width: 96,
+    height: 96,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 2,
-    shadowColor: '#FFFFFF',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: ENDEL.colors.borderSubtle,
+    ...((ENDEL.shadows.card as unknown) as object),
+    marginBottom: 18,
   },
-  backgroundPattern: {
+  logo: {
+    width: 62,
+    height: 62,
+  },
+  title: {
+    fontSize: 28,
+    lineHeight: 32,
+    fontWeight: '700' as const,
+    color: ENDEL.colors.text,
+    letterSpacing: -0.3,
+  },
+  baseline: {
+    marginTop: 6,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '500' as const,
+    color: ENDEL.colors.textSecondary,
+  },
+  loaderRow: {
     position: 'absolute',
-    top: 0,
+    bottom: 26,
     left: 0,
     right: 0,
-    bottom: 0,
-    zIndex: 0,
-  },
-  floatingElement: {
-    position: 'absolute',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  element1: {
-    width: 120,
-    height: 120,
-    borderRadius: 20,
-    top: '15%',
-    right: '10%',
-  },
-  element2: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    bottom: '25%',
-    left: '15%',
-  },
-  element3: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    top: '65%',
-    right: '25%',
-  },
-  element4: {
-    width: 100,
-    height: 100,
-    borderRadius: 15,
-    top: '35%',
-    left: '5%',
-  },
-  element5: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    bottom: '15%',
-    right: '5%',
-  },
-  content: {
-    alignItems: 'center',
-    zIndex: 2,
-  },
-  logoContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    borderRadius: 80,
-    padding: DIMENSIONS.SPACING.xl,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-    shadowColor: '#A855F7',
-    shadowOffset: { width: 0, height: 30 },
-    shadowOpacity: 0.4,
-    shadowRadius: 50,
-    elevation: 25,
-    marginBottom: DIMENSIONS.SPACING.xl,
-    width: 280,
-    height: 280,
+    flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'center',
+    gap: 8,
   },
-  logoImage: {
-    width: 220,
-    height: 220,
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#111111',
+    opacity: 0.3,
   },
-  titleContainer: {
-    alignItems: 'center',
-    marginTop: DIMENSIONS.SPACING.sm,
-  },
-  appTitle: {
-    fontSize: 56,
-    fontWeight: '700' as const,
-    letterSpacing: 3,
-    textAlign: 'center',
-    color: '#ffffff',
-    textShadowColor: 'rgba(168, 85, 247, 0.5)',
-    textShadowOffset: { width: 0, height: 4 },
-    textShadowRadius: 12,
-    marginBottom: DIMENSIONS.SPACING.xs,
-  },
-
 });

@@ -26,6 +26,7 @@ import { MatchingContext } from "@/hooks/matching-store";
 import { FavoritesContext } from "@/hooks/favorites-store";
 import { ActivePetContext } from "@/hooks/active-pet-store";
 import { RevenueCatContext } from "@/hooks/revenuecat-store";
+import { OnboardingContext } from "@/hooks/onboarding-store";
 import { trpc, trpcClient } from "@/lib/trpc";
 import AppBackground from "@/components/AppBackground";
 import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
@@ -71,6 +72,7 @@ const RootLayoutNav = React.memo(() => {
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="splash" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+      <Stack.Screen name="onboarding-setup" options={{ headerShown: false }} />
       <Stack.Screen name="auth/signin" options={{ headerShown: false }} />
       <Stack.Screen name="auth/signup" options={{ headerShown: false }} />
       <Stack.Screen name="auth/pro-register" options={{ headerShown: false }} />
@@ -127,7 +129,8 @@ const AppProviders = React.memo(({ children }: { children: React.ReactNode }) =>
   return (
     <FirebaseUserContext>
       <RevenueCatContext>
-        <NotificationsProvider>
+        <OnboardingContext>
+          <NotificationsProvider>
           <EmergencyContext>
             <PetsContext>
               <ActivePetContext>
@@ -163,7 +166,8 @@ const AppProviders = React.memo(({ children }: { children: React.ReactNode }) =>
               </ActivePetContext>
             </PetsContext>
           </EmergencyContext>
-        </NotificationsProvider>
+          </NotificationsProvider>
+        </OnboardingContext>
       </RevenueCatContext>
     </FirebaseUserContext>
   );
