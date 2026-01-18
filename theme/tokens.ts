@@ -2,16 +2,20 @@ export const COLORS = {
   background: '#FAFAF8',
   surface: '#FFFFFF',
   surfaceSecondary: '#F7F7F4',
-  primary: '#0B2A3C',
-  primarySoft: 'rgba(11, 42, 60, 0.08)',
+  primary: '#0B5FFF',
+  primaryDark: '#0847CC',
+  primaryLight: '#5B8FFF',
+  primarySoft: 'rgba(11, 95, 255, 0.08)',
   onboardingBlue: '#63B3FF',
   border: '#E2E8F0',
   textPrimary: '#0F172A',
   textSecondary: '#475569',
+  textTertiary: '#94A3B8',
   danger: '#DC2626',
   success: '#10B981',
   warning: '#F59E0B',
   overlay: 'rgba(15, 23, 42, 0.5)',
+  cardBorder: '#F1F5F9',
 } as const;
 
 export const RADIUS = {
