@@ -1474,13 +1474,43 @@ export const messagingService = {
         participants,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        unreadCount: participants.reduce((acc, userId) => ({ ...acc, [userId]: 0 }), {})
+        unreadCount: participants.reduce((acc, userId) => ({ ...acc, [userId]: 0 }), {}),
+        hasMatch: false
       });
       
       console.log('✅ Conversation created successfully');
       return docRef.id;
     } catch (error) {
       console.error('❌ Error creating conversation:', error);
+      throw error;
+    }
+  },
+
+  // Create or get conversation for two owners (deterministic docId)
+  async createOrGetConversationForOwners(ownerA: string, ownerB: string): Promise<string> {
+    try {
+      const participants = [ownerA, ownerB].sort();
+      const conversationId = participants.join('_');
+      const conversationRef = doc(db, COLLECTIONS.CONVERSATIONS, conversationId);
+      
+      const existingConv = await getDoc(conversationRef);
+      if (existingConv.exists()) {
+        console.log('✅ Conversation already exists:', conversationId);
+        return conversationId;
+      }
+      
+      await setDoc(conversationRef, {
+        participants,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        unreadCount: { [ownerA]: 0, [ownerB]: 0 },
+        hasMatch: false
+      });
+      
+      console.log('✅ Conversation created for owners:', conversationId);
+      return conversationId;
+    } catch (error) {
+      console.error('❌ Error creating/getting conversation for owners:', error);
       throw error;
     }
   },
@@ -2460,7 +2490,7 @@ export const emergencyService = {
 // Pet Matching Service
 export const petMatchingService = {
   // Like a pet
-  async likePet(fromPetId: string, toPetId: string, userId: string): Promise<{ matched: boolean; matchId?: string }> {
+  async likePet(fromPetId: string, toPetId: string, userId: string): Promise<{ matched: boolean; matchId?: string; conversationId?: string }> {
     try {
       const likeRef = doc(db, COLLECTIONS.PET_LIKES, `${fromPetId}_${toPetId}`);
       await setDoc(likeRef, {
@@ -2477,17 +2507,38 @@ export const petMatchingService = {
       if (reverseLikeSnap.exists()) {
         // It's a match!
         const matchId = [fromPetId, toPetId].sort().join('_');
-        const matchRef = doc(db, COLLECTIONS.PET_MATCHES, matchId);
         
+        // Get both pets to retrieve owner IDs
+        const fromPetSnap = await getDoc(doc(db, COLLECTIONS.PETS, fromPetId));
+        const toPetSnap = await getDoc(doc(db, COLLECTIONS.PETS, toPetId));
+        
+        if (!fromPetSnap.exists() || !toPetSnap.exists()) {
+          throw new Error('Pets not found');
+        }
+        
+        const ownerA = fromPetSnap.data().ownerId;
+        const ownerB = toPetSnap.data().ownerId;
+        
+        // Create or get conversation for owners
+        const conversationId = await messagingService.createOrGetConversationForOwners(ownerA, ownerB);
+        
+        // Mark conversation as match
+        const conversationRef = doc(db, COLLECTIONS.CONVERSATIONS, conversationId);
+        await setDoc(conversationRef, { hasMatch: true }, { merge: true });
+        
+        // Create match with conversationId
+        const matchRef = doc(db, COLLECTIONS.PET_MATCHES, matchId);
         await setDoc(matchRef, {
           petIds: [fromPetId, toPetId],
+          ownerIds: [ownerA, ownerB],
+          conversationId,
           createdAt: serverTimestamp(),
           lastMessageAt: null,
           messageCount: 0
         });
 
-        console.log('🎉 Pet match created!');
-        return { matched: true, matchId };
+        console.log('🎉 Pet match created with conversation:', conversationId);
+        return { matched: true, matchId, conversationId };
       }
 
       return { matched: false };

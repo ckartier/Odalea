@@ -16,7 +16,7 @@ import { TYPOGRAPHY } from '@/constants/typography';
 import AppBackground from '@/components/AppBackground';
 import { useMessaging } from '@/hooks/messaging-store';
 import { useI18n } from '@/hooks/i18n-store';
-import { Bell, MessageCircle, UserCheck, UserPlus, Search, Filter } from 'lucide-react-native';
+import { Bell, MessageCircle, UserCheck, UserPlus, Search, Filter, Heart } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { userService } from '@/services/database';
 import type { User } from '@/types';
@@ -27,7 +27,7 @@ export default function MessagesScreen() {
   const { conversations, getPendingRequests, getConversationUser, respondToFriendRequest } = useMessaging();
   
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'messages' | 'requests'>('messages');
+  const [activeTab, setActiveTab] = useState<'matches' | 'social' | 'requests'>('matches');
   const [search, setSearch] = useState<string>('');
   const [unreadOnly, setUnreadOnly] = useState<boolean>(false);
   
@@ -55,9 +55,23 @@ export default function MessagesScreen() {
     for (const u of (requestSendersQuery.data ?? [])) map.set(u.id, u);
     return map;
   }, [requestSendersQuery.data]);
-  const filteredConversations = useMemo(() => {
+  const matchConversations = useMemo(() => {
     const term = search.trim().toLowerCase();
     return conversations.filter(c => {
+      if (c.hasMatch !== true) return false;
+      if (unreadOnly && c.unreadCount === 0) return false;
+      const other = getConversationUser(c.id);
+      const name = other?.pseudo?.toLowerCase() ?? '';
+      const last = c.lastMessage?.content?.toLowerCase() ?? '';
+      if (!term) return true;
+      return name.includes(term) || last.includes(term);
+    });
+  }, [conversations, getConversationUser, search, unreadOnly]);
+
+  const socialConversations = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return conversations.filter(c => {
+      if (c.hasMatch === true) return false;
       if (unreadOnly && c.unreadCount === 0) return false;
       const other = getConversationUser(c.id);
       const name = other?.pseudo?.toLowerCase() ?? '';
@@ -240,7 +254,7 @@ export default function MessagesScreen() {
             style={styles.newMessageButton}
             onPress={handleNewMessage}
           >
-            <MessageCircle size={24} color={COLORS.maleAccent} />
+            <MessageCircle size={24} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
 
@@ -264,19 +278,37 @@ export default function MessagesScreen() {
           <TouchableOpacity
             style={[
               styles.tab,
-              activeTab === 'messages' && styles.activeTab,
+              activeTab === 'matches' && styles.activeTab,
             ]}
-            onPress={() => setActiveTab('messages')}
+            onPress={() => setActiveTab('matches')}
           >
             <Text
               style={[
                 styles.tabText,
-                activeTab === 'messages' && styles.activeTabText,
+                activeTab === 'matches' && styles.activeTabText,
               ]}
             >
-              Messages
+              Matchs
             </Text>
-            {activeTab === 'messages' && <View style={styles.tabIndicator} />}
+            {activeTab === 'matches' && <View style={styles.tabIndicator} />}
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === 'social' && styles.activeTab,
+            ]}
+            onPress={() => setActiveTab('social')}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === 'social' && styles.activeTabText,
+              ]}
+            >
+              Social
+            </Text>
+            {activeTab === 'social' && <View style={styles.tabIndicator} />}
           </TouchableOpacity>
           
           <TouchableOpacity
@@ -304,22 +336,22 @@ export default function MessagesScreen() {
             {activeTab === 'requests' && <View style={styles.tabIndicator} />}
           </TouchableOpacity>
 
-          {activeTab === 'messages' && (
+          {(activeTab === 'matches' || activeTab === 'social') && (
             <TouchableOpacity
               style={styles.filterButton}
               onPress={() => setUnreadOnly(v => !v)}
             >
-              <Filter size={16} color={unreadOnly ? COLORS.maleAccent : COLORS.darkGray} />
+              <Filter size={16} color={unreadOnly ? COLORS.primary : COLORS.darkGray} />
               <Text style={[styles.filterText, unreadOnly && styles.filterTextActive]}>Non lus</Text>
             </TouchableOpacity>
           )}
         </View>
       </View>
       
-      {activeTab === 'messages' ? (
-        conversations.length > 0 ? (
+      {activeTab === 'matches' ? (
+        matchConversations.length > 0 ? (
           <FlatList
-            data={filteredConversations}
+            data={matchConversations}
             renderItem={renderConversationItem}
             keyExtractor={item => item.id}
             contentContainerStyle={styles.listContent}
@@ -330,19 +362,45 @@ export default function MessagesScreen() {
           />
         ) : (
           <View style={styles.emptyContainer}>
-            <Bell size={48} color={COLORS.darkGray} />
-            <Text style={styles.emptyTitle}>{t('messages.no_conversations')}</Text>
+            <Heart size={48} color={COLORS.darkGray} />
+            <Text style={styles.emptyTitle}>Aucun match</Text>
             <Text style={styles.emptyText}>
-              {t('messages.start_conversation_description')}
+              Vos matchs d&apos;animaux apparaîtront ici. Commencez à swiper !
             </Text>
-            <TouchableOpacity
-              style={[styles.startButton, SHADOWS.small]}
-              onPress={handleNewMessage}
-            >
-              <Text style={styles.startButtonText}>{t('messages.start_chat')}</Text>
-            </TouchableOpacity>
           </View>
         )
+      ) : activeTab === 'social' ? (
+        <>
+          <View style={styles.newMessageBanner}>
+            <TouchableOpacity
+              style={[styles.newMessageBannerButton, SHADOWS.small]}
+              onPress={handleNewMessage}
+            >
+              <MessageCircle size={20} color={COLORS.white} />
+              <Text style={styles.newMessageBannerText}>Nouveau message</Text>
+            </TouchableOpacity>
+          </View>
+          {socialConversations.length > 0 ? (
+            <FlatList
+              data={socialConversations}
+              renderItem={renderConversationItem}
+              keyExtractor={item => item.id}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
+            />
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Bell size={48} color={COLORS.darkGray} />
+              <Text style={styles.emptyTitle}>{t('messages.no_conversations')}</Text>
+              <Text style={styles.emptyText}>
+                {t('messages.start_conversation_description')}
+              </Text>
+            </View>
+          )}
+        </>
       ) : (
         pendingRequests.length > 0 ? (
           <FlatList
@@ -448,11 +506,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 3,
-    backgroundColor: COLORS.maleAccent,
+    backgroundColor: COLORS.primary,
     borderRadius: 2,
   },
   badge: {
-    backgroundColor: COLORS.maleAccent,
+    backgroundColor: COLORS.primary,
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -479,7 +537,28 @@ const styles = StyleSheet.create({
     color: COLORS.darkGray,
   },
   filterTextActive: {
-    color: COLORS.maleAccent,
+    color: COLORS.primary,
+  },
+  newMessageBanner: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightGray,
+  },
+  newMessageBannerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: COLORS.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+  },
+  newMessageBannerText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.white,
   },
   listContent: {
     padding: 16,
@@ -510,7 +589,7 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: COLORS.maleAccent,
+    backgroundColor: COLORS.primary,
     borderWidth: 2,
     borderColor: COLORS.white,
   },
@@ -553,7 +632,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   unreadBadge: {
-    backgroundColor: COLORS.maleAccent,
+    backgroundColor: COLORS.primary,
     borderRadius: 10,
     minWidth: 20,
     height: 20,
@@ -613,7 +692,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.maleAccent,
+    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -650,7 +729,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   startButton: {
-    backgroundColor: COLORS.maleAccent,
+    backgroundColor: COLORS.primary,
     paddingVertical: 14,
     paddingHorizontal: 28,
     borderRadius: 24,

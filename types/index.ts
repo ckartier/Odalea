@@ -235,6 +235,7 @@ export interface Conversation {
   participants: string[];
   lastMessage?: Message;
   unreadCount: number;
+  hasMatch?: boolean;
 }
 
 export interface Product {
