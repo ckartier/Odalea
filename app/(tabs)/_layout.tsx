@@ -4,7 +4,7 @@ import { View, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IS_TABLET, RESPONSIVE_LAYOUT, COLORS } from "@/constants/colors";
 import AppHeader, { useAppHeaderHeight } from "@/components/AppHeader";
-import { Map, MessageCircle, Users, User } from "lucide-react-native";
+import { Heart, MessageCircle, Plus, User, Sparkles } from "lucide-react-native";
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
@@ -45,31 +45,55 @@ export default function TabLayout() {
             tabBarInactiveTintColor: COLORS.gray,
             tabBarHideOnKeyboard: true,
             tabBarStyle: {
-              backgroundColor: COLORS.white,
-              borderTopWidth: 1,
-              borderTopColor: COLORS.borderLight,
-              height: 60 + insets.bottom,
-              paddingBottom: insets.bottom,
-              paddingTop: 8,
+              backgroundColor: '#FFFFFF',
+              borderTopWidth: 0,
+              height: 80 + insets.bottom,
+              paddingBottom: insets.bottom + 8,
+              paddingTop: 12,
+              shadowColor: '#0F172A',
+              shadowOffset: { width: 0, height: -2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 12,
+              elevation: 8,
             },
             tabBarLabelStyle: {
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: '600',
+              marginTop: 4,
             },
           }}
         >
           <Tabs.Screen 
-            name="map" 
+            name="home" 
             options={{ 
-              title: "Carte",
-              tabBarIcon: ({ color, size }) => <Map size={size} color={color} />,
+              title: "Découvrir",
+              tabBarIcon: ({ color, size }) => <Sparkles size={size} color={color} />,
             }} 
           />
           <Tabs.Screen 
-            name="community" 
+            name="challenges" 
             options={{ 
-              title: "Communauté",
-              tabBarIcon: ({ color, size }) => <Users size={size} color={color} />,
+              title: "Matchs",
+              tabBarIcon: ({ color, size }) => <Heart size={size} color={color} />,
+            }} 
+          />
+          <Tabs.Screen 
+            name="shop" 
+            options={{ 
+              title: "Ajouter",
+              tabBarIcon: ({ color, size }) => (
+                <View style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 24,
+                  backgroundColor: COLORS.primary,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 20,
+                }}>
+                  <Plus size={28} color="#FFFFFF" strokeWidth={3} />
+                </View>
+              ),
             }} 
           />
           <Tabs.Screen 
@@ -86,11 +110,10 @@ export default function TabLayout() {
               tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
             }} 
           />
-          <Tabs.Screen name="home" options={{ href: null }} />
-          <Tabs.Screen name="shop" options={{ href: null }} />
+          <Tabs.Screen name="map" options={{ href: null }} />
+          <Tabs.Screen name="community" options={{ href: null }} />
           <Tabs.Screen name="cat-sitter" options={{ href: null }} />
           <Tabs.Screen name="lost-found" options={{ href: null }} />
-          <Tabs.Screen name="challenges" options={{ href: null }} />
         </Tabs>
       </View>
     </>

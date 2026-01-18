@@ -10,7 +10,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
+  Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Heart, X } from 'lucide-react-native';
 import { useMatching } from '@/hooks/matching-store';
@@ -161,7 +163,11 @@ export default function PetDiscoveryScreen() {
             <Text style={styles.stampText}>✖️</Text>
           </Animated.View>
 
-          <View style={styles.cardContent}>
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.85)']}
+            locations={[0.4, 1]}
+            style={styles.cardGradient}
+          >
             <View style={styles.petInfo}>
               <Text style={styles.petName}>{pet.name}</Text>
               <Text style={styles.petDetails}>
@@ -177,7 +183,7 @@ export default function PetDiscoveryScreen() {
                 </View>
               )}
             </View>
-          </View>
+          </LinearGradient>
         </Animated.View>
       );
     }
@@ -292,12 +298,12 @@ export default function PetDiscoveryScreen() {
       <FloatingActionBar
         actions={[
           {
-            icon: <X size={28} color={COLORS.textPrimary} strokeWidth={2.5} />,
+            icon: <X size={32} color={COLORS.textPrimary} strokeWidth={3} />,
             onPress: handlePass,
             testID: 'pass-button',
           },
           {
-            icon: <Heart size={28} color={COLORS.surface} strokeWidth={2.5} fill={COLORS.surface} />,
+            icon: <Heart size={32} color={COLORS.surface} strokeWidth={2.5} fill={COLORS.surface} />,
             onPress: handleLike,
             primary: true,
             testID: 'like-button',
@@ -340,11 +346,13 @@ const styles = StyleSheet.create({
   greeting: {
     ...TYPOGRAPHY.title,
     color: COLORS.textPrimary,
+    fontSize: 32,
+    fontWeight: '700' as const,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: COLORS.surfaceSecondary,
   },
   filtersContainer: {
@@ -353,11 +361,11 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   filterChip: {
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
     borderRadius: RADIUS.pill,
     backgroundColor: COLORS.surface,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: COLORS.border,
   },
   filterChipActive: {
@@ -367,21 +375,24 @@ const styles = StyleSheet.create({
   filterChipText: {
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
+    fontSize: 16,
+    fontWeight: '500' as const,
   },
   filterChipTextActive: {
     color: COLORS.surface,
-    fontWeight: '600' as const,
+    fontWeight: '700' as const,
   },
   cardsContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: 100,
+    paddingBottom: 120,
+    paddingTop: SPACING.lg,
   },
   card: {
     position: 'absolute',
     width: SCREEN_WIDTH - (SPACING.lg * 2),
-    height: SCREEN_HEIGHT * 0.6,
+    height: SCREEN_HEIGHT * 0.68,
     borderRadius: RADIUS.card * 2,
     backgroundColor: COLORS.surface,
     ...SHADOWS.card,
@@ -395,29 +406,29 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  cardContent: {
+  cardGradient: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: SPACING.lg,
-    paddingBottom: SPACING.xl,
-    backgroundColor: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
-    borderBottomLeftRadius: RADIUS.card * 2,
-    borderBottomRightRadius: RADIUS.card * 2,
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.xxl * 2,
+    paddingBottom: SPACING.xxl + SPACING.lg,
+    justifyContent: 'flex-end',
   },
   petInfo: {
     gap: SPACING.xs,
   },
   petName: {
-    ...TYPOGRAPHY.title,
-    fontSize: 32,
+    ...TYPOGRAPHY.hero,
     color: COLORS.surface,
+    fontWeight: '700' as const,
   },
   petDetails: {
-    ...TYPOGRAPHY.body,
+    ...TYPOGRAPHY.bodyLarge,
     color: COLORS.surface,
-    opacity: 0.9,
+    opacity: 0.95,
+    marginTop: SPACING.xs,
   },
   petLocation: {
     ...TYPOGRAPHY.caption,
@@ -431,30 +442,31 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
   characterBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
     borderRadius: RADIUS.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
   },
   characterText: {
     ...TYPOGRAPHY.caption,
+    fontSize: 15,
     color: COLORS.surface,
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
   },
   likeStamp: {
     position: 'absolute',
-    top: 80,
-    right: SPACING.xl,
-    fontSize: 80,
+    top: 100,
+    right: SPACING.xl * 1.5,
   },
   nopeStamp: {
     position: 'absolute',
-    top: 80,
-    left: SPACING.xl,
-    fontSize: 80,
+    top: 100,
+    left: SPACING.xl * 1.5,
   },
   stampText: {
-    fontSize: 80,
+    fontSize: 100,
   },
   emptyContainer: {
     flex: 1,

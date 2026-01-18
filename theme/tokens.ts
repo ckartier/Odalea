@@ -24,28 +24,38 @@ export const RADIUS = {
 } as const;
 
 export const TYPOGRAPHY = {
+  hero: {
+    fontSize: 40,
+    fontWeight: '700' as const,
+    lineHeight: 48,
+  },
   title: {
     fontSize: 28,
     fontWeight: '600' as const,
     lineHeight: 36,
   },
   h2: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '600' as const,
-    lineHeight: 28,
+    lineHeight: 30,
   },
   body: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '400' as const,
     lineHeight: 24,
   },
-  caption: {
-    fontSize: 13,
+  bodyLarge: {
+    fontSize: 19,
     fontWeight: '400' as const,
-    lineHeight: 18,
+    lineHeight: 26,
+  },
+  caption: {
+    fontSize: 14,
+    fontWeight: '400' as const,
+    lineHeight: 20,
   },
   button: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600' as const,
     lineHeight: 24,
   },
@@ -77,7 +87,7 @@ export const SHADOWS = {
   },
 } as const;
 
-export const TOUCH_TARGET = 44;
+export const TOUCH_TARGET = 48;
 
 export const ANIMATION = {
   duration: {
