@@ -24,7 +24,7 @@ const SLIDES = [
   {
     title: 'Des rencontres pour eux',
     subtitle: 'Aide ton animal à créer des liens adaptés à sa personnalité.',
-    image: 'https://images.unsplash.com/photo-1548681528-6a5c45b66b42?w=1200&q=80',
+    image: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/0jfm5p4d0r89ncjsaotfp',
   },
   {
     title: 'Des profils pensés avec soin',
