@@ -34,7 +34,7 @@ const SLIDES = [
   {
     title: 'Des rencontres à leur rythme',
     subtitle: 'Découvre, échange et organise des rencontres adaptées.',
-    image: 'https://images.unsplash.com/photo-1501820488136-72669149e0d4?w=1200&q=80',
+    image: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/paty2cb5t1ei8rkwz5puv',
   },
 ];
 
