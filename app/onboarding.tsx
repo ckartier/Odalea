@@ -8,29 +8,30 @@ import * as Haptics from 'expo-haptics';
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY, ANIMATION } from '@/theme/tokens';
 import { useOnboarding } from '@/hooks/onboarding-store';
 
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const SLIDES = [
   {
-    title: 'Trouve un compagnon',
-    subtitle: 'Des milliers d\'animaux près de chez toi',
+    title: 'Des rencontres pour eux',
+    subtitle: 'Aide ton animal à créer des liens adaptés à sa personnalité.',
     image: 'https://images.unsplash.com/photo-1548681528-6a5c45b66b42?w=800&q=80',
   },
   {
-    title: 'Match en douceur',
-    subtitle: 'Des rencontres pensées pour leur bien-être',
+    title: 'Des profils pensés avec soin',
+    subtitle: 'Personnalité, affinités et intentions claires pour chaque animal.',
     image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=800&q=80',
   },
   {
-    title: 'Rencontre en vrai',
-    subtitle: 'Organise des rendez-vous en toute sécurité',
+    title: 'Des rencontres à leur rythme',
+    subtitle: 'Découvre, échange et organise des rencontres adaptées.',
     image: 'https://images.unsplash.com/photo-1501820488136-72669149e0d4?w=800&q=80',
   },
 ];
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const { setPreferredIntent } = useOnboarding();
+  const { complete } = useOnboarding();
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -55,8 +56,8 @@ export default function OnboardingScreen() {
         animated: true,
       });
     } else {
-      setPreferredIntent('map');
-      router.push('/onboarding-setup' as any);
+      complete();
+      router.push('/auth/signup' as any);
     }
   };
 
