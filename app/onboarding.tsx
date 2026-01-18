@@ -29,7 +29,7 @@ const SLIDES = [
   {
     title: 'Des profils pensés avec soin',
     subtitle: 'Personnalité, affinités et intentions claires pour chaque animal.',
-    image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=1200&q=80',
+    image: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/3z6mfb118zpggrt08bvsq',
   },
   {
     title: 'Des rencontres à leur rythme',
