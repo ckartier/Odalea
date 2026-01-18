@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated, Platform, Pressable, PressableStateCallbackType } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, RADIUS, SHADOWS, SPACING, TOUCH_TARGET, ANIMATION } from '@/theme/tokens';
+import { COLORS, RADIUS, SHADOWS, SPACING, ANIMATION } from '@/theme/tokens';
 
 interface Action {
   icon: React.ReactNode;

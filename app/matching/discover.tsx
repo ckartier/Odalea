@@ -3,14 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
-  Dimensions,
+  useWindowDimensions,
   Animated,
   PanResponder,
   Image,
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
-  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,9 +22,6 @@ import { FloatingActionBar } from '@/components/FloatingActionBar';
 import { Pet } from '@/types';
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY, SHADOWS } from '@/theme/tokens';
 import { Stack, useRouter } from 'expo-router';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const SWIPE_THRESHOLD = 120;
 
 type FilterType = 'all' | 'dog' | 'cat' | 'other';
 
@@ -40,6 +36,8 @@ export default function PetDiscoveryScreen() {
   const router = useRouter();
   const { user } = useFirebaseUser();
   const { userPets } = usePets();
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
+  const SWIPE_THRESHOLD = 120;
   const {
     selectedPetId,
     setSelectedPetId,
@@ -49,12 +47,19 @@ export default function PetDiscoveryScreen() {
     passPet,
     showMatchModal,
     matchedPet,
+    matchConversationId,
     closeMatchModal,
   } = useMatching();
 
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
   const position = useRef(new Animated.ValueXY()).current;
+  
+  const cardHeight = useMemo(() => {
+    const maxHeight = SCREEN_HEIGHT * 0.65;
+    const minHeight = 500;
+    return Math.max(minHeight, Math.min(maxHeight, SCREEN_HEIGHT - 200));
+  }, [SCREEN_HEIGHT]);
   
   const rotate = position.x.interpolate({
     inputRange: [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2],
@@ -92,7 +97,7 @@ export default function PetDiscoveryScreen() {
       position.setValue({ x: 0, y: 0 });
       setCurrentIndex(currentIndex + 1);
     });
-  }, [position, discoveryPets, currentIndex, selectedPetId, user, likePet, passPet]);
+  }, [position, discoveryPets, currentIndex, selectedPetId, user, likePet, passPet, SCREEN_WIDTH]);
 
   const resetPosition = useCallback(() => {
     Animated.spring(position, {
@@ -118,7 +123,7 @@ export default function PetDiscoveryScreen() {
           }
         },
       }),
-    [position, forceSwipe, resetPosition]
+    [position, forceSwipe, resetPosition, SWIPE_THRESHOLD]
   );
 
   const handleLike = () => {
@@ -148,6 +153,7 @@ export default function PetDiscoveryScreen() {
           style={[
             styles.card,
             {
+              height: cardHeight,
               transform: [{ translateX: position.x }, { translateY: position.y }, { rotate }],
             },
           ]}
@@ -189,7 +195,7 @@ export default function PetDiscoveryScreen() {
     }
 
     return (
-      <View key={pet.id} style={[styles.card, styles.nextCard]}>
+      <View key={pet.id} style={[styles.card, styles.nextCard, { height: cardHeight }]}>
         <Image source={{ uri: pet.mainPhoto }} style={styles.cardImage} resizeMode="cover" />
       </View>
     );
@@ -317,8 +323,8 @@ export default function PetDiscoveryScreen() {
         onClose={closeMatchModal}
         onSendMessage={() => {
           closeMatchModal();
-          if (matchedPet?.ownerId) {
-            router.push(`/messages/new?recipientId=${matchedPet.ownerId}` as any);
+          if (matchConversationId) {
+            router.push(`/messages/${matchConversationId}` as any);
           }
         }}
       />
@@ -391,8 +397,7 @@ const styles = StyleSheet.create({
   },
   card: {
     position: 'absolute',
-    width: SCREEN_WIDTH - (SPACING.lg * 2),
-    height: SCREEN_HEIGHT * 0.68,
+    width: '90%',
     borderRadius: RADIUS.card * 2,
     backgroundColor: COLORS.surface,
     ...SHADOWS.card,
@@ -429,11 +434,6 @@ const styles = StyleSheet.create({
     color: COLORS.surface,
     opacity: 0.95,
     marginTop: SPACING.xs,
-  },
-  petLocation: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.surface,
-    opacity: 0.8,
   },
   characterContainer: {
     flexDirection: 'row',

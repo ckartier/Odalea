@@ -88,7 +88,11 @@ export default function MatchesListScreen() {
               <TouchableOpacity
                 key={match.id}
                 style={styles.matchCard}
-                onPress={() => router.push(`/messages/new?recipientId=${matchedPet.ownerId}` as any)}
+                onPress={() => {
+                  if (match.conversationId) {
+                    router.push(`/messages/${match.conversationId}` as any);
+                  }
+                }}
                 activeOpacity={0.9}
               >
                 <Image

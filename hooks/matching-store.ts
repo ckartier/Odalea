@@ -9,6 +9,7 @@ export const [MatchingContext, useMatching] = createContextHook(() => {
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [showMatchModal, setShowMatchModal] = useState<boolean>(false);
   const [matchedPet, setMatchedPet] = useState<Pet | null>(null);
+  const [matchConversationId, setMatchConversationId] = useState<string | null>(null);
 
   const discoveryQuery = useQuery({
     queryKey: ['discovery-pets', selectedPetId],
@@ -42,8 +43,9 @@ export const [MatchingContext, useMatching] = createContextHook(() => {
       const result = await databaseService.petMatching.likePet(fromPetId, toPet.id, userId);
       
       if (result.matched) {
-        console.log('🎉 It\'s a match!', result.matchId);
+        console.log('🎉 It\'s a match!', result.matchId, 'conversationId:', result.conversationId);
         setMatchedPet(toPet);
+        setMatchConversationId(result.conversationId || null);
         setShowMatchModal(true);
 
         try {
@@ -115,6 +117,7 @@ export const [MatchingContext, useMatching] = createContextHook(() => {
   const closeMatchModal = useCallback(() => {
     setShowMatchModal(false);
     setMatchedPet(null);
+    setMatchConversationId(null);
   }, []);
 
   return {
@@ -131,6 +134,7 @@ export const [MatchingContext, useMatching] = createContextHook(() => {
     isPassing: passMutation.isPending,
     showMatchModal,
     matchedPet,
+    matchConversationId,
     closeMatchModal,
     refetchDiscovery: discoveryQuery.refetch,
     refetchMatches: matchesQuery.refetch,

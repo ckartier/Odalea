@@ -9,14 +9,14 @@ import {
 } from './responsive';
 
 export const COLORS = {
-  // Primary accent (violet unique)
-  primary: '#7C3AED',
-  primaryDark: '#6D28D9',
-  primaryLight: '#A78BFA',
-  primarySoft: 'rgba(124, 58, 237, 0.08)',
-  accent: '#7C3AED',
-  accentDark: '#6D28D9',
-  accentLight: '#DDD6FE',
+  // Primary accent (bleu profond premium)
+  primary: '#0B2A3C',
+  primaryDark: '#061823',
+  primaryLight: '#1A4D6E',
+  primarySoft: 'rgba(11, 42, 60, 0.08)',
+  accent: '#0B2A3C',
+  accentDark: '#061823',
+  accentLight: 'rgba(11, 42, 60, 0.15)',
   
   // Secondary (legacy support)
   secondary: '#FFB3E6',
@@ -50,14 +50,15 @@ export const COLORS = {
   mediumGray: '#E5E7EB',
   darkGray: '#6B7280',
   
-  // Surfaces (2025 design - fond blanc)
-  background: '#FFFFFF',
+  // Surfaces (design premium)
+  background: '#FAFAF8',
   surface: '#FFFFFF',
-  surfaceSecondary: '#F9FAFB',
+  surfaceSecondary: '#F7F7F4',
   surfaceTertiary: '#F3F4F6',
   cardBackground: '#FFFFFF',
-  screenBackground: '#FFFFFF',
-  surfaceBackground: '#FFFFFF',
+  screenBackground: '#FAFAF8',
+  surfaceBackground: '#FAFAF8',
+  onboardingBlue: '#63B3FF',
   
   // Dark mode (legacy support)
   darkBackground: '#0F172A',
@@ -98,9 +99,9 @@ export const COLORS = {
   overlayLight: 'rgba(15, 23, 42, 0.4)',
   
   // Borders
-  border: '#E5E7EB',
+  border: '#E2E8F0',
   borderLight: '#F3F4F6',
-  borderFocus: '#7C3AED',
+  borderFocus: '#0B2A3C',
   neutral: '#E2E8F0',
   
   // Map markers
