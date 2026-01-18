@@ -22,7 +22,7 @@ import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { usePets } from '@/hooks/pets-store';
 import { StorageService } from '@/services/storage';
 import { Gender, Pet } from '@/types';
-import { ArrowLeft, Plus, Trash2, Palette, Heart, Tag } from 'lucide-react-native';
+import { Plus, Trash2, Palette, Tag } from 'lucide-react-native';
 
 const CHARACTER_TRAITS = [
   { id: 'joueur', label: 'Joueur', emoji: '🎾' },
@@ -92,7 +92,7 @@ export default function EditPetScreen() {
         router.back();
       }
     }
-  }, [id]);
+  }, [id, getPet, router]);
   
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -184,7 +184,7 @@ export default function EditPetScreen() {
     setLoading(true);
     
     try {
-      const updatedPetData = {
+      const updatedPetData: any = {
         ...pet,
         name,
         breed,
@@ -192,19 +192,26 @@ export default function EditPetScreen() {
         dateOfBirth,
         color,
         character,
-        distinctiveSign: distinctiveSign || undefined,
-        microchipNumber: microchipNumber || undefined,
         mainPhoto: mainPhoto || '',
         galleryPhotos: galleryPhotos.filter(Boolean),
-        vet: vetName
-          ? {
-              name: vetName,
-              address: vetAddress,
-              phoneNumber: vetPhone,
-            }
-          : undefined,
         walkTimes: walkTimes.filter(Boolean),
       };
+      
+      if (distinctiveSign && distinctiveSign.trim()) {
+        updatedPetData.distinctiveSign = distinctiveSign.trim();
+      }
+      
+      if (microchipNumber && microchipNumber.trim()) {
+        updatedPetData.microchipNumber = microchipNumber.trim();
+      }
+      
+      if (vetName && vetName.trim()) {
+        updatedPetData.vet = {
+          name: vetName,
+          address: vetAddress,
+          phoneNumber: vetPhone,
+        };
+      }
       
       const result = await updatePet(pet.id, updatedPetData);
       
@@ -256,10 +263,6 @@ export default function EditPetScreen() {
         ? prev.filter(id => id !== traitId)
         : [...prev, traitId]
     );
-  };
-  
-  const handleBack = () => {
-    router.back();
   };
   
   if (!pet) {

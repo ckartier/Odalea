@@ -18,11 +18,11 @@ import PhotoUploader from '@/components/PhotoUploader';
 import BreedSelector from '@/components/BreedSelector';
 import GenderSelector from '@/components/GenderSelector';
 import DatePicker from '@/components/DatePicker';
-import DropdownSelector from '@/components/DropdownSelector';
+
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { StorageService } from '@/services/storage';
 import { Gender } from '@/types';
-import { ArrowLeft, Plus, Trash2, Palette, Tag } from 'lucide-react-native';
+import { ArrowLeft, Plus, Trash2, Tag } from 'lucide-react-native';
 
 export default function AddPetScreen() {
   const router = useRouter();
@@ -135,7 +135,7 @@ export default function AddPetScreen() {
     setLoading(true);
     
     try {
-      const petData = {
+      const petData: any = {
         name,
         type: 'cat' as const,
         breed,
@@ -143,17 +143,8 @@ export default function AddPetScreen() {
         dateOfBirth,
         color,
         character,
-        distinctiveSign: distinctiveSign || undefined,
-        microchipNumber: microchipNumber || undefined,
         mainPhoto: mainPhoto || '',
         galleryPhotos: galleryPhotos.filter(Boolean),
-        vet: vetName
-          ? {
-              name: vetName,
-              address: vetAddress,
-              phoneNumber: vetPhone,
-            }
-          : undefined,
         walkTimes: walkTimes.filter(Boolean),
         vaccinationDates: [],
         location: {
@@ -161,6 +152,22 @@ export default function AddPetScreen() {
           longitude: 2.3522 + (Math.random() * 0.02 - 0.01),
         },
       };
+      
+      if (distinctiveSign && distinctiveSign.trim()) {
+        petData.distinctiveSign = distinctiveSign.trim();
+      }
+      
+      if (microchipNumber && microchipNumber.trim()) {
+        petData.microchipNumber = microchipNumber.trim();
+      }
+      
+      if (vetName && vetName.trim()) {
+        petData.vet = {
+          name: vetName,
+          address: vetAddress,
+          phoneNumber: vetPhone,
+        };
+      }
       
       const result = await addPet(petData);
       

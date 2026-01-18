@@ -28,6 +28,7 @@ import {
 } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { safeJsonParse } from '@/lib/safe-json';
+import { sanitizeForFirestore, sanitizeAndLog } from '@/lib/firestore-sanitizer';
 
 // Collections
 const COLLECTIONS = {
@@ -96,10 +97,11 @@ export const userService = {
   async saveUser(user: User): Promise<void> {
     try {
       const userRef = doc(db, COLLECTIONS.USERS, user.id);
-      await setDoc(userRef, {
+      const cleanData = sanitizeAndLog({
         ...user,
         updatedAt: serverTimestamp()
-      }, { merge: true });
+      }, 'User');
+      await setDoc(userRef, cleanData, { merge: true });
       console.log('✅ User saved successfully');
     } catch (error) {
       console.error('❌ Error saving user:', error);
@@ -243,10 +245,11 @@ export const petService = {
   async savePet(pet: Pet): Promise<void> {
     try {
       const petRef = doc(db, COLLECTIONS.PETS, pet.id);
-      await setDoc(petRef, {
+      const cleanData = sanitizeAndLog({
         ...pet,
         updatedAt: serverTimestamp()
-      }, { merge: true });
+      }, 'Pet');
+      await setDoc(petRef, cleanData, { merge: true });
       console.log('✅ Pet saved successfully');
     } catch (error) {
       console.error('❌ Error saving pet:', error);
@@ -434,7 +437,7 @@ export const postService = {
           Object.entries(post).filter(([_, value]) => value !== undefined)
         );
         
-        const docRef = await addDoc(postsRef, {
+        const postData = sanitizeForFirestore({
           ...cleanPost,
           visibility: cleanPost.visibility || 'public',
           createdAt: serverTimestamp(),
@@ -442,6 +445,7 @@ export const postService = {
           likesCount: 0,
           commentsCount: 0
         });
+        const docRef = await addDoc(postsRef, postData);
         
         console.log('✅ Post created successfully (Firebase)');
         return docRef.id;
@@ -1014,11 +1018,12 @@ export const professionalService = {
   async saveProfessional(userId: string, professionalData: ProfessionalData): Promise<void> {
     try {
       const professionalRef = doc(db, COLLECTIONS.PROFESSIONALS, userId);
-      await setDoc(professionalRef, {
+      const cleanData = sanitizeAndLog({
         ...professionalData,
         userId,
         updatedAt: serverTimestamp()
-      }, { merge: true });
+      }, 'Professional');
+      await setDoc(professionalRef, cleanData, { merge: true });
       console.log('✅ Professional data saved successfully');
     } catch (error) {
       console.error('❌ Error saving professional data:', error);
@@ -1103,10 +1108,11 @@ export const productService = {
   async saveProduct(product: Product): Promise<void> {
     try {
       const productRef = doc(db, COLLECTIONS.PRODUCTS, product.id);
-      await setDoc(productRef, {
+      const cleanData = sanitizeForFirestore({
         ...product,
         updatedAt: serverTimestamp()
-      }, { merge: true });
+      });
+      await setDoc(productRef, cleanData, { merge: true });
       console.log('✅ Product saved successfully');
     } catch (error) {
       console.error('❌ Error saving product:', error);
@@ -1194,11 +1200,12 @@ export const professionalProductService = {
   async saveProfessionalProduct(product: ProfessionalProduct, sellerId: string): Promise<void> {
     try {
       const productRef = doc(db, COLLECTIONS.PROFESSIONAL_PRODUCTS, product.id);
-      await setDoc(productRef, {
+      const cleanData = sanitizeForFirestore({
         ...product,
         sellerId,
         updatedAt: serverTimestamp()
-      }, { merge: true });
+      });
+      await setDoc(productRef, cleanData, { merge: true });
       console.log('✅ Professional product saved successfully');
     } catch (error) {
       console.error('❌ Error saving professional product:', error);
@@ -1470,13 +1477,14 @@ export const messagingService = {
   async createConversation(participants: string[]): Promise<string> {
     try {
       const conversationsRef = collection(db, COLLECTIONS.CONVERSATIONS);
-      const docRef = await addDoc(conversationsRef, {
+      const conversationData = sanitizeForFirestore({
         participants,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         unreadCount: participants.reduce((acc, userId) => ({ ...acc, [userId]: 0 }), {}),
         hasMatch: false
       });
+      const docRef = await addDoc(conversationsRef, conversationData);
       
       console.log('✅ Conversation created successfully');
       return docRef.id;
@@ -1499,13 +1507,14 @@ export const messagingService = {
         return conversationId;
       }
       
-      await setDoc(conversationRef, {
+      const conversationData = sanitizeForFirestore({
         participants,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         unreadCount: { [ownerA]: 0, [ownerB]: 0 },
         hasMatch: false
       });
+      await setDoc(conversationRef, conversationData);
       
       console.log('✅ Conversation created for owners:', conversationId);
       return conversationId;
@@ -2493,12 +2502,13 @@ export const petMatchingService = {
   async likePet(fromPetId: string, toPetId: string, userId: string): Promise<{ matched: boolean; matchId?: string; conversationId?: string }> {
     try {
       const likeRef = doc(db, COLLECTIONS.PET_LIKES, `${fromPetId}_${toPetId}`);
-      await setDoc(likeRef, {
+      const likeData = sanitizeForFirestore({
         fromPetId,
         toPetId,
         userId,
         createdAt: serverTimestamp()
       });
+      await setDoc(likeRef, likeData);
 
       // Check if the other pet already liked this pet
       const reverseLikeRef = doc(db, COLLECTIONS.PET_LIKES, `${toPetId}_${fromPetId}`);
@@ -2528,7 +2538,7 @@ export const petMatchingService = {
         
         // Create match with conversationId
         const matchRef = doc(db, COLLECTIONS.PET_MATCHES, matchId);
-        await setDoc(matchRef, {
+        const matchData = sanitizeForFirestore({
           petIds: [fromPetId, toPetId],
           ownerIds: [ownerA, ownerB],
           conversationId,
@@ -2536,6 +2546,7 @@ export const petMatchingService = {
           lastMessageAt: null,
           messageCount: 0
         });
+        await setDoc(matchRef, matchData);
 
         console.log('🎉 Pet match created with conversation:', conversationId);
         return { matched: true, matchId, conversationId };
@@ -2552,11 +2563,12 @@ export const petMatchingService = {
   async passPet(fromPetId: string, toPetId: string): Promise<void> {
     try {
       const passRef = doc(db, COLLECTIONS.PET_PASSES, `${fromPetId}_${toPetId}`);
-      await setDoc(passRef, {
+      const passData = sanitizeForFirestore({
         fromPetId,
         toPetId,
         createdAt: serverTimestamp()
       });
+      await setDoc(passRef, passData);
       console.log('✅ Pet passed');
     } catch (error) {
       console.error('❌ Error passing pet:', error);
