@@ -10,9 +10,9 @@ import {
   Dimensions,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { Heart } from 'lucide-react-native';
+import { Heart, MessageCircle } from 'lucide-react-native';
 import { Pet } from '@/types';
-import { COLORS } from '@/constants/colors';
+import { COLORS, RADIUS, SPACING, TYPOGRAPHY, SHADOWS } from '@/theme/tokens';
 
 const { width } = Dimensions.get('window');
 
@@ -74,13 +74,13 @@ export default function MatchModal({
         >
           <View style={styles.heartContainer}>
             <View style={styles.heartBackground}>
-              <Heart size={60} color={COLORS.white} fill={COLORS.error} />
+              <Heart size={60} color={COLORS.surface} fill={COLORS.primary} />
             </View>
           </View>
 
           <Text style={styles.title}>C&apos;est un match! 🎉</Text>
           <Text style={styles.subtitle}>
-            Vous avez tous les deux aimé vos animaux!
+            Vous avez tous les deux liké ces animaux
           </Text>
 
           <View style={styles.petImageContainer}>
@@ -101,12 +101,12 @@ export default function MatchModal({
             <TouchableOpacity
               style={[styles.button, styles.primaryButton]}
               onPress={() => {
-                onClose();
                 onSendMessage?.();
               }}
               activeOpacity={0.8}
             >
-              <Text style={styles.primaryButtonText}>Envoyer un message</Text>
+              <MessageCircle size={20} color={COLORS.surface} />
+              <Text style={styles.primaryButtonText}>Discuter</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -128,106 +128,90 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: COLORS.overlay,
   },
   content: {
-    width: width - 48,
-    backgroundColor: COLORS.white,
-    borderRadius: 24,
-    padding: 24,
+    width: width - SPACING.xxl,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.card,
+    padding: SPACING.xl,
     alignItems: 'center',
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 12,
+    ...SHADOWS.floatingBar,
   },
   heartContainer: {
-    marginBottom: 20,
+    marginBottom: SPACING.lg,
   },
   heartBackground: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: COLORS.error,
+    backgroundColor: COLORS.primarySoft,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: COLORS.error,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700' as const,
-    color: COLORS.black,
-    marginBottom: 8,
+    ...TYPOGRAPHY.title,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.sm,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
-    color: COLORS.gray,
-    marginBottom: 24,
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.lg,
     textAlign: 'center',
-    lineHeight: 22,
   },
   petImageContainer: {
     width: '100%',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: SPACING.lg,
   },
   petImage: {
     width: 160,
     height: 160,
     borderRadius: 80,
-    marginBottom: 16,
-    borderWidth: 4,
-    borderColor: COLORS.secondary,
+    marginBottom: SPACING.md,
+    backgroundColor: COLORS.surfaceSecondary,
   },
   petInfo: {
     alignItems: 'center',
   },
   petName: {
+    ...TYPOGRAPHY.h2,
     fontSize: 24,
-    fontWeight: '700' as const,
-    color: COLORS.black,
-    marginBottom: 4,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.xs,
   },
   petDetails: {
-    fontSize: 16,
-    color: COLORS.gray,
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
   },
   buttonContainer: {
     width: '100%',
-    gap: 12,
+    gap: SPACING.sm,
   },
   button: {
     width: '100%',
-    paddingVertical: 16,
-    borderRadius: 16,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: SPACING.sm,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.button,
   },
   primaryButton: {
-    backgroundColor: COLORS.secondary,
-    shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: COLORS.primary,
+    ...SHADOWS.card,
   },
   primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: COLORS.white,
+    ...TYPOGRAPHY.button,
+    color: COLORS.surface,
   },
   secondaryButton: {
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: COLORS.surfaceSecondary,
   },
   secondaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: COLORS.black,
+    ...TYPOGRAPHY.button,
+    color: COLORS.textPrimary,
   },
 });

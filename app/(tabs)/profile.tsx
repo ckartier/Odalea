@@ -5,48 +5,33 @@ import {
   View, 
   ScrollView, 
   TouchableOpacity,
-  FlatList,
   RefreshControl,
   Alert,
-  Platform,
   ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Href, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { COLORS, SHADOWS } from '@/constants/colors';
-import { TYPOGRAPHY } from '@/constants/typography';
-import GlassCard from '@/components/GlassCard';
-import AppBackground from '@/components/AppBackground';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { COLORS, RADIUS, SPACING, TYPOGRAPHY, SHADOWS } from '@/theme/tokens';
 
-import Badge from '@/components/Badge';
-import Button from '@/components/Button';
-import PhotoUploader from '@/components/PhotoUploader';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { StorageService } from '@/services/storage';
-import { useBadges } from '@/hooks/badges-store';
-import { useChallenges } from '@/hooks/challenges-store';
 import { usePremium } from '@/hooks/premium-store';
 import { useActivePet } from '@/hooks/active-pet-store';
 import { usePets } from '@/hooks/pets-store';
 import { useSocial } from '@/hooks/social-store';
 import { PostCard } from '@/components/PostCard';
 import { Post } from '@/types';
-
 import { useFriends } from '@/hooks/friends-store';
 import { 
   LogOut, 
-  MapPin, 
-  Phone, 
   Plus, 
   Settings, 
-  Shield, 
-  Star, 
-  User as UserIcon,
-  Users,
-  Trophy,
-  Heart,
-  Lock,
+  Shield,
+  Star,
+  ChevronRight,
+  MessageCircle,
 } from 'lucide-react-native';
 
 export default function ProfileScreen() {
@@ -54,10 +39,8 @@ export default function ProfileScreen() {
   const toHref = (path: string): Href => path as Href;
   const { user, signOut, updateUser } = useFirebaseUser();
   const { friends } = useFriends();
-  const { getUnlockedBadges } = useBadges();
-  const { getUserActiveChallenges, getUserCompletedChallenges } = useChallenges();
   const { isPremium } = usePremium();
-  const { activePetId, activePet, setActivePet } = useActivePet();
+  const { activePetId, setActivePet } = useActivePet();
   const { userPets } = usePets();
   const { 
     getUserPosts, 
@@ -73,7 +56,6 @@ export default function ProfileScreen() {
     isDeletingPost,
   } = useSocial();
 
-  
   const [refreshing, setRefreshing] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | undefined>(user?.photo);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -83,18 +65,9 @@ export default function ProfileScreen() {
   const [commentsMap, setCommentsMap] = useState<Record<string, any[]>>({});
   const [loadingComments, setLoadingComments] = useState<Record<string, boolean>>({});
   
-  // Update profile photo when user changes
   useEffect(() => {
     setProfilePhoto(user?.photo);
   }, [user?.photo]);
-  
-
-  
-  const unlockedBadges = getUnlockedBadges();
-  const activeChallenges = user ? getUserActiveChallenges(user.id) : [];
-  const completedChallenges = user ? getUserCompletedChallenges(user.id) : [];
-  
-
   
   const loadUserPosts = useCallback(async () => {
     if (!user) return;
@@ -123,16 +96,11 @@ export default function ProfileScreen() {
     router.push(toHref('/pet/add'));
   };
   
-  const handleEditProfile = () => {
-    router.push(toHref('/profile/edit'));
-  };
-  
   const handlePhotoChange = async (uri: string | null) => {
     if (!user) return;
     
     try {
       setUploadingPhoto(true);
-      console.log('📤 Uploading profile photo:', uri);
       
       let photoUrl: string | undefined = undefined;
       
@@ -142,22 +110,19 @@ export default function ProfileScreen() {
             console.log(`📊 Upload progress: ${progress.progress.toFixed(1)}%`);
           },
         });
-        console.log('✅ Photo uploaded to Firebase Storage:', photoUrl);
       }
       
       setProfilePhoto(photoUrl);
       
       const result = await updateUser({ ...user, photo: photoUrl });
       if (result.success) {
-        console.log('✅ Profile photo updated successfully');
-        Alert.alert('Succès', 'Photo de profil mise à jour avec succès.');
+        Alert.alert('Succès', 'Photo de profil mise à jour.');
       } else {
-        console.error('❌ Failed to update profile photo:', result.error);
-        Alert.alert('Erreur', 'Impossible de mettre à jour la photo de profil.');
+        Alert.alert('Erreur', 'Impossible de mettre à jour la photo.');
       }
     } catch (error) {
       console.error('❌ Error uploading photo:', error);
-      Alert.alert('Erreur', 'Impossible d\'uploader la photo. Veuillez réessayer.');
+      Alert.alert('Erreur', 'Impossible d\'uploader la photo.');
       setProfilePhoto(user.photo);
     } finally {
       setUploadingPhoto(false);
@@ -166,12 +131,12 @@ export default function ProfileScreen() {
   
   const handleSignOut = async () => {
     Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
+      'Déconnexion',
+      'Voulez-vous vraiment vous déconnecter ?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Annuler', style: 'cancel' },
         { 
-          text: 'Sign Out', 
+          text: 'Déconnexion', 
           style: 'destructive',
           onPress: async () => {
             await signOut();
@@ -227,826 +192,456 @@ export default function ProfileScreen() {
     Alert.alert('Partager', 'Fonctionnalité de partage à venir!');
   }, []);
   
-
-  
-
-  
-
-  
   if (!user) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Loading profile...</Text>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
-  
-  const primaryPetGender = user.pets[0]?.gender;
-  const tint = primaryPetGender === 'male' ? 'male' : primaryPetGender === 'female' ? 'female' : 'neutral';
 
   return (
-    <AppBackground>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar style="dark" />
-      
-      {/* Fixed Header */}
-      <GlassCard tint={tint as 'male' | 'female' | 'neutral'} style={styles.fixedHeader} noPadding>
-        <View style={styles.headerInner}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.headerName}>@{user.pseudo}</Text>
-            <Text style={styles.friendsCount}>{friends.length} {friends.length <= 1 ? 'ami' : 'amis'}</Text>
-          </View>
-          
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={styles.headerButton}
-              onPress={() => router.push(toHref(user?.isCatSitter ? '/(pro)/cat-sitter-dashboard' : '/(tabs)/cat-sitter'))}
-              testID="profile-cat-sitter-button"
-            >
-              <Heart size={20} color={COLORS.primary} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.headerButton}
-              onPress={() => router.push(toHref('/friends'))}
-            >
-              <Users size={20} color={COLORS.primary} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.headerButton}
-              onPress={handleEditProfile}
-            >
-              <Settings size={20} color={COLORS.primary} />
-            </TouchableOpacity>
-            
-            {user.role === 'admin' && (
-              <TouchableOpacity
-                style={styles.headerButton}
-                onPress={() => router.push(toHref('/admin'))}
-              >
-                <Lock size={20} color={COLORS.accent} />
-              </TouchableOpacity>
-            )}
-            
-            <TouchableOpacity
-              style={styles.headerButton}
-              onPress={handleSignOut}
-            >
-              <LogOut size={20} color={COLORS.error} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </GlassCard>
       
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
         }
       >
-        {/* Profile Info */}
-        <View style={styles.profileSection}>
-          <View style={styles.profilePhotoContainer}>
-            <PhotoUploader
-              value={profilePhoto}
-              onChange={handlePhotoChange}
-              placeholder="Ajouter photo"
-              style={styles.profilePhotoUploader}
+        {/* Header Card */}
+        <View style={styles.headerCard}>
+          <TouchableOpacity
+            style={styles.profilePhotoContainer}
+            onPress={() => handlePhotoChange(null)}
+          >
+            <Image
+              source={{ uri: profilePhoto || 'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=500' }}
+              style={styles.profilePhoto}
+              contentFit="cover"
             />
             {uploadingPhoto && (
               <View style={styles.uploadingOverlay}>
-                <Text style={styles.uploadingText}>Upload...</Text>
+                <ActivityIndicator color={COLORS.surface} />
               </View>
             )}
-          </View>
-          
-          <View style={styles.detailsContainer}>
-            <View style={styles.detailItem}>
-              <MapPin size={16} color={COLORS.darkGray} />
-              <Text style={styles.detailText}>{user.city}</Text>
-            </View>
-            
-            <View style={styles.detailItem}>
-              <Phone size={16} color={COLORS.darkGray} />
-              <Text style={styles.detailText}>+{user.countryCode} {user.phoneNumber}</Text>
-            </View>
-          </View>
-        </View>
-        
-        {/* Membership Status */}
-        <GlassCard 
-          tint={tint as 'male' | 'female' | 'neutral'}
-          style={styles.membershipCard}
-          onPress={() => router.push(toHref('/premium'))}
-        >
-          <View style={styles.membershipInfo}>
-            {isPremium ? (
-              <View style={styles.premiumIconContainer}>
-                <Star size={24} color={COLORS.accent} fill={COLORS.accent} />
-              </View>
-            ) : (
-              <Shield size={24} color={COLORS.darkGray} />
-            )}
-            <View>
-              <Text style={styles.membershipTitle}>
-                {isPremium ? 'Membre Premium' : 'Compte Gratuit'}
-              </Text>
-              <Text style={styles.membershipSubtitle}>
-                {isPremium 
-                  ? 'Profitez de toutes les fonctionnalités premium' 
-                  : 'Passez à Premium pour supprimer les pubs'}
-              </Text>
-            </View>
-          </View>
-          
-          {!isPremium ? (
-            <Button
-              title="Passer à Premium"
-              onPress={() => router.push(toHref('/premium'))}
-              variant="primary"
-              size="small"
-            />
-          ) : (
-            <Text style={styles.managePremiumText}>Gérer</Text>
-          )}
-        </GlassCard>
-        
-        {/* Friends Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Mes amis</Text>
-          <TouchableOpacity onPress={() => router.push(toHref('/friends'))}>
-            <Text style={styles.seeAllText}>Voir tout</Text>
           </TouchableOpacity>
+          
+          <Text style={styles.userName}>@{user.pseudo}</Text>
+          <Text style={styles.userCity}>{user.city}</Text>
+          
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{userPosts.length}</Text>
+              <Text style={styles.statLabel}>Posts</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{friends.length}</Text>
+              <Text style={styles.statLabel}>Amis</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{userPets.length}</Text>
+              <Text style={styles.statLabel}>Animaux</Text>
+            </View>
+          </View>
         </View>
-        
-        {friends.length > 0 ? (
-          <FlatList
-            data={friends.slice(0, 10)}
-            renderItem={({ item }) => (
-              <GlassCard 
-                tint={tint as 'male' | 'female' | 'neutral'}
-                style={styles.friendItem}
-                onPress={() => router.push(toHref(`/messages/${item.id}`))}
-              >
-                {item.photo ? (
-                  <Image 
-                    source={{ uri: item.photo }} 
-                    style={styles.friendAvatar}
-                    contentFit="cover"
-                  />
-                ) : (
-                  <View style={[styles.friendAvatar, styles.friendAvatarPlaceholder]}>
-                    <UserIcon size={24} color={COLORS.mediumGray} />
-                  </View>
-                )}
-                <View style={styles.friendInfo}>
-                  <Text style={styles.friendName}>@{item.pseudo || item.name}</Text>
-                  <Text style={styles.friendAction}>Envoyer un message</Text>
-                </View>
-              </GlassCard>
-            )}
-            keyExtractor={item => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.friendsList}
-          />
-        ) : (
-          <GlassCard tint={tint as 'male' | 'female' | 'neutral'} style={styles.emptyFriendsCard}>
-            <Users size={32} color={COLORS.mediumGray} />
-            <Text style={styles.emptyFriendsText}>Aucun ami pour le moment</Text>
-            <TouchableOpacity onPress={() => router.push(toHref('/friends'))}>
-              <Text style={styles.addFriendsText}>Ajouter des amis</Text>
+
+        {/* My Animals */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Mes animaux</Text>
+            <TouchableOpacity
+              style={styles.fabButton}
+              onPress={handleAddPet}
+              activeOpacity={0.8}
+            >
+              <Plus size={20} color={COLORS.surface} />
             </TouchableOpacity>
-          </GlassCard>
-        )}
-        
-        {/* My Pets Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Mes animaux</Text>
-          <TouchableOpacity onPress={handleAddPet} style={styles.addPetButton}>
-            <Plus size={18} color={COLORS.white} />
-            <Text style={styles.addPetButtonText}>Ajouter</Text>
-          </TouchableOpacity>
-        </View>
-        
-        {userPets.length > 0 ? (
-          <>
-            <FlatList
-              data={userPets}
-              renderItem={({ item }) => {
-                const isActive = activePetId === item.id;
+          </View>
+
+          {userPets.length > 0 ? (
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.petsScroll}
+            >
+              {userPets.map((pet) => {
+                const isActive = activePetId === pet.id;
                 return (
                   <TouchableOpacity
-                    onPress={() => setActivePet(item.id)}
-                    style={[styles.petCardWrapper, isActive && styles.petCardWrapperActive]}
+                    key={pet.id}
+                    style={[styles.petCard, isActive && styles.petCardActive]}
+                    onPress={() => setActivePet(pet.id)}
+                    activeOpacity={0.9}
                   >
-                    <View style={[styles.petCardInner, isActive && styles.petCardInnerActive]}>
-                      <Image 
-                        source={{ uri: item.mainPhoto || 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131' }}
-                        style={styles.petCardImage}
-                        contentFit="cover"
-                      />
-                      <View style={styles.petCardInfo}>
-                        <Text style={styles.petCardName}>{item.name}</Text>
-                        <Text style={styles.petCardBreed}>{item.breed || item.type}</Text>
-                      </View>
-                      {isActive && (
-                        <View style={styles.activePetBadge}>
-                          <Text style={styles.activePetText}>✓ Actif</Text>
-                        </View>
-                      )}
+                    <Image
+                      source={{ uri: pet.mainPhoto || 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131' }}
+                      style={styles.petImage}
+                      contentFit="cover"
+                    />
+                    <View style={styles.petInfo}>
+                      <Text style={styles.petName}>{pet.name}</Text>
+                      <Text style={styles.petBreed}>{pet.breed}</Text>
                     </View>
+                    {isActive && (
+                      <View style={styles.activeBadge}>
+                        <Text style={styles.activeBadgeText}>✓</Text>
+                      </View>
+                    )}
                   </TouchableOpacity>
                 );
-              }}
-              keyExtractor={item => item.id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.petsContainer}
-            />
-            <View style={styles.activePetHintContainer}>
-              <Text style={styles.activePetHint}>
-                {activePet ? `Animal actif : ${activePet.name}` : 'Sélectionnez un animal actif'}
-              </Text>
-              <Text style={styles.activePetSubhint}>
-                Vos posts et actions seront signés par cet animal
-              </Text>
-            </View>
-          </>
-        ) : (
-          <TouchableOpacity
-            style={[styles.addPetCard, SHADOWS.small]}
-            onPress={handleAddPet}
-          >
-            <Plus size={32} color={COLORS.maleAccent} />
-            <Text style={styles.addPetText}>Ajoutez votre premier animal</Text>
-          </TouchableOpacity>
-        )}
-        
-        {/* User Stats */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{userPosts.length}</Text>
-            <Text style={styles.statLabel}>Posts</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{friends.length}</Text>
-            <Text style={styles.statLabel}>Amis</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{completedChallenges.length}</Text>
-            <Text style={styles.statLabel}>Défis</Text>
+              })}
+            </ScrollView>
+          ) : (
+            <TouchableOpacity
+              style={styles.emptyCard}
+              onPress={handleAddPet}
+              activeOpacity={0.8}
+            >
+              <Plus size={32} color={COLORS.textSecondary} />
+              <Text style={styles.emptyText}>Ajouter un animal</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Raccourcis</Text>
+          
+          <View style={styles.actionsCard}>
+            <TouchableOpacity
+              style={styles.actionItem}
+              onPress={() => router.push(toHref('/settings/index'))}
+              activeOpacity={0.7}
+            >
+              <View style={styles.actionLeft}>
+                <View style={[styles.actionIcon, { backgroundColor: COLORS.primarySoft }]}>
+                  <Settings size={20} color={COLORS.primary} />
+                </View>
+                <Text style={styles.actionText}>Paramètres</Text>
+              </View>
+              <ChevronRight size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+
+            <View style={styles.actionDivider} />
+
+            <TouchableOpacity
+              style={styles.actionItem}
+              onPress={() => router.push(toHref('/premium'))}
+              activeOpacity={0.7}
+            >
+              <View style={styles.actionLeft}>
+                <View style={[styles.actionIcon, { backgroundColor: 'rgba(255, 193, 7, 0.1)' }]}>
+                  <Star size={20} color="#FFC107" fill={isPremium ? "#FFC107" : "none"} />
+                </View>
+                <Text style={styles.actionText}>
+                  {isPremium ? 'Premium actif' : 'Passer à Premium'}
+                </Text>
+              </View>
+              <ChevronRight size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+
+            <View style={styles.actionDivider} />
+
+            <TouchableOpacity
+              style={styles.actionItem}
+              onPress={() => router.push(toHref('/settings/privacy'))}
+              activeOpacity={0.7}
+            >
+              <View style={styles.actionLeft}>
+                <View style={[styles.actionIcon, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
+                  <Shield size={20} color="#4CAF50" />
+                </View>
+                <Text style={styles.actionText}>Sécurité</Text>
+              </View>
+              <ChevronRight size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+
+            <View style={styles.actionDivider} />
+
+            <TouchableOpacity
+              style={styles.actionItem}
+              onPress={handleSignOut}
+              activeOpacity={0.7}
+            >
+              <View style={styles.actionLeft}>
+                <View style={[styles.actionIcon, { backgroundColor: 'rgba(220, 38, 38, 0.1)' }]}>
+                  <LogOut size={20} color={COLORS.danger} />
+                </View>
+                <Text style={[styles.actionText, { color: COLORS.danger }]}>Déconnexion</Text>
+              </View>
+              <ChevronRight size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
           </View>
         </View>
-        
-        {/* My Posts Section */}
-        <View style={styles.sectionHeader}>
+
+        {/* My Posts */}
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Mes posts</Text>
-        </View>
-        
-        {loadingPosts ? (
-          <View style={styles.postsLoadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-          </View>
-        ) : userPosts.length > 0 ? (
-          userPosts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              isLiked={isPostLiked(post.id)}
-              currentUserId={user?.id}
-              onLike={toggleLike}
-              onComment={addComment}
-              onShare={handleShare}
-              onDelete={handleDeletePost}
-              onReport={reportPost}
-              onBlock={blockUser}
-              isTogglingLike={isTogglingLike}
-              isAddingComment={isAddingComment}
-              isDeletingPost={isDeletingPost}
-              comments={commentsMap[post.id] || []}
-              isCommentsLoading={loadingComments[post.id] || false}
-              isCommentsExpanded={expandedComments.has(post.id)}
-              onToggleComments={handleToggleComments}
-            />
-          ))
-        ) : (
-          <View style={styles.emptyPostsCard}>
-            <Text style={styles.emptyPostsText}>Aucune publication</Text>
-            <Text style={styles.emptyPostsSubtext}>Partagez vos moments dans la communauté</Text>
-          </View>
-        )}
-        
-        {/* Challenges Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Mes défis</Text>
-          <TouchableOpacity onPress={() => router.push(toHref('/(tabs)/challenges'))}>
-            <Text style={styles.seeAllText}>Voir tout</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <GlassCard tint={tint as 'male' | 'female' | 'neutral'} style={styles.challengesContainer}>
-          <View style={styles.challengesSummary}>
-            <View style={styles.challengeStatItem}>
-              <Trophy size={20} color={COLORS.accent} />
-              <Text style={styles.challengeStatNumber}>{completedChallenges.length}</Text>
-              <Text style={styles.challengeStatLabel}>Terminés</Text>
+          
+          {loadingPosts ? (
+            <View style={styles.loadingCard}>
+              <ActivityIndicator size="large" color={COLORS.primary} />
             </View>
-            <View style={styles.challengeStatItem}>
-              <Trophy size={20} color={COLORS.primary} />
-              <Text style={styles.challengeStatNumber}>{activeChallenges.length}</Text>
-              <Text style={styles.challengeStatLabel}>En cours</Text>
+          ) : userPosts.length > 0 ? (
+            userPosts.map((post) => (
+              <PostCard
+                key={post.id}
+                post={post}
+                isLiked={isPostLiked(post.id)}
+                currentUserId={user?.id}
+                onLike={toggleLike}
+                onComment={addComment}
+                onShare={handleShare}
+                onDelete={handleDeletePost}
+                onReport={reportPost}
+                onBlock={blockUser}
+                isTogglingLike={isTogglingLike}
+                isAddingComment={isAddingComment}
+                isDeletingPost={isDeletingPost}
+                comments={commentsMap[post.id] || []}
+                isCommentsLoading={loadingComments[post.id] || false}
+                isCommentsExpanded={expandedComments.has(post.id)}
+                onToggleComments={handleToggleComments}
+              />
+            ))
+          ) : (
+            <View style={styles.emptyCard}>
+              <MessageCircle size={32} color={COLORS.textSecondary} />
+              <Text style={styles.emptyText}>Aucune publication</Text>
+              <Text style={styles.emptySubtext}>Partagez vos moments dans la communauté</Text>
             </View>
-          </View>
-        </GlassCard>
-        
-        {/* Badges Section */}
-        {unlockedBadges.length > 0 && (
-          <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Vos badges</Text>
-              <TouchableOpacity onPress={() => router.push(toHref('/badges'))}>
-                <Text style={styles.seeAllText}>Voir tout</Text>
-              </TouchableOpacity>
-            </View>
-            
-            <FlatList
-              data={unlockedBadges}
-              renderItem={({ item }) => (
-                <Badge badge={item} style={styles.badge} />
-              )}
-              keyExtractor={item => item.id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.badgesContainer}
-            />
-          </>
-        )}
-        
-        
-        {/* Account Info */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Informations du compte</Text>
+          )}
         </View>
-        
-        <GlassCard tint={tint as 'male' | 'female' | 'neutral'} style={styles.infoCard}>
-          <View style={styles.infoItem}>
-            <UserIcon size={18} color={COLORS.darkGray} />
-            <Text style={styles.infoLabel}>Email</Text>
-            <Text style={styles.infoValue} numberOfLines={1}>{user.email}</Text>
-          </View>
-          
-          <View style={styles.divider} />
-          
-          <View style={styles.infoItem}>
-            <MapPin size={18} color={COLORS.darkGray} />
-            <Text style={styles.infoLabel}>Ville</Text>
-            <Text style={styles.infoValue} numberOfLines={1}>{user.city}</Text>
-          </View>
-          
-          <View style={styles.divider} />
-          
-          <View style={styles.infoItem}>
-            <Star size={18} color={COLORS.darkGray} />
-            <Text style={styles.infoLabel}>Membre depuis</Text>
-            <Text style={styles.infoValue}>
-              {new Date(user.createdAt).toLocaleDateString('fr-FR')}
-            </Text>
-          </View>
-        </GlassCard>
       </ScrollView>
-    </AppBackground>
+
+      {/* FAB for adding pet */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={handleAddPet}
+        activeOpacity={0.8}
+      >
+        <Plus size={24} color={COLORS.surface} />
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: COLORS.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  fixedHeader: {
-    marginHorizontal: 16,
-    marginTop: Platform.OS === 'ios' ? 12 : 16,
-    marginBottom: 8,
-  },
-  headerInner: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  headerLeft: {
-    flex: 1,
-  },
-  headerName: {
-    ...TYPOGRAPHY.h3,
-  },
-  friendsCount: {
-    ...TYPOGRAPHY.body2,
-    color: COLORS.darkGray,
-    marginTop: 2,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: COLORS.background,
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 40,
+    paddingBottom: 100,
   },
-  profileSection: {
-    marginBottom: 24,
+  headerCard: {
+    backgroundColor: COLORS.surface,
+    paddingVertical: SPACING.xl,
+    paddingHorizontal: SPACING.lg,
     alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
   profilePhotoContainer: {
     position: 'relative',
-    marginBottom: 16,
-    alignItems: 'center',
+    marginBottom: SPACING.md,
   },
-  profilePhotoUploader: {
+  profilePhoto: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    overflow: 'hidden',
+    backgroundColor: COLORS.surfaceSecondary,
   },
   uploadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
     borderRadius: 50,
-  },
-  uploadingText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: '600' as const,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  profileInfo: {
-    flex: 1,
-  },
-  nameContainer: {
-    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    marginBottom: 8,
   },
-  name: {
+  userName: {
+    ...TYPOGRAPHY.title,
     fontSize: 24,
-    fontWeight: '700' as const,
-    color: COLORS.black,
-    marginRight: 8,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.xs,
   },
-  badgeContainer: {
-    backgroundColor: COLORS.maleAccent,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
+  userCity: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.lg,
   },
-  badgeText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: '500' as const,
-  },
-  detailsContainer: {
-    gap: 4,
-  },
-  detailItem: {
+  statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: SPACING.lg,
   },
-  detailText: {
-    ...TYPOGRAPHY.body2,
-    color: COLORS.darkGray,
-  },
-  actionsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  actionButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
+  statItem: {
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.mediumGray,
   },
-  membershipCard: {
-    marginBottom: 24,
+  statNumber: {
+    ...TYPOGRAPHY.h2,
+    color: COLORS.textPrimary,
   },
-  premiumIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  membershipInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  membershipTitle: {
-    ...TYPOGRAPHY.h5,
-    marginBottom: 2,
-  },
-  membershipSubtitle: {
+  statLabel: {
     ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs,
+  },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: COLORS.border,
+  },
+  section: {
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.lg,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-    marginTop: 24,
+    marginBottom: SPACING.md,
   },
   sectionTitle: {
-    ...TYPOGRAPHY.h4,
+    ...TYPOGRAPHY.h2,
+    color: COLORS.textPrimary,
   },
-  seeAllText: {
-    ...TYPOGRAPHY.body2,
-    color: COLORS.maleAccent,
-  },
-  petsContainer: {
-    paddingRight: 16,
-    gap: 16,
-  },
-  petCardWrapper: {
-    marginRight: 16,
+  fabButton: {
+    width: 32,
+    height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.white,
-    ...SHADOWS.small,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...SHADOWS.card,
   },
-  petCardWrapperActive: {
+  petsScroll: {
+    gap: SPACING.md,
+  },
+  petCard: {
+    width: 140,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.card,
+    overflow: 'hidden',
     borderWidth: 2,
+    borderColor: 'transparent',
+    ...SHADOWS.card,
+  },
+  petCardActive: {
     borderColor: COLORS.primary,
   },
-  petCardInner: {
-    width: 160,
-    borderRadius: 16,
+  petImage: {
+    width: '100%',
+    height: 120,
+    backgroundColor: COLORS.surfaceSecondary,
+  },
+  petInfo: {
+    padding: SPACING.md,
+  },
+  petName: {
+    ...TYPOGRAPHY.body,
+    fontWeight: '600' as const,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.xs / 2,
+  },
+  petBreed: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+  },
+  activeBadge: {
+    position: 'absolute',
+    top: SPACING.sm,
+    right: SPACING.sm,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  activeBadgeText: {
+    color: COLORS.surface,
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  emptyCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.card,
+    padding: SPACING.xl,
+    alignItems: 'center',
+    gap: SPACING.sm,
+    ...SHADOWS.card,
+  },
+  emptyText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+  },
+  emptySubtext: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
+  actionsCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.card,
+    ...SHADOWS.card,
     overflow: 'hidden',
   },
-  petCardInnerActive: {
-    opacity: 1,
-  },
-  petCardImage: {
-    width: '100%',
-    height: 160,
-  },
-  petCardInfo: {
-    padding: 12,
-    backgroundColor: COLORS.white,
-  },
-  petCardName: {
-    ...TYPOGRAPHY.h5,
-    marginBottom: 2,
-  },
-  petCardBreed: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.darkGray,
-  },
-  activePetBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    backgroundColor: COLORS.success,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    ...SHADOWS.small,
-  },
-  activePetText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.white,
-    fontWeight: '700' as const,
-  },
-  activePetHintContainer: {
-    marginTop: 12,
-    padding: 16,
-    backgroundColor: COLORS.lightGray,
-    borderRadius: 12,
+  actionItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    padding: SPACING.md,
   },
-  activePetHint: {
-    ...TYPOGRAPHY.subtitle2,
-    color: COLORS.black,
-    textAlign: 'center',
-  },
-  activePetSubhint: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.darkGray,
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  addPetButton: {
+  actionLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    gap: SPACING.md,
   },
-  addPetButtonText: {
-    ...TYPOGRAPHY.label,
-    color: COLORS.white,
-  },
-  addPetCard: {
-    width: 160,
-    height: 220,
-    borderRadius: 16,
-    backgroundColor: COLORS.default,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.mediumGray,
-    borderStyle: 'dashed',
-  },
-  addPetText: {
-    ...TYPOGRAPHY.h5,
-    color: COLORS.maleAccent,
-    marginTop: 8,
-  },
-  badgesContainer: {
-    paddingRight: 16,
-    gap: 16,
-  },
-  badge: {
-    marginRight: 12,
-  },
-  infoCard: {
-    marginBottom: 24,
-  },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    minHeight: 40,
-  },
-  infoLabel: {
-    ...TYPOGRAPHY.label,
-    marginLeft: 10,
-    width: 90,
-  },
-  infoValue: {
-    ...TYPOGRAPHY.body2,
-    flex: 1,
-    color: COLORS.darkGray,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.mediumGray,
-  },
-  friendsList: {
-    paddingRight: 16,
-    gap: 12,
-  },
-  friendItem: {
-    alignItems: 'center',
-    width: 120,
-    marginRight: 12,
-  },
-  friendAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginBottom: 8,
-    backgroundColor: COLORS.lightGray,
-  },
-  friendAvatarPlaceholder: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  friendInfo: {
-    alignItems: 'center',
-  },
-  friendName: {
-    ...TYPOGRAPHY.h6,
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  friendAction: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.primary,
-    textAlign: 'center',
-  },
-  emptyFriendsCard: {
-    alignItems: 'center',
-    paddingVertical: 32,
-    paddingHorizontal: 24,
-  },
-  emptyFriendsText: {
-    ...TYPOGRAPHY.body2,
-    color: COLORS.darkGray,
-    marginTop: 12,
-    textAlign: 'center',
-  },
-  addFriendsText: {
-    ...TYPOGRAPHY.h6,
-    color: COLORS.primary,
-    marginTop: 8,
-  },
-  challengesContainer: {
-    marginBottom: 16,
-  },
-  challengesSummary: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  challengeStatItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  challengeStatNumber: {
-    ...TYPOGRAPHY.h2,
-    marginTop: 8,
-  },
-  challengeStatLabel: {
-    ...TYPOGRAPHY.caption,
-    marginTop: 4,
-  },
-  managePremiumText: {
-    ...TYPOGRAPHY.subtitle2,
-    color: COLORS.primary,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 20,
-    marginVertical: 24,
-    ...SHADOWS.small,
-    justifyContent: 'space-around',
-    alignItems: 'center',
-  },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statNumber: {
-    ...TYPOGRAPHY.h2,
-    color: COLORS.black,
-  },
-  statLabel: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.darkGray,
-    marginTop: 4,
-  },
-  statDivider: {
-    width: 1,
+  actionIcon: {
+    width: 40,
     height: 40,
-    backgroundColor: COLORS.mediumGray,
-  },
-  emptyPostsCard: {
-    padding: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    ...SHADOWS.small,
   },
-  emptyPostsText: {
-    ...TYPOGRAPHY.h5,
-    color: COLORS.darkGray,
-    marginBottom: 8,
+  actionText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textPrimary,
   },
-  emptyPostsSubtext: {
-    ...TYPOGRAPHY.body2,
-    color: COLORS.darkGray,
-    textAlign: 'center',
+  actionDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginLeft: SPACING.md + 40 + SPACING.md,
   },
-  postsLoadingContainer: {
-    padding: 40,
+  loadingCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.card,
+    padding: SPACING.xl,
     alignItems: 'center',
+    ...SHADOWS.card,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: SPACING.lg,
+    right: SPACING.lg,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...SHADOWS.floatingBar,
   },
 });

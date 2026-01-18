@@ -9,6 +9,7 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Heart, X } from 'lucide-react-native';
@@ -16,12 +17,22 @@ import { useMatching } from '@/hooks/matching-store';
 import { usePets } from '@/hooks/pets-store';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import MatchModal from '@/components/MatchModal';
+import { FloatingActionBar } from '@/components/FloatingActionBar';
 import { Pet } from '@/types';
-import { COLORS } from '@/constants/colors';
+import { COLORS, RADIUS, SPACING, TYPOGRAPHY, SHADOWS } from '@/theme/tokens';
 import { Stack, useRouter } from 'expo-router';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SWIPE_THRESHOLD = 120;
+
+type FilterType = 'all' | 'dog' | 'cat' | 'other';
+
+const FILTERS: { key: FilterType; label: string }[] = [
+  { key: 'all', label: 'Tous' },
+  { key: 'dog', label: 'Chiens' },
+  { key: 'cat', label: 'Chats' },
+  { key: 'other', label: 'Autres' },
+];
 
 export default function PetDiscoveryScreen() {
   const router = useRouter();
@@ -34,15 +45,15 @@ export default function PetDiscoveryScreen() {
     isLoadingDiscovery,
     likePet,
     passPet,
-    isLiking,
-    isPassing,
     showMatchModal,
     matchedPet,
     closeMatchModal,
   } = useMatching();
 
   const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
   const position = useRef(new Animated.ValueXY()).current;
+  
   const rotate = position.x.interpolate({
     inputRange: [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2],
     outputRange: ['-10deg', '0deg', '10deg'],
@@ -143,11 +154,11 @@ export default function PetDiscoveryScreen() {
           <Image source={{ uri: pet.mainPhoto }} style={styles.cardImage} resizeMode="cover" />
           
           <Animated.View style={[styles.likeStamp, { opacity: likeOpacity }]}>
-            <Text style={styles.stampText}>❤️ J&apos;AIME</Text>
+            <Text style={styles.stampText}>❤️</Text>
           </Animated.View>
 
           <Animated.View style={[styles.nopeStamp, { opacity: nopeOpacity }]}>
-            <Text style={styles.stampText}>✖️ PASSER</Text>
+            <Text style={styles.stampText}>✖️</Text>
           </Animated.View>
 
           <View style={styles.cardContent}>
@@ -183,16 +194,16 @@ export default function PetDiscoveryScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>Aucun animal sélectionné</Text>
+          <Text style={styles.emptyTitle}>Aucun animal</Text>
           <Text style={styles.emptyText}>
-            Veuillez ajouter un animal pour commencer à matcher
+            Ajoute un animal pour commencer à matcher
           </Text>
           <TouchableOpacity
-            style={styles.addButton}
+            style={styles.primaryButton}
             onPress={() => router.push('/pet/add')}
             activeOpacity={0.8}
           >
-            <Text style={styles.addButtonText}>Ajouter un animal</Text>
+            <Text style={styles.primaryButtonText}>Ajouter un animal</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -204,8 +215,8 @@ export default function PetDiscoveryScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.secondary} />
-          <Text style={styles.loadingText}>Recherche d&apos;animaux...</Text>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Recherche en cours...</Text>
         </View>
       </SafeAreaView>
     );
@@ -216,16 +227,16 @@ export default function PetDiscoveryScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>Plus d&apos;animaux à découvrir</Text>
+          <Text style={styles.emptyTitle}>Plus de profils</Text>
           <Text style={styles.emptyText}>
-            Revenez plus tard pour voir de nouveaux profils
+            Reviens plus tard pour voir de nouveaux animaux
           </Text>
           <TouchableOpacity
-            style={styles.addButton}
+            style={styles.primaryButton}
             onPress={() => router.back()}
             activeOpacity={0.8}
           >
-            <Text style={styles.addButtonText}>Retour</Text>
+            <Text style={styles.primaryButtonText}>Retour</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -237,14 +248,40 @@ export default function PetDiscoveryScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Découvrir</Text>
-        <TouchableOpacity
-          onPress={() => router.push('/matching/list' as any)}
-          style={styles.matchesButton}
-        >
-          <Heart size={24} color={COLORS.secondary} fill={COLORS.secondary} />
-        </TouchableOpacity>
+        <View style={styles.headerLeft}>
+          <Text style={styles.greeting}>Hey {user?.name?.split(' ')[0] || 'toi'}</Text>
+          {user?.photo && (
+            <Image source={{ uri: user.photo }} style={styles.avatar} />
+          )}
+        </View>
       </View>
+
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filtersContainer}
+      >
+        {FILTERS.map((filter) => (
+          <TouchableOpacity
+            key={filter.key}
+            style={[
+              styles.filterChip,
+              selectedFilter === filter.key && styles.filterChipActive,
+            ]}
+            onPress={() => setSelectedFilter(filter.key)}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.filterChipText,
+                selectedFilter === filter.key && styles.filterChipTextActive,
+              ]}
+            >
+              {filter.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
 
       <View style={styles.cardsContainer}>
         {discoveryPets.slice(currentIndex, currentIndex + 2).reverse().map((pet, index) =>
@@ -252,32 +289,29 @@ export default function PetDiscoveryScreen() {
         )}
       </View>
 
-      <View style={styles.buttonsContainer}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.passButton]}
-          onPress={handlePass}
-          disabled={isLiking || isPassing}
-          activeOpacity={0.8}
-        >
-          <X size={32} color={COLORS.white} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionButton, styles.likeButton]}
-          onPress={handleLike}
-          disabled={isLiking || isPassing}
-          activeOpacity={0.8}
-        >
-          <Heart size={32} color={COLORS.white} />
-        </TouchableOpacity>
-      </View>
+      <FloatingActionBar
+        actions={[
+          {
+            icon: <X size={28} color={COLORS.textPrimary} strokeWidth={2.5} />,
+            onPress: handlePass,
+            testID: 'pass-button',
+          },
+          {
+            icon: <Heart size={28} color={COLORS.surface} strokeWidth={2.5} fill={COLORS.surface} />,
+            onPress: handleLike,
+            primary: true,
+            testID: 'like-button',
+          },
+        ]}
+      />
 
       <MatchModal
         visible={showMatchModal}
         matchedPet={matchedPet}
         onClose={closeMatchModal}
         onSendMessage={() => {
-          if (matchedPet) {
+          closeMatchModal();
+          if (matchedPet?.ownerId) {
             router.push(`/messages/new?recipientId=${matchedPet.ownerId}` as any);
           }
         }}
@@ -289,53 +323,72 @@ export default function PetDiscoveryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700' as const,
-    color: COLORS.black,
-  },
-  matchesButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
+  headerLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    gap: SPACING.md,
+  },
+  greeting: {
+    ...TYPOGRAPHY.title,
+    color: COLORS.textPrimary,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.surfaceSecondary,
+  },
+  filtersContainer: {
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.md,
+    gap: SPACING.sm,
+  },
+  filterChip: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  filterChipActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  filterChipText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+  },
+  filterChipTextActive: {
+    color: COLORS.surface,
+    fontWeight: '600' as const,
   },
   cardsContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingBottom: 100,
   },
   card: {
     position: 'absolute',
-    width: SCREEN_WIDTH - 40,
-    height: SCREEN_HEIGHT * 0.65,
-    borderRadius: 24,
-    backgroundColor: COLORS.white,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+    width: SCREEN_WIDTH - (SPACING.lg * 2),
+    height: SCREEN_HEIGHT * 0.6,
+    borderRadius: RADIUS.card * 2,
+    backgroundColor: COLORS.surface,
+    ...SHADOWS.card,
     overflow: 'hidden',
   },
   nextCard: {
-    opacity: 0.9,
+    opacity: 0.5,
     transform: [{ scale: 0.95 }],
   },
   cardImage: {
@@ -347,138 +400,99 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 20,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    padding: SPACING.lg,
+    paddingBottom: SPACING.xl,
+    backgroundColor: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
+    borderBottomLeftRadius: RADIUS.card * 2,
+    borderBottomRightRadius: RADIUS.card * 2,
   },
   petInfo: {
-    gap: 8,
+    gap: SPACING.xs,
   },
   petName: {
+    ...TYPOGRAPHY.title,
     fontSize: 32,
-    fontWeight: '700' as const,
-    color: COLORS.white,
+    color: COLORS.surface,
   },
   petDetails: {
-    fontSize: 18,
-    color: COLORS.white,
+    ...TYPOGRAPHY.body,
+    color: COLORS.surface,
     opacity: 0.9,
+  },
+  petLocation: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.surface,
+    opacity: 0.8,
   },
   characterContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 8,
+    gap: SPACING.sm,
+    marginTop: SPACING.sm,
   },
   characterBadge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.pill,
   },
   characterText: {
-    fontSize: 14,
-    color: COLORS.white,
+    ...TYPOGRAPHY.caption,
+    color: COLORS.surface,
     fontWeight: '500' as const,
   },
   likeStamp: {
     position: 'absolute',
-    top: 60,
-    right: 40,
-    transform: [{ rotate: '20deg' }],
-    borderWidth: 6,
-    borderColor: COLORS.success,
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    top: 80,
+    right: SPACING.xl,
+    fontSize: 80,
   },
   nopeStamp: {
     position: 'absolute',
-    top: 60,
-    left: 40,
-    transform: [{ rotate: '-20deg' }],
-    borderWidth: 6,
-    borderColor: COLORS.error,
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    top: 80,
+    left: SPACING.xl,
+    fontSize: 80,
   },
   stampText: {
-    fontSize: 32,
-    fontWeight: '800' as const,
-    letterSpacing: 2,
-  },
-  buttonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 40,
-    paddingVertical: 32,
-    paddingHorizontal: 20,
-  },
-  actionButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  passButton: {
-    backgroundColor: COLORS.error,
-  },
-  likeButton: {
-    backgroundColor: COLORS.success,
+    fontSize: 80,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: SPACING.xl,
   },
   emptyTitle: {
-    fontSize: 24,
-    fontWeight: '700' as const,
-    color: COLORS.black,
-    marginBottom: 12,
+    ...TYPOGRAPHY.title,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.sm,
     textAlign: 'center',
   },
   emptyText: {
-    fontSize: 16,
-    color: COLORS.gray,
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 24,
+    marginBottom: SPACING.xl,
   },
-  addButton: {
-    backgroundColor: COLORS.secondary,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 16,
-    shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+  primaryButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.button,
+    ...SHADOWS.card,
   },
-  addButtonText: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: COLORS.white,
+  primaryButtonText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.surface,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 16,
+    gap: SPACING.md,
   },
   loadingText: {
-    fontSize: 16,
-    color: COLORS.gray,
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
   },
 });

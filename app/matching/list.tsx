@@ -9,11 +9,11 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Heart, MessageCircle, ArrowLeft } from 'lucide-react-native';
+import { Heart, ArrowLeft } from 'lucide-react-native';
 import { useMatching } from '@/hooks/matching-store';
 import { usePets } from '@/hooks/pets-store';
 import { Pet } from '@/types';
-import { COLORS } from '@/constants/colors';
+import { COLORS, RADIUS, SPACING, TYPOGRAPHY, SHADOWS } from '@/theme/tokens';
 import { Stack, useRouter } from 'expo-router';
 
 export default function MatchesListScreen() {
@@ -37,8 +37,8 @@ export default function MatchesListScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.secondary} />
-          <Text style={styles.loadingText}>Chargement des matchs...</Text>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Chargement...</Text>
         </View>
       </SafeAreaView>
     );
@@ -53,7 +53,7 @@ export default function MatchesListScreen() {
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <ArrowLeft size={24} color={COLORS.black} />
+          <ArrowLeft size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Mes Matchs</Text>
         <View style={styles.placeholder} />
@@ -61,17 +61,17 @@ export default function MatchesListScreen() {
 
       {matches.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Heart size={80} color={COLORS.gray} strokeWidth={1.5} />
-          <Text style={styles.emptyTitle}>Aucun match pour le moment</Text>
+          <Heart size={80} color={COLORS.textSecondary} strokeWidth={1.5} />
+          <Text style={styles.emptyTitle}>Aucun match</Text>
           <Text style={styles.emptyText}>
-            Continuez à swiper pour trouver des compagnons pour votre animal!
+            Continue à swiper pour trouver des compagnons
           </Text>
           <TouchableOpacity
-            style={styles.discoverButton}
+            style={styles.primaryButton}
             onPress={() => router.push('/matching/discover' as any)}
             activeOpacity={0.8}
           >
-            <Text style={styles.discoverButtonText}>Découvrir</Text>
+            <Text style={styles.primaryButtonText}>Découvrir</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -85,7 +85,12 @@ export default function MatchesListScreen() {
             if (!matchedPet) return null;
 
             return (
-              <View key={match.id} style={styles.matchCard}>
+              <TouchableOpacity
+                key={match.id}
+                style={styles.matchCard}
+                onPress={() => router.push(`/messages/new?recipientId=${matchedPet.ownerId}` as any)}
+                activeOpacity={0.9}
+              >
                 <Image
                   source={{ uri: matchedPet.mainPhoto }}
                   style={styles.petImage}
@@ -98,16 +103,11 @@ export default function MatchesListScreen() {
                       {matchedPet.breed} • {matchedPet.gender === 'male' ? 'Mâle' : 'Femelle'}
                     </Text>
                   </View>
-                  <TouchableOpacity
-                    style={styles.messageButton}
-                    onPress={() => router.push(`/messages/new?recipientId=${matchedPet.ownerId}` as any)}
-                    activeOpacity={0.8}
-                  >
-                    <MessageCircle size={20} color={COLORS.white} />
-                    <Text style={styles.messageButtonText}>Message</Text>
-                  </TouchableOpacity>
+                  <View style={styles.badge}>
+                    <Heart size={16} color={COLORS.primary} fill={COLORS.primary} />
+                  </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           })}
         </ScrollView>
@@ -119,32 +119,27 @@ export default function MatchesListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...SHADOWS.card,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    color: COLORS.black,
+    ...TYPOGRAPHY.h2,
+    color: COLORS.textPrimary,
   },
   placeholder: {
     width: 40,
@@ -153,106 +148,86 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 16,
+    gap: SPACING.md,
   },
   loadingText: {
-    fontSize: 16,
-    color: COLORS.gray,
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
-    gap: 16,
+    padding: SPACING.lg,
+    gap: SPACING.md,
   },
   matchCard: {
     flexDirection: 'row',
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.card,
     overflow: 'hidden',
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    ...SHADOWS.card,
   },
   petImage: {
-    width: 120,
-    height: 120,
+    width: 100,
+    height: 100,
+    backgroundColor: COLORS.surfaceSecondary,
   },
   matchInfo: {
     flex: 1,
-    padding: 16,
+    padding: SPACING.md,
     justifyContent: 'space-between',
-  },
-  petDetails: {
-    gap: 4,
-  },
-  petName: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    color: COLORS.black,
-  },
-  petBreed: {
-    fontSize: 14,
-    color: COLORS.gray,
-  },
-  messageButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: COLORS.secondary,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
   },
-  messageButtonText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: COLORS.white,
+  petDetails: {
+    flex: 1,
+    gap: SPACING.xs,
+  },
+  petName: {
+    ...TYPOGRAPHY.h2,
+    color: COLORS.textPrimary,
+  },
+  petBreed: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+  },
+  badge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.primarySoft,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
-    gap: 16,
+    padding: SPACING.xl,
+    gap: SPACING.md,
   },
   emptyTitle: {
-    fontSize: 24,
-    fontWeight: '700' as const,
-    color: COLORS.black,
-    marginTop: 16,
+    ...TYPOGRAPHY.title,
+    color: COLORS.textPrimary,
+    marginTop: SPACING.md,
     textAlign: 'center',
   },
   emptyText: {
-    fontSize: 16,
-    color: COLORS.gray,
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
     textAlign: 'center',
-    lineHeight: 24,
   },
-  discoverButton: {
-    backgroundColor: COLORS.secondary,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 16,
-    marginTop: 16,
-    shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+  primaryButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.button,
+    marginTop: SPACING.md,
+    ...SHADOWS.card,
   },
-  discoverButtonText: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: COLORS.white,
+  primaryButtonText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.surface,
   },
 });

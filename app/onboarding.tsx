@@ -1,199 +1,220 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, StyleSheet, Text, Pressable, Dimensions, Animated, Image, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
+import { ArrowRight } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
-import { ENDEL } from '@/constants/endel';
+import { COLORS, RADIUS, SPACING, TYPOGRAPHY, ANIMATION } from '@/theme/tokens';
 import { useOnboarding } from '@/hooks/onboarding-store';
 
-type IntentKey = 'map' | 'community' | 'lostFound' | 'pros' | 'catSitter';
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const INTENTS: {
-  key: IntentKey;
-  title: string;
-  subtitle: string;
-  route: string;
-}[] = [
-  { key: 'map', title: 'Autour de moi', subtitle: 'Carte & proches', route: '/(tabs)/map' },
-  { key: 'community', title: 'Publier', subtitle: 'Communauté', route: '/(tabs)/community' },
-  { key: 'lostFound', title: 'Perdu / Trouvé', subtitle: 'Alerte & entraide', route: '/(tabs)/lost-found' },
-  { key: 'pros', title: 'Trouver un service', subtitle: 'Vétos, shops…', route: '/(tabs)/map' },
-  { key: 'catSitter', title: 'Réserver un cat sitter', subtitle: 'Disponibilités', route: '/(tabs)/cat-sitter' },
+const SLIDES = [
+  {
+    title: 'Trouve un compagnon',
+    subtitle: 'Des milliers d\'animaux près de chez toi',
+    image: 'https://images.unsplash.com/photo-1548681528-6a5c45b66b42?w=800&q=80',
+  },
+  {
+    title: 'Match en douceur',
+    subtitle: 'Des rencontres pensées pour leur bien-être',
+    image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=800&q=80',
+  },
+  {
+    title: 'Rencontre en vrai',
+    subtitle: 'Organise des rendez-vous en toute sécurité',
+    image: 'https://images.unsplash.com/photo-1501820488136-72669149e0d4?w=800&q=80',
+  },
 ];
 
-function IntentCard({
-  title,
-  subtitle,
-  onPress,
-  testID,
-}: {
-  title: string;
-  subtitle: string;
-  onPress: () => void;
-  testID: string;
-}) {
-  const scale = useRef(new Animated.Value(1)).current;
-
-  const pressIn = useCallback(() => {
-    Animated.spring(scale, {
-      toValue: 0.98,
-      useNativeDriver: true,
-      friction: 12,
-      tension: 110,
-    }).start();
-  }, [scale]);
-
-  const pressOut = useCallback(() => {
-    Animated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-      friction: 12,
-      tension: 110,
-    }).start();
-  }, [scale]);
-
-  return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={pressIn}
-      onPressOut={pressOut}
-      testID={testID}
-      style={styles.cardPress}
-    >
-      <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
-        <Text style={styles.cardTitle}>{title}</Text>
-        <Text style={styles.cardSubtitle}>{subtitle}</Text>
-      </Animated.View>
-    </Pressable>
-  );
-}
-
-export default function OnboardingIntentScreen() {
+export default function OnboardingScreen() {
   const router = useRouter();
-  const { hasCompleted, isReady, setPreferredIntent } = useOnboarding();
-  const [isNavigating, setIsNavigating] = useState<boolean>(false);
+  const { setPreferredIntent } = useOnboarding();
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    if (isReady && hasCompleted) {
-      router.replace('/(tabs)/map');
-    }
-  }, [hasCompleted, isReady, router]);
+  React.useEffect(() => {
+    fadeAnim.setValue(0);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: ANIMATION.duration.slow,
+      useNativeDriver: true,
+    }).start();
+  }, [currentIndex, fadeAnim]);
 
-  const onPick = useCallback(
-    async (intent: IntentKey, route: string) => {
-      if (isNavigating) return;
-      setIsNavigating(true);
-
-      console.log('[OnboardingIntent] pick', intent, route);
-      setPreferredIntent(intent);
-
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
-
+  const handleNext = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    if (currentIndex < SLIDES.length - 1) {
+      const nextIndex = currentIndex + 1;
+      setCurrentIndex(nextIndex);
+      scrollViewRef.current?.scrollTo({
+        x: nextIndex * SCREEN_WIDTH,
+        animated: true,
+      });
+    } else {
+      setPreferredIntent('map');
       router.push('/onboarding-setup' as any);
+    }
+  };
 
-      setTimeout(() => setIsNavigating(false), 600);
-    },
-    [isNavigating, router, setPreferredIntent],
-  );
+  const handleScroll = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / SCREEN_WIDTH);
+    if (index !== currentIndex) {
+      setCurrentIndex(index);
+    }
+  };
 
-  const header = useMemo(() => {
-    return {
-      title: 'Bienvenue',
-      subtitle: 'Choisis ton intention.',
-    };
-  }, []);
+  const isLastSlide = currentIndex === SLIDES.length - 1;
 
   return (
-    <View style={styles.root} testID="onboarding-intent">
-      <StatusBar style="dark" />
-
+    <View style={styles.container}>
+      <StatusBar style="light" />
+      
       <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        testID="onboarding-intent-scroll"
+        ref={scrollViewRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        bounces={false}
       >
-        <View style={styles.header}>
-          <Text style={styles.hTitle} testID="onboarding-intent-title">
-            {header.title}
-          </Text>
-          <Text style={styles.hSubtitle} testID="onboarding-intent-subtitle">
-            {header.subtitle}
-          </Text>
-        </View>
+        {SLIDES.map((slide, index) => (
+          <View key={index} style={styles.slide}>
+            <Animated.View style={[styles.imageContainer, { opacity: fadeAnim }]}>
+              <Image
+                source={{ uri: slide.image }}
+                style={styles.image}
+                resizeMode="cover"
+              />
+              <View style={styles.imageOverlay} />
+            </Animated.View>
+            
+            <Animated.View style={[styles.textContainer, { opacity: fadeAnim }]}>
+              <Text style={styles.title}>{slide.title}</Text>
+              <Text style={styles.subtitle}>{slide.subtitle}</Text>
+            </Animated.View>
+          </View>
+        ))}
+      </ScrollView>
 
-        <View style={styles.cards}>
-          {INTENTS.map((i) => (
-            <IntentCard
-              key={i.key}
-              title={i.title}
-              subtitle={i.subtitle}
-              onPress={() => onPick(i.key, i.route)}
-              testID={`intent-${i.key}`}
+      <View style={styles.footer}>
+        <View style={styles.dotsContainer}>
+          {SLIDES.map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.dot,
+                index === currentIndex && styles.dotActive,
+              ]}
             />
           ))}
         </View>
 
-        <Text style={styles.footNote} testID="onboarding-intent-footnote">
-          Tu pourras changer plus tard depuis le profil.
-        </Text>
-      </ScrollView>
+        <Pressable
+          onPress={handleNext}
+          style={({ pressed }) => [
+            styles.nextButton,
+            pressed && styles.nextButtonPressed,
+          ]}
+        >
+          {isLastSlide ? (
+            <Text style={styles.nextButtonText}>Commencer</Text>
+          ) : (
+            <ArrowRight size={24} color={COLORS.surface} strokeWidth={2.5} />
+          )}
+        </Pressable>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
+  container: {
     flex: 1,
-    backgroundColor: ENDEL.colors.bg,
+    backgroundColor: COLORS.onboardingBlue,
   },
-  content: {
-    paddingHorizontal: ENDEL.spacing.lg,
-    paddingTop: ENDEL.spacing.xl,
-    paddingBottom: ENDEL.spacing.xl,
+  slide: {
+    width: SCREEN_WIDTH,
+    flex: 1,
   },
-  header: {
-    marginBottom: ENDEL.spacing.lg,
-  },
-  hTitle: {
-    ...ENDEL.typography.title,
-  },
-  hSubtitle: {
-    marginTop: 6,
-    ...ENDEL.typography.subtitle,
-  },
-  cards: {
-    gap: 12,
-  },
-  cardPress: {
-    borderRadius: ENDEL.radii.card,
-  },
-  card: {
-    minHeight: 72,
-    borderRadius: ENDEL.radii.card,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: ENDEL.colors.borderSubtle,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: ENDEL.spacing.lg,
-    paddingVertical: 16,
+  imageContainer: {
+    flex: 1,
     justifyContent: 'center',
-    ...((ENDEL.shadows.card as unknown) as object),
+    alignItems: 'center',
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.xxl * 2,
   },
-  cardTitle: {
-    fontSize: 16,
-    lineHeight: 20,
-    fontWeight: '700' as const,
-    color: ENDEL.colors.text,
+  image: {
+    width: SCREEN_WIDTH * 0.7,
+    height: SCREEN_WIDTH * 0.7,
+    borderRadius: RADIUS.card * 2,
   },
-  cardSubtitle: {
-    marginTop: 4,
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '500' as const,
-    color: ENDEL.colors.textSecondary,
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
   },
-  footNote: {
-    marginTop: ENDEL.spacing.lg,
-    ...ENDEL.typography.caption,
+  textContainer: {
+    paddingHorizontal: SPACING.xl,
+    paddingBottom: SPACING.xxl,
+    alignItems: 'center',
+  },
+  title: {
+    ...TYPOGRAPHY.title,
+    fontSize: 32,
+    color: COLORS.surface,
+    textAlign: 'center',
+    marginBottom: SPACING.sm,
+  },
+  subtitle: {
+    ...TYPOGRAPHY.body,
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    paddingHorizontal: SPACING.xl,
+    paddingBottom: SPACING.xxl,
+  },
+  dotsContainer: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    alignItems: 'center',
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  dotActive: {
+    backgroundColor: COLORS.surface,
+    width: 24,
+  },
+  nextButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  nextButtonPressed: {
+    opacity: 0.8,
+  },
+  nextButtonText: {
+    ...TYPOGRAPHY.button,
+    fontSize: 14,
+    color: COLORS.surface,
   },
 });
