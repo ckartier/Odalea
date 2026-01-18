@@ -1,52 +1,56 @@
 import React, { useState, useRef } from 'react';
-import { View, StyleSheet, Text, Pressable, Dimensions, Animated, Image, ScrollView } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Text,
+  Pressable,
+  Dimensions,
+  ImageBackground,
+  ScrollView,
+  Platform,
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { ArrowRight } from 'lucide-react-native';
+import { ChevronRight } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY, ANIMATION } from '@/theme/tokens';
+import { COLORS } from '@/theme/tokens';
 import { useOnboarding } from '@/hooks/onboarding-store';
 
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const SLIDES = [
   {
     title: 'Des rencontres pour eux',
     subtitle: 'Aide ton animal à créer des liens adaptés à sa personnalité.',
-    image: 'https://images.unsplash.com/photo-1548681528-6a5c45b66b42?w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1548681528-6a5c45b66b42?w=1200&q=80',
   },
   {
     title: 'Des profils pensés avec soin',
     subtitle: 'Personnalité, affinités et intentions claires pour chaque animal.',
-    image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=1200&q=80',
   },
   {
     title: 'Des rencontres à leur rythme',
     subtitle: 'Découvre, échange et organise des rencontres adaptées.',
-    image: 'https://images.unsplash.com/photo-1501820488136-72669149e0d4?w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1501820488136-72669149e0d4?w=1200&q=80',
   },
 ];
 
+const MODAL_HEIGHT = 240;
+
 export default function OnboardingScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { complete } = useOnboarding();
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  React.useEffect(() => {
-    fadeAnim.setValue(0);
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: ANIMATION.duration.slow,
-      useNativeDriver: true,
-    }).start();
-  }, [currentIndex, fadeAnim]);
 
   const handleNext = async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (Platform.OS !== 'web') {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     
     if (currentIndex < SLIDES.length - 1) {
       const nextIndex = currentIndex + 1;
@@ -64,7 +68,7 @@ export default function OnboardingScreen() {
   const handleScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const index = Math.round(offsetX / SCREEN_WIDTH);
-    if (index !== currentIndex) {
+    if (index !== currentIndex && index >= 0 && index < SLIDES.length) {
       setCurrentIndex(index);
     }
   };
@@ -83,52 +87,58 @@ export default function OnboardingScreen() {
         onScroll={handleScroll}
         scrollEventThrottle={16}
         bounces={false}
+        style={styles.scrollView}
       >
         {SLIDES.map((slide, index) => (
           <View key={index} style={styles.slide}>
-            <Animated.View style={[styles.imageContainer, { opacity: fadeAnim }]}>
-              <Image
-                source={{ uri: slide.image }}
-                style={styles.image}
-                resizeMode="cover"
-              />
+            <ImageBackground
+              source={{ uri: slide.image }}
+              style={styles.backgroundImage}
+              resizeMode="cover"
+            >
               <View style={styles.imageOverlay} />
-            </Animated.View>
-            
-            <Animated.View style={[styles.textContainer, { opacity: fadeAnim }]}>
-              <Text style={styles.title}>{slide.title}</Text>
-              <Text style={styles.subtitle}>{slide.subtitle}</Text>
-            </Animated.View>
+            </ImageBackground>
           </View>
         ))}
       </ScrollView>
 
-      <View style={styles.footer}>
-        <View style={styles.dotsContainer}>
-          {SLIDES.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.dot,
-                index === currentIndex && styles.dotActive,
-              ]}
-            />
-          ))}
-        </View>
+      <View style={[styles.modalContainer, { paddingBottom: insets.bottom + 14 }]}>
+        <View style={styles.modalContent}>
+          <Text style={styles.title} numberOfLines={2}>
+            {SLIDES[currentIndex].title}
+          </Text>
+          <Text style={styles.subtitle} numberOfLines={2}>
+            {SLIDES[currentIndex].subtitle}
+          </Text>
+          
+          <View style={styles.footer}>
+            <View style={styles.dotsContainer}>
+              {SLIDES.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.dot,
+                    index === currentIndex && styles.dotActive,
+                  ]}
+                />
+              ))}
+            </View>
 
-        <Pressable
-          onPress={handleNext}
-          style={({ pressed }) => [
-            styles.nextButton,
-            pressed && styles.nextButtonPressed,
-          ]}
-        >
-          {isLastSlide ? (
-            <Text style={styles.nextButtonText}>Commencer</Text>
-          ) : (
-            <ArrowRight size={24} color={COLORS.surface} strokeWidth={2.5} />
-          )}
-        </Pressable>
+            <Pressable
+              onPress={handleNext}
+              style={({ pressed }) => [
+                isLastSlide ? styles.buttonPill : styles.buttonRound,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              {isLastSlide ? (
+                <Text style={styles.buttonText}>Commencer</Text>
+              ) : (
+                <ChevronRight size={24} color={COLORS.surface} strokeWidth={2.5} />
+              )}
+            </Pressable>
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -137,85 +147,100 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.onboardingBlue,
+    backgroundColor: '#000',
+  },
+  scrollView: {
+    flex: 1,
   },
   slide: {
     width: SCREEN_WIDTH,
-    flex: 1,
+    height: SCREEN_HEIGHT,
   },
-  imageContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.xxl * 2,
-  },
-  image: {
-    width: SCREEN_WIDTH * 0.7,
-    height: SCREEN_WIDTH * 0.7,
-    borderRadius: RADIUS.card * 2,
+  backgroundImage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
   },
   imageOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
   },
-  textContainer: {
-    paddingHorizontal: SPACING.xl,
-    paddingBottom: SPACING.xxl,
-    alignItems: 'center',
-  },
-  title: {
-    ...TYPOGRAPHY.title,
-    fontSize: 32,
-    color: COLORS.surface,
-    textAlign: 'center',
-    marginBottom: SPACING.sm,
-  },
-  subtitle: {
-    ...TYPOGRAPHY.body,
-    color: 'rgba(255, 255, 255, 0.9)',
-    textAlign: 'center',
-  },
-  footer: {
+  modalContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+    height: MODAL_HEIGHT,
+  },
+  modalContent: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '600' as const,
+    color: COLORS.textPrimary,
+    marginBottom: 8,
+    lineHeight: 30,
+  },
+  subtitle: {
+    fontSize: 15,
+    fontWeight: '400' as const,
+    color: COLORS.textSecondary,
+    lineHeight: 22,
+    marginBottom: 'auto',
+  },
+  footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    paddingHorizontal: SPACING.xl,
-    paddingBottom: SPACING.xxl,
+    alignItems: 'center',
+    paddingTop: 16,
   },
   dotsContainer: {
     flexDirection: 'row',
-    gap: SPACING.sm,
+    gap: 8,
     alignItems: 'center',
   },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    backgroundColor: '#E2E8F0',
   },
   dotActive: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#0B2A3C',
     width: 24,
   },
-  nextButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: COLORS.primary,
+  buttonRound: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#0B2A3C',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  nextButtonPressed: {
-    opacity: 0.8,
+  buttonPill: {
+    paddingHorizontal: 28,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#0B2A3C',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  nextButtonText: {
-    ...TYPOGRAPHY.button,
-    fontSize: 14,
+  buttonPressed: {
+    opacity: 0.85,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
     color: COLORS.surface,
   },
 });
