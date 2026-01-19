@@ -15,13 +15,9 @@ import { COLORS } from '@/constants/colors';
 import { TYPOGRAPHY } from '@/constants/typography';
 import { useAuth } from '@/hooks/auth-store';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
-import { useFriends } from '@/hooks/friends-store';
-import { useMessaging } from '@/hooks/messaging-store';
 import { getUserAvatarUrl } from '@/lib/image-helpers';
 import {
-  Home,
   Map,
-  MessageCircle,
   ShoppingBag,
   Trophy,
   User,
@@ -56,8 +52,6 @@ export default function MenuScreen() {
   const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
   const { user: firebaseUser } = useFirebaseUser();
-  const { pendingRequests } = useFriends();
-  const { conversations } = useMessaging();
 
   const isProfessional = Boolean(user?.isProfessional);
   const isCatSitter = Boolean(user?.isCatSitter);
@@ -66,8 +60,6 @@ export default function MenuScreen() {
     console.log('MenuScreen mounted');
   }, []);
 
-  const friendRequestCount = pendingRequests?.length || 0;
-  const unreadMessagesCount = conversations?.filter(c => c.unreadCount > 0).length || 0;
   const userAvatar = getUserAvatarUrl(firebaseUser || user) || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face';
 
   const handleSignOut = async () => {
@@ -90,19 +82,6 @@ export default function MenuScreen() {
 
   const mainMenuItems: MenuItem[] = [
     {
-      id: 'friends',
-      title: 'Mes Amis',
-      icon: <Heart size={24} color="#111" />,
-      route: '/friends',
-      badge: friendRequestCount,
-    },
-    {
-      id: 'home',
-      title: 'Accueil',
-      icon: <Home size={24} color={COLORS.primary} />,
-      route: '/(tabs)/home',
-    },
-    {
       id: 'map',
       title: 'Carte',
       icon: <Map size={24} color={COLORS.primary} />,
@@ -115,16 +94,16 @@ export default function MenuScreen() {
       route: '/(tabs)/community',
     },
     {
+      id: 'defis',
+      title: 'Défis',
+      icon: <Trophy size={24} color={COLORS.primary} />,
+      route: '/defis',
+    },
+    {
       id: 'cat-sitter',
       title: 'Cat Sitters',
       icon: <Cat size={24} color={COLORS.primary} />,
       route: isCatSitter ? '/(pro)/cat-sitter-dashboard' : '/(tabs)/cat-sitter',
-    },
-    {
-      id: 'challenges',
-      title: 'Défis',
-      icon: <Trophy size={24} color={COLORS.primary} />,
-      route: '/(tabs)/challenges',
     },
     {
       id: 'shop',
@@ -138,13 +117,6 @@ export default function MenuScreen() {
       icon: <AlertTriangle size={24} color="#FF6B6B" />,
       route: '/(tabs)/lost-found',
       color: '#FF6B6B',
-    },
-    {
-      id: 'messages',
-      title: 'Messages',
-      icon: <MessageCircle size={24} color="#111" />,
-      route: '/(tabs)/messages',
-      badge: unreadMessagesCount,
     },
   ];
 

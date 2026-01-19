@@ -4,7 +4,7 @@ import { View, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IS_TABLET, RESPONSIVE_LAYOUT, COLORS, SHADOWS } from "@/constants/colors";
 import AppHeader, { useAppHeaderHeight } from "@/components/AppHeader";
-import { Heart, MessageCircle, Plus, Sparkles } from "lucide-react-native";
+import { Heart, MessageCircle, Plus, Sparkles, User } from "lucide-react-native";
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
@@ -103,7 +103,10 @@ export default function TabLayout() {
           />
           <Tabs.Screen 
             name="profile" 
-            options={{ href: null }} 
+            options={{ 
+              title: "Profil",
+              tabBarIcon: ({ color, size }) => <User size={22} color={color} strokeWidth={2} />,
+            }} 
           />
           <Tabs.Screen name="map" options={{ href: null }} />
           <Tabs.Screen name="community" options={{ href: null }} />
