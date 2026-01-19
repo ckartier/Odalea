@@ -26,7 +26,6 @@ import UserMarker from '@/components/UserMarker';
 import GooglePlaceMarker from '@/components/GooglePlaceMarker';
 import MapBottomSheet from '@/components/MapBottomSheet';
 import type { MapFilterType } from '@/components/MapFilterChips';
-import ResponsiveModal from '@/components/ResponsiveModal';
 import { Check, SlidersHorizontal, X } from 'lucide-react-native';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { usePremium } from '@/hooks/premium-store';
@@ -827,63 +826,78 @@ export default function MapScreen() {
         </TouchableOpacity>
       </View>
 
-      <ResponsiveModal
-        isVisible={isFiltersOpen}
-        onClose={() => setIsFiltersOpen(false)}
-        size={Platform.OS === 'web' ? 'medium' : 'large'}
-        tint="neutral"
-        closeOnBackdrop
-      >
-        <View style={styles.filtersModalContent} testID="map-filters-modal">
-          <View style={styles.filtersModalHeader}>
-            <Text style={styles.filtersModalTitle}>Filtres</Text>
-            <TouchableOpacity
-              onPress={() => setIsFiltersOpen(false)}
-              style={styles.filtersModalClose}
-              activeOpacity={0.85}
-              testID="map-close-filters"
-            >
-              <X size={18} color="#0f172a" />
-            </TouchableOpacity>
-          </View>
-
-          {([
-            { key: 'users', label: 'Utilisateurs', color: '#7C3AED' },
-            { key: 'catSitters', label: 'Cat Sitters', color: '#6366f1' },
-            { key: 'pros', label: 'Professionnels', color: '#10b981' },
-            { key: 'googleVet', label: 'Vétérinaires', color: '#10b981' },
-            { key: 'googleShop', label: 'Animaleries', color: '#f59e0b' },
-            { key: 'googleZoo', label: 'Zoos', color: '#8b5cf6' },
-            { key: 'googleShelter', label: 'Refuges', color: '#06b6d4' },
-          ] as const).map((item) => {
-            const isActive = activeFilters.has(item.key);
-            return (
-              <TouchableOpacity
-                key={item.key}
-                style={[styles.filterRow, isActive && { borderColor: item.color }]}
-                onPress={() => handleFilterToggle(item.key)}
-                activeOpacity={0.85}
-                testID={`map-filter-${item.key}`}
-              >
-                <View style={[styles.filterDot, { backgroundColor: item.color }]} />
-                <Text style={styles.filterLabel}>{item.label}</Text>
-                <View style={[styles.filterCheck, isActive && { backgroundColor: item.color, borderColor: item.color }]}>
-                  {isActive && <Check size={14} color="#ffffff" />}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-
-          <TouchableOpacity
-            style={styles.filtersDoneButton}
+      {isFiltersOpen && (
+        <View style={styles.filtersOverlay}>
+          <TouchableOpacity 
+            style={styles.filtersBackdrop} 
+            activeOpacity={1}
             onPress={() => setIsFiltersOpen(false)}
-            activeOpacity={0.9}
-            testID="map-filters-done"
-          >
-            <Text style={styles.filtersDoneText}>Terminer</Text>
-          </TouchableOpacity>
+          />
+          <View style={[styles.filtersSheet, { bottom: insets.bottom + 20 }]} testID="map-filters-modal">
+            <View style={styles.filtersHeader}>
+              <Text style={styles.filtersTitle}>Filtres</Text>
+              <TouchableOpacity
+                onPress={() => setIsFiltersOpen(false)}
+                style={styles.filtersCloseButton}
+                activeOpacity={0.85}
+                testID="map-close-filters"
+              >
+                <X size={20} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.filtersContent}>
+              {([
+                { key: 'users', label: 'Utilisateurs', color: '#0f172a' },
+                { key: 'catSitters', label: 'Cat Sitters', color: '#0f172a' },
+                { key: 'pros', label: 'Professionnels', color: '#0f172a' },
+                { key: 'googleVet', label: 'Vétérinaires', color: '#0f172a' },
+                { key: 'googleShop', label: 'Animaleries', color: '#0f172a' },
+                { key: 'googleZoo', label: 'Zoos', color: '#0f172a' },
+                { key: 'googleShelter', label: 'Refuges', color: '#0f172a' },
+              ] as const).map((item) => {
+                const isActive = activeFilters.has(item.key);
+                return (
+                  <TouchableOpacity
+                    key={item.key}
+                    style={[
+                      styles.filterChip,
+                      isActive && styles.filterChipActive,
+                    ]}
+                    onPress={() => handleFilterToggle(item.key)}
+                    activeOpacity={0.7}
+                    testID={`map-filter-${item.key}`}
+                  >
+                    <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
+                      {item.label}
+                    </Text>
+                    {isActive && <Check size={16} color="#ffffff" strokeWidth={3} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <View style={styles.filtersActions}>
+              <TouchableOpacity
+                style={styles.filtersResetButton}
+                onPress={() => setActiveFilters(new Set())}
+                activeOpacity={0.85}
+                testID="map-filters-reset"
+              >
+                <Text style={styles.filtersResetText}>Réinitialiser</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.filtersApplyButton}
+                onPress={() => setIsFiltersOpen(false)}
+                activeOpacity={0.85}
+                testID="map-filters-apply"
+              >
+                <Text style={styles.filtersApplyText}>Appliquer</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      </ResponsiveModal>
+      )}
 
       {selectedPet && !selectedGooglePlace && (
         <MapBottomSheet
@@ -975,72 +989,104 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     pointerEvents: 'box-none',
   },
-  filtersModalContent: {
-    paddingTop: 10,
-    gap: 10,
+  filtersOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1000,
   },
-  filtersModalHeader: {
+  filtersBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  filtersSheet: {
+    position: 'absolute',
+    left: '4%',
+    right: '4%',
+    width: '92%',
+    alignSelf: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 28,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 24,
+    elevation: 16,
+  },
+  filtersHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 6,
+    marginBottom: 20,
   },
-  filtersModalTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0f172a',
-  },
-  filtersModalClose: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(15, 23, 42, 0.06)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  filterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.28)',
-  },
-  filterDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  filterLabel: {
-    flex: 1,
-    fontSize: 14,
+  filtersTitle: {
+    fontSize: 24,
     fontWeight: '700',
     color: '#0f172a',
   },
-  filterCheck: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 2,
-    borderColor: 'rgba(148,163,184,0.5)',
-    backgroundColor: 'transparent',
+  filtersCloseButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f1f5f9',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  filtersDoneButton: {
-    marginTop: 6,
+  filtersContent: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 24,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 20,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+  },
+  filterChipActive: {
     backgroundColor: '#0f172a',
+    borderColor: '#0f172a',
+  },
+  filterChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  filterChipTextActive: {
+    color: '#ffffff',
+  },
+  filtersActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  filtersResetButton: {
+    flex: 1,
+    paddingVertical: 16,
     borderRadius: 16,
-    paddingVertical: 14,
+    backgroundColor: '#f1f5f9',
     alignItems: 'center',
   },
-  filtersDoneText: {
-    color: '#ffffff',
+  filtersResetText: {
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: '700',
+    color: '#64748b',
+  },
+  filtersApplyButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: '#0f172a',
+    alignItems: 'center',
+  },
+  filtersApplyText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#ffffff',
   },
   webPetMarker: {
     position: 'absolute',
