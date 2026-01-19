@@ -2,9 +2,9 @@ import React, { useMemo, useCallback } from "react";
 import { Tabs, useRouter } from "expo-router";
 import { View, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { IS_TABLET, RESPONSIVE_LAYOUT, COLORS } from "@/constants/colors";
+import { IS_TABLET, RESPONSIVE_LAYOUT, COLORS, SHADOWS } from "@/constants/colors";
 import AppHeader, { useAppHeaderHeight } from "@/components/AppHeader";
-import { Heart, MessageCircle, Plus, User, Sparkles } from "lucide-react-native";
+import { Heart, MessageCircle, Plus, Sparkles } from "lucide-react-native";
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
@@ -42,24 +42,30 @@ export default function TabLayout() {
             headerShown: false,
             tabBarShowLabel: true,
             tabBarActiveTintColor: COLORS.primary,
-            tabBarInactiveTintColor: COLORS.gray,
+            tabBarInactiveTintColor: COLORS.textTertiary,
             tabBarHideOnKeyboard: true,
             tabBarStyle: {
+              position: 'absolute',
+              bottom: insets.bottom + 20,
+              left: '5%',
+              right: '5%',
+              width: '90%',
               backgroundColor: '#FFFFFF',
               borderTopWidth: 0,
-              height: 80 + insets.bottom,
-              paddingBottom: insets.bottom + 8,
-              paddingTop: 12,
-              shadowColor: '#0F172A',
-              shadowOffset: { width: 0, height: -2 },
-              shadowOpacity: 0.05,
-              shadowRadius: 12,
-              elevation: 8,
+              borderRadius: 28,
+              height: 72,
+              paddingBottom: 8,
+              paddingTop: 8,
+              ...SHADOWS.large,
             },
             tabBarLabelStyle: {
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: '600',
               marginTop: 4,
+              marginBottom: 2,
+            },
+            tabBarItemStyle: {
+              paddingVertical: 4,
             },
           }}
         >
@@ -67,31 +73,23 @@ export default function TabLayout() {
             name="home" 
             options={{ 
               title: "Découvrir",
-              tabBarIcon: ({ color, size }) => <Sparkles size={size} color={color} />,
+              tabBarIcon: ({ color, size }) => <Sparkles size={22} color={color} strokeWidth={2} />,
             }} 
           />
           <Tabs.Screen 
             name="challenges" 
             options={{ 
               title: "Matchs",
-              tabBarIcon: ({ color, size }) => <Heart size={size} color={color} />,
+              tabBarIcon: ({ color, size }) => <Heart size={22} color={color} strokeWidth={2} />,
             }} 
           />
           <Tabs.Screen 
             name="shop" 
             options={{ 
-              title: "Ajouter",
+              title: "",
               tabBarIcon: ({ color, size }) => (
-                <View style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 24,
-                  backgroundColor: COLORS.primary,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 20,
-                }}>
-                  <Plus size={28} color="#FFFFFF" strokeWidth={3} />
+                <View style={styles.centerButton}>
+                  <Plus size={26} color="#FFFFFF" strokeWidth={2.5} />
                 </View>
               ),
             }} 
@@ -100,15 +98,12 @@ export default function TabLayout() {
             name="messages" 
             options={{ 
               title: "Messages",
-              tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
+              tabBarIcon: ({ color, size }) => <MessageCircle size={22} color={color} strokeWidth={2} />,
             }} 
           />
           <Tabs.Screen 
             name="profile" 
-            options={{ 
-              title: "Profil",
-              tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
-            }} 
+            options={{ href: null }} 
           />
           <Tabs.Screen name="map" options={{ href: null }} />
           <Tabs.Screen name="community" options={{ href: null }} />
@@ -125,5 +120,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.white,
     width: '100%',
+  },
+  centerButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -28,
+    ...SHADOWS.medium,
   },
 });

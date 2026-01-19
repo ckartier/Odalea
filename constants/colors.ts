@@ -9,14 +9,14 @@ import {
 } from './responsive';
 
 export const COLORS = {
-  // Primary accent (bleu menu bas #0B5FFF)
-  primary: '#0B5FFF',
-  primaryDark: '#0847CC',
-  primaryLight: '#5B8FFF',
-  primarySoft: 'rgba(11, 95, 255, 0.08)',
-  accent: '#0B5FFF',
-  accentDark: '#0847CC',
-  accentLight: 'rgba(11, 95, 255, 0.15)',
+  // Primary accent (bleu menu bas #0B2A3C)
+  primary: '#0B2A3C',
+  primaryDark: '#081F2E',
+  primaryLight: '#2A4C5E',
+  primarySoft: 'rgba(11, 42, 60, 0.08)',
+  accent: '#0B2A3C',
+  accentDark: '#081F2E',
+  accentLight: 'rgba(11, 42, 60, 0.15)',
   
   // Secondary (legacy support)
   secondary: '#FFB3E6',
