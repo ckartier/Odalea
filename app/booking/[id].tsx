@@ -7,13 +7,17 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
-import { useI18n } from '@/hooks/i18n-store';
+
 import { useAuth } from '@/hooks/auth-store';
 import { useBooking } from '@/hooks/booking-store';
+import { useQuery } from '@tanstack/react-query';
+import { petSitterService, userService } from '@/services/database';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import PaymentModal from '@/components/PaymentModal';
 import Input from '@/components/Input';
@@ -21,7 +25,6 @@ import Button from '@/components/Button';
 import {
   Calendar,
   MapPin,
-  User,
   Heart,
   Star,
   ArrowLeft,
@@ -78,10 +81,22 @@ const timeSlots = [
   '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
 ];
 
+interface SitterData {
+  id: string;
+  name: string;
+  photo?: string;
+  rating: number;
+  reviewCount: number;
+  location: string;
+  isPremium: boolean;
+  isVerified: boolean;
+  hourlyRate?: number;
+}
+
 export default function BookingScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { t } = useI18n();
+
   const { user } = useAuth();
   const { createBooking, updateBookingStatus } = useBooking();
 
@@ -94,16 +109,47 @@ export default function BookingScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPayment, setShowPayment] = useState<boolean>(false);
 
-  // Mock sitter data - in real app, fetch based on ID
-  const sitter = {
-    id: '1',
-    name: 'Marie Dubois',
-    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?q=80&w=400',
-    rating: 4.9,
-    reviewCount: 127,
-    location: 'Montmartre, Paris',
-    isPremium: true,
-    isVerified: true,
+  const sitterQuery = useQuery({
+    queryKey: ['catSitter', id],
+    queryFn: async () => {
+      if (!id) return null;
+      console.log('🔄 Fetching cat sitter profile for:', id);
+      
+      const profile = await petSitterService.getProfile(id as string);
+      const userData = await userService.getUser(id as string);
+      
+      if (!userData) {
+        console.log('⚠️ User not found for sitter:', id);
+        return null;
+      }
+      
+      const sitterData: SitterData = {
+        id: id as string,
+        name: userData.name || `${userData.firstName} ${userData.lastName}`.trim() || 'Cat Sitter',
+        photo: userData.photo,
+        rating: profile?.rating ?? 4.5,
+        reviewCount: profile?.reviewCount ?? 0,
+        location: userData.city || userData.address || 'France',
+        isPremium: userData.isPremium ?? false,
+        isVerified: profile?.isVerified ?? true,
+        hourlyRate: profile?.hourlyRate,
+      };
+      
+      console.log('✅ Sitter data loaded:', sitterData.name);
+      return sitterData;
+    },
+    enabled: !!id,
+  });
+
+  const sitter = sitterQuery.data ?? {
+    id: id as string || '1',
+    name: 'Chargement...',
+    photo: undefined,
+    rating: 0,
+    reviewCount: 0,
+    location: '',
+    isPremium: false,
+    isVerified: false,
   };
 
   const calculateTotal = () => {
@@ -170,7 +216,7 @@ export default function BookingScreen() {
       
       setShowPayment(false);
       router.push(`/booking/confirmation/${result.id}`);
-    } catch (_error) {
+    } catch {
       if (Platform.OS === 'web') alert('Une erreur inattendue est survenue'); else Alert.alert('Erreur', 'Une erreur inattendue est survenue');
     } finally {
       setIsLoading(false);
@@ -196,40 +242,51 @@ export default function BookingScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Sitter Info */}
-        <View style={[styles.sitterCard, SHADOWS.medium]}>
-          <View style={styles.sitterHeader}>
-            <View style={[styles.avatar, { backgroundColor: COLORS.catSitter }]}>
-              <Text style={styles.avatarText}>
-                {sitter.name.split(' ').map(n => n[0]).join('')}
-              </Text>
-            </View>
-            {sitter.isPremium && (
-              <View style={styles.premiumBadge}>
-                <Heart size={12} color={COLORS.premium} />
-              </View>
-            )}
+        {sitterQuery.isLoading ? (
+          <View style={[styles.sitterCard, SHADOWS.medium, styles.loadingCard]}>
+            <ActivityIndicator size="small" color={COLORS.primary} />
+            <Text style={styles.loadingText}>Chargement du profil...</Text>
           </View>
-
-          <View style={styles.sitterInfo}>
-            <View style={styles.nameRow}>
-              <Text style={styles.sitterName}>{sitter.name}</Text>
-              {sitter.isVerified && (
-                <CheckCircle size={16} color={COLORS.success} />
+        ) : (
+          <View style={[styles.sitterCard, SHADOWS.medium]}>
+            <View style={styles.sitterHeader}>
+              {sitter.photo ? (
+                <Image source={{ uri: sitter.photo }} style={styles.avatarImage} contentFit="cover" />
+              ) : (
+                <View style={[styles.avatar, { backgroundColor: COLORS.catSitter }]}>
+                  <Text style={styles.avatarText}>
+                    {sitter.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </Text>
+                </View>
+              )}
+              {sitter.isPremium && (
+                <View style={styles.premiumBadge}>
+                  <Heart size={12} color={COLORS.premium} />
+                </View>
               )}
             </View>
 
-            <View style={styles.ratingRow}>
-              <Star size={14} color={COLORS.accent} fill={COLORS.accent} />
-              <Text style={styles.rating}>{sitter.rating}</Text>
-              <Text style={styles.reviewCount}>({sitter.reviewCount})</Text>
-            </View>
+            <View style={styles.sitterInfo}>
+              <View style={styles.nameRow}>
+                <Text style={styles.sitterName}>{sitter.name}</Text>
+                {sitter.isVerified && (
+                  <CheckCircle size={16} color={COLORS.success} />
+                )}
+              </View>
 
-            <View style={styles.locationRow}>
-              <MapPin size={14} color={COLORS.darkGray} />
-              <Text style={styles.location}>{sitter.location}</Text>
+              <View style={styles.ratingRow}>
+                <Star size={14} color={COLORS.accent} fill={COLORS.accent} />
+                <Text style={styles.rating}>{sitter.rating.toFixed(1)}</Text>
+                <Text style={styles.reviewCount}>({sitter.reviewCount})</Text>
+              </View>
+
+              <View style={styles.locationRow}>
+                <MapPin size={14} color={COLORS.darkGray} />
+                <Text style={styles.location}>{sitter.location || 'France'}</Text>
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
         {/* Service Selection */}
         <View style={[styles.section, SHADOWS.small]}>
@@ -433,6 +490,21 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  avatarImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: COLORS.lightGray,
+  },
+  loadingCard: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: COLORS.darkGray,
   },
   avatarText: {
     fontSize: 18,
