@@ -17,7 +17,7 @@ import GlassView from './GlassView';
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
   onPress?: () => void;
-  variant?: 'primary' | 'subtle' | 'ghost' | 'outline' | 'male' | 'female';
+  variant?: 'primary' | 'subtle' | 'ghost' | 'outline' | 'male' | 'female' | 'solid';
   size?: 'xs' | 'small' | 'medium' | 'large' | 'xl';
   loading?: boolean;
   disabled?: boolean;
@@ -94,7 +94,8 @@ const Button: React.FC<ButtonProps> = ({
 
   const getTextColor = () => {
     if (disabled) return COLORS.gray;
-    return COLORS.black;
+    if (variant === 'solid' || variant === 'primary') return '#FFFFFF';
+    return '#000000';
   };
 
   const getPadding = () => {
@@ -151,7 +152,33 @@ const Button: React.FC<ButtonProps> = ({
     </>
   );
 
-  if (liquidGlass || variant === 'primary') {
+  if (variant === 'solid' || variant === 'primary') {
+    return (
+      <TouchableOpacity
+        testID="button"
+        accessibilityRole="button"
+        style={[
+          styles.button,
+          {
+            borderRadius: getBorderRadius(),
+            ...getPadding(),
+            width: fullWidth ? '100%' : undefined,
+            backgroundColor: disabled ? COLORS.mediumGray : '#000000',
+          },
+          getShadow(),
+          style,
+        ]}
+        onPress={onPress || (() => {})}
+        disabled={disabled || loading}
+        activeOpacity={0.8}
+        {...props}
+      >
+        <ButtonContent />
+      </TouchableOpacity>
+    );
+  }
+
+  if (liquidGlass) {
     return (
       <TouchableOpacity
         testID="button"

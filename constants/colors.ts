@@ -9,14 +9,14 @@ import {
 } from './responsive';
 
 export const COLORS = {
-  // Primary accent (bleu menu bas #0B2A3C)
-  primary: '#0B2A3C',
-  primaryDark: '#081F2E',
-  primaryLight: '#2A4C5E',
-  primarySoft: 'rgba(11, 42, 60, 0.08)',
-  accent: '#0B2A3C',
-  accentDark: '#081F2E',
-  accentLight: 'rgba(11, 42, 60, 0.15)',
+  // Primary accent - BLACK (2026 design system)
+  primary: '#000000',
+  primaryDark: '#000000',
+  primaryLight: '#333333',
+  primarySoft: 'rgba(0, 0, 0, 0.08)',
+  accent: '#000000',
+  accentDark: '#000000',
+  accentLight: 'rgba(0, 0, 0, 0.15)',
   
   // Secondary (legacy support)
   secondary: '#FFB3E6',
@@ -101,7 +101,7 @@ export const COLORS = {
   // Borders
   border: '#E2E8F0',
   borderLight: '#F3F4F6',
-  borderFocus: '#0B2A3C',
+  borderFocus: '#000000',
   neutral: '#E2E8F0',
   
   // Map markers

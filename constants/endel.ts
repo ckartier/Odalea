@@ -7,7 +7,7 @@ export const ENDEL = {
     textSecondary: '#6B7280',
     border: '#E5E7EB',
     borderSubtle: '#F3F4F6',
-    accent: '#7C3AED',
+    accent: '#000000',
     danger: '#EF4444',
     success: '#10B981',
   },

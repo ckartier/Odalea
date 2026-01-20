@@ -8,6 +8,7 @@ import {
   ImageBackground,
   ScrollView,
   Platform,
+  Image,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
@@ -38,7 +39,8 @@ const SLIDES = [
   },
 ];
 
-const MODAL_HEIGHT = 240;
+const MODAL_HEIGHT = 260;
+const LOGO_URI = 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/qg65dezpx8zrcqopuuggc';
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -78,6 +80,15 @@ export default function OnboardingScreen() {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
+      
+      {/* Logo at top */}
+      <View style={[styles.logoContainer, { top: insets.top + 16 }]}>
+        <Image 
+          source={{ uri: LOGO_URI }} 
+          style={styles.logo} 
+          resizeMode="contain" 
+        />
+      </View>
       
       <ScrollView
         ref={scrollViewRef}
@@ -134,10 +145,13 @@ export default function OnboardingScreen() {
               {isLastSlide ? (
                 <Text style={styles.buttonText}>Commencer</Text>
               ) : (
-                <ChevronRight size={24} color={COLORS.surface} strokeWidth={2.5} />
+                <ChevronRight size={24} color="#FFFFFF" strokeWidth={2.5} />
               )}
             </Pressable>
           </View>
+          
+          {/* Odalea signature */}
+          <Text style={styles.signature}>Odalea</Text>
         </View>
       </View>
     </View>
@@ -148,6 +162,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+  },
+  logoContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    alignItems: 'center',
+  },
+  logo: {
+    width: 40,
+    height: 40,
+    tintColor: '#000000',
   },
   scrollView: {
     flex: 1,
@@ -169,7 +195,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 20,
@@ -187,22 +213,22 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '600' as const,
-    color: COLORS.textPrimary,
+    color: '#0F172A',
     marginBottom: 8,
     lineHeight: 30,
   },
   subtitle: {
     fontSize: 15,
     fontWeight: '400' as const,
-    color: COLORS.textSecondary,
+    color: '#475569',
     lineHeight: 22,
-    marginBottom: 'auto',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: 16,
+    marginTop: 'auto',
   },
   dotsContainer: {
     flexDirection: 'row',
@@ -216,14 +242,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#E2E8F0',
   },
   dotActive: {
-    backgroundColor: '#0B2A3C',
+    backgroundColor: '#000000',
     width: 24,
   },
   buttonRound: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#0B2A3C',
+    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -231,7 +257,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#0B2A3C',
+    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -241,6 +267,14 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: '600' as const,
-    color: COLORS.surface,
+    color: '#FFFFFF',
+  },
+  signature: {
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '500' as const,
+    color: '#9CA3AF',
+    marginTop: 8,
+    letterSpacing: 0.5,
   },
 });

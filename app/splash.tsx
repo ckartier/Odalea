@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '500' as const,
-    color: ENDEL.colors.textSecondary,
+    color: '#6B7280',
   },
   loaderRow: {
     position: 'absolute',
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#111111',
+    backgroundColor: '#000000',
     opacity: 0.3,
   },
 });

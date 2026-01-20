@@ -4,7 +4,7 @@ import { View, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IS_TABLET, RESPONSIVE_LAYOUT, COLORS, SHADOWS } from "@/constants/colors";
 import AppHeader, { useAppHeaderHeight } from "@/components/AppHeader";
-import { Heart, MessageCircle, Plus, Sparkles, User } from "lucide-react-native";
+import { Heart, MessageCircle, Sparkles, User } from "lucide-react-native";
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
@@ -41,8 +41,8 @@ export default function TabLayout() {
           screenOptions={{
             headerShown: false,
             tabBarShowLabel: true,
-            tabBarActiveTintColor: COLORS.primary,
-            tabBarInactiveTintColor: COLORS.textTertiary,
+            tabBarActiveTintColor: '#000000',
+            tabBarInactiveTintColor: '#9CA3AF',
             tabBarHideOnKeyboard: true,
             tabBarStyle: {
               position: 'absolute',
@@ -83,17 +83,7 @@ export default function TabLayout() {
               tabBarIcon: ({ color, size }) => <Heart size={22} color={color} strokeWidth={2} />,
             }} 
           />
-          <Tabs.Screen 
-            name="shop" 
-            options={{ 
-              title: "",
-              tabBarIcon: ({ color, size }) => (
-                <View style={styles.centerButton}>
-                  <Plus size={26} color="#FFFFFF" strokeWidth={2.5} />
-                </View>
-              ),
-            }} 
-          />
+          <Tabs.Screen name="shop" options={{ href: null }} />
           <Tabs.Screen 
             name="messages" 
             options={{ 
@@ -124,14 +114,5 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     width: '100%',
   },
-  centerButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: -28,
-    ...SHADOWS.medium,
-  },
+  
 });
