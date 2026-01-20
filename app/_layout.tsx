@@ -114,13 +114,14 @@ const RootLayoutNav = React.memo(() => {
 
 RootLayoutNav.displayName = 'RootLayoutNav';
 
-// Language wrapper that rerenders on language change
+// Language wrapper - removed key={currentLocale} to prevent full app re-renders
+// Language changes are handled by i18n context updates, not full remounts
 const LanguageWrapper = React.memo(() => {
   const { currentLocale } = useI18n();
   
-  return (
-    <RootLayoutInner key={currentLocale} />
-  );
+  console.log('[LanguageWrapper] Current locale:', currentLocale);
+  
+  return <RootLayoutInner />;
 });
 
 LanguageWrapper.displayName = 'LanguageWrapper';

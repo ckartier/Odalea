@@ -29,10 +29,13 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
       console.log('[Messaging] Realtime conversations update', convs.length);
       setLiveConversations(convs);
     });
-    return () => { try { unsub && (unsub as any)(); } catch (e) {} };
+    return () => { try { unsub && (unsub as any)(); } catch { /* ignore cleanup errors */ } };
   }, [user?.id]);
 
-  const conversations = (liveConversations.length > 0 ? liveConversations : (conversationsQuery.data ?? []));
+  const conversations = useMemo(() => 
+    liveConversations.length > 0 ? liveConversations : (conversationsQuery.data ?? []),
+    [liveConversations, conversationsQuery.data]
+  );
 
   const otherParticipantIds = useMemo(() => {
     if (!user) return [] as string[];
@@ -87,16 +90,31 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
     return data;
   };
 
+  const conversationIds = useMemo(() => conversations.map(c => c.id), [conversations]);
+  const conversationIdsKey = conversationIds.join(',');
+  
   useEffect(() => {
-    const unsubs: Array<() => void> = [];
-    for (const conv of conversations) {
-      const unsub = databaseService.realtime.listenToMessages(conv.id, (msgs: any) => {
-        setMessagesByConv(prev => ({ ...prev, [conv.id]: msgs }));
+    if (conversationIds.length === 0) return;
+    
+    console.log('[Messaging] Setting up message listeners for', conversationIds.length, 'conversations');
+    const unsubs: (() => void)[] = [];
+    
+    for (const convId of conversationIds) {
+      const unsub = databaseService.realtime.listenToMessages(convId, (msgs: any) => {
+        setMessagesByConv(prev => ({ ...prev, [convId]: msgs }));
       });
       unsubs.push(unsub);
     }
-    return () => { unsubs.forEach(u => { try { u(); } catch {} }); };
-  }, [conversations.map(c => c.id).join(',')]);
+    
+    return () => {
+      console.log('[Messaging] Cleaning up message listeners');
+      unsubs.forEach(u => {
+        try { u(); } catch (err) {
+          console.warn('[Messaging] Failed to unsubscribe:', err);
+        }
+      });
+    };
+  }, [conversationIds, conversationIdsKey]);
 
   const sendMessage = useMutation({
     mutationFn: async ({ conversationId, content }: { conversationId: string; content: string }) => {

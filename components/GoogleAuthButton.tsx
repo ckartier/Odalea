@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, View, Alert, Platform } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, View, Alert } from 'react-native';
 import { useGoogleAuth } from '@/hooks/use-google-auth';
 import { COLORS } from '@/constants/colors';
 
@@ -18,7 +18,7 @@ export function GoogleSignInButton({
   textStyle, 
   disabled = false 
 }: GoogleSignInButtonProps) {
-  const { signIn, isLoading, error, user, isSignedIn } = useGoogleAuth();
+  const { signIn, isLoading, error, user, isSignedIn, isReady } = useGoogleAuth();
 
   React.useEffect(() => {
     if (user && onSignInSuccess) {
@@ -32,23 +32,23 @@ export function GoogleSignInButton({
     }
   }, [error, onSignInError]);
 
-  const handlePress = async () => {
-    if (!isLoading && !disabled) {
-      try {
-        await signIn();
-      } catch (err) {
-        console.error('[GoogleSignInButton] Sign-in failed:', err);
-        const message = err instanceof Error ? err.message : 'Connexion Google échouée';
-        if (message.includes('client ID missing') || message.includes('Missing client')) {
-          Alert.alert(
-            'Configuration requise',
-            'La connexion Google nécessite une configuration. Veuillez utiliser la connexion par email.',
-          );
-        } else if (onSignInError) {
-          onSignInError(message);
-        }
-      }
+  const handlePress = () => {
+    if (isLoading || disabled) {
+      console.log('[GoogleSignInButton] Button disabled or loading');
+      return;
     }
+    
+    if (!isReady) {
+      console.log('[GoogleSignInButton] Auth not ready yet');
+      Alert.alert(
+        'Chargement...',
+        'Veuillez patienter quelques secondes et réessayer.',
+      );
+      return;
+    }
+    
+    console.log('[GoogleSignInButton] Triggering sign-in SYNCHRONOUSLY');
+    signIn();
   };
 
   if (isSignedIn) {
@@ -63,7 +63,7 @@ export function GoogleSignInButton({
 
   return (
     <TouchableOpacity
-      style={[styles.button, disabled && styles.disabledButton, style]}
+      style={[styles.button, (disabled || !isReady) && styles.disabledButton, style]}
       onPress={handlePress}
       disabled={isLoading || disabled}
       activeOpacity={0.8}

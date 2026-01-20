@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { googleAuth, GoogleUser, GoogleAuthResponse } from '@/services/google-auth';
 import { useFirebaseAuth } from './use-firebase-auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,9 +7,10 @@ interface UseGoogleAuthReturn {
   user: GoogleUser | null;
   isLoading: boolean;
   error: string | null;
-  signIn: () => Promise<void>;
+  signIn: () => void;
   signOut: () => Promise<void>;
   isSignedIn: boolean;
+  isReady: boolean;
 }
 
 const GOOGLE_USER_KEY = 'google_user';
@@ -19,7 +20,16 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
   const [user, setUser] = useState<GoogleUser | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const { user: firebaseUser, isAuthenticated } = useFirebaseAuth();
+  const [isReady, setIsReady] = useState<boolean>(false);
+  const { user: firebaseUser } = useFirebaseAuth();
+  const signInPromiseRef = useRef<Promise<GoogleAuthResponse | null> | null>(null);
+
+  useEffect(() => {
+    googleAuth.ensureRequestReady().then((ready) => {
+      console.log('[useGoogleAuth] Request ready:', ready);
+      setIsReady(ready);
+    });
+  }, []);
 
   const loadStoredUser = useCallback(async () => {
     try {
@@ -32,32 +42,39 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
     }
   }, []);
 
-  const signIn = useCallback(async () => {
+  const signIn = useCallback(() => {
+    if (isLoading) {
+      console.log('[useGoogleAuth] Already signing in, ignoring');
+      return;
+    }
+    
+    console.log('[useGoogleAuth] signIn called - SYNCHRONOUS execution');
     setIsLoading(true);
     setError(null);
     
-    try {
-      const result: GoogleAuthResponse | null = await googleAuth.signIn();
-      
-      if (result) {
-        setUser(result.user);
-        
-        // Stocker les informations utilisateur
-        await AsyncStorage.setItem(GOOGLE_USER_KEY, JSON.stringify(result.user));
-        await AsyncStorage.setItem(GOOGLE_TOKEN_KEY, result.accessToken);
-        
-        console.log('Google Sign-In successful:', result.user.name);
-      } else {
-        setError('Connexion annulée');
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erreur de connexion';
-      setError(errorMessage);
-      console.error('Google Sign-In Error:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    signInPromiseRef.current = googleAuth.signIn();
+    
+    signInPromiseRef.current
+      .then(async (result: GoogleAuthResponse | null) => {
+        if (result) {
+          setUser(result.user);
+          await AsyncStorage.setItem(GOOGLE_USER_KEY, JSON.stringify(result.user));
+          await AsyncStorage.setItem(GOOGLE_TOKEN_KEY, result.accessToken);
+          console.log('[useGoogleAuth] Sign-In successful:', result.user.name);
+        } else {
+          setError('Connexion annulée');
+        }
+      })
+      .catch((err: unknown) => {
+        const errorMessage = err instanceof Error ? err.message : 'Erreur de connexion';
+        setError(errorMessage);
+        console.error('[useGoogleAuth] Sign-In Error:', err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+        signInPromiseRef.current = null;
+      });
+  }, [isLoading]);
 
   const signOut = useCallback(async () => {
     setIsLoading(true);
@@ -116,5 +133,6 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
     signIn,
     signOut,
     isSignedIn: !!user,
+    isReady,
   };
 }
