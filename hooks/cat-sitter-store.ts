@@ -2,6 +2,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { petSitterService, userService } from '@/services/database';
+import { safeJsonParse } from '@/lib/safe-json';
 
 export interface CustomService {
   id: string;
@@ -314,7 +315,7 @@ export const [CatSitterContext, useCatSitter] = createContextHook(() => {
       try {
         const stored = await AsyncStorage.getItem(STORAGE_PROFILE_KEY);
         if (stored) {
-          const parsed = normalizeProfile(JSON.parse(stored));
+          const parsed = normalizeProfile(safeJsonParse(stored, null));
           const { profile: next } = ensureDefaults(parsed);
           setProfile(next);
         }
@@ -369,7 +370,7 @@ export const [CatSitterContext, useCatSitter] = createContextHook(() => {
       // fallback cache
       const stored = await AsyncStorage.getItem(STORAGE_PROFILE_KEY);
       if (stored) {
-        const parsed = normalizeProfile(JSON.parse(stored));
+        const parsed = normalizeProfile(safeJsonParse(stored, null));
         const { profile: next } = ensureDefaults(parsed);
         setProfile(next);
         return next;

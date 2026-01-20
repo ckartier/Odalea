@@ -2273,13 +2273,22 @@ export const bookingService = {
   // Create booking
   async createBooking(booking: any): Promise<string> {
     try {
+      const { auth } = await import('./firebase');
+      if (!auth.currentUser) {
+        console.log('⚠️ Skipping createBooking - user not authenticated');
+        throw new Error('User not authenticated');
+      }
+      
       const bookingsRef = collection(db, COLLECTIONS.BOOKINGS);
-      const docRef = await addDoc(bookingsRef, {
+      const bookingData = sanitizeForFirestore({
         ...booking,
+        userId: booking.userId || auth.currentUser.uid,
+        clientId: booking.clientId || booking.userId || auth.currentUser.uid,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         status: 'pending'
       });
+      const docRef = await addDoc(bookingsRef, bookingData);
       console.log('✅ Booking created successfully');
       return docRef.id;
     } catch (error) {
@@ -2291,17 +2300,49 @@ export const bookingService = {
   // Get bookings by user (as client)
   async getBookingsByUser(userId: string): Promise<any[]> {
     try {
+      const { auth } = await import('./firebase');
+      if (!auth.currentUser) {
+        console.log('⚠️ Skipping getBookingsByUser - user not authenticated');
+        return [];
+      }
+      
+      if (auth.currentUser.uid !== userId) {
+        console.log('⚠️ getBookingsByUser - userId does not match authenticated user');
+        return [];
+      }
+      
       const bookingsRef = collection(db, COLLECTIONS.BOOKINGS);
-      const q = query(
+      
+      // Query by userId (primary field used in createBooking)
+      const qByUserId = query(
         bookingsRef,
-        where('clientId', '==', userId)
+        where('userId', '==', userId)
       );
       
-      const querySnapshot = await getDocs(q);
-      const items = querySnapshot.docs.map(doc => ({
+      const querySnapshot = await getDocs(qByUserId);
+      let items = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as any[];
+      
+      // Also try clientId for backwards compatibility
+      if (items.length === 0) {
+        try {
+          const qByClientId = query(
+            bookingsRef,
+            where('clientId', '==', userId)
+          );
+          const clientIdSnapshot = await getDocs(qByClientId);
+          items = clientIdSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as any[];
+        } catch {
+          console.log('⚠️ clientId query failed, using userId results');
+        }
+      }
+      
+      console.log(`✅ Loaded ${items.length} bookings for user ${userId}`);
       
       return items.sort((a: any, b: any) => {
         const tA = a.createdAt?.toMillis?.() || 0;
@@ -2314,7 +2355,7 @@ export const bookingService = {
         console.log('🔒 Returning empty bookings due to permission rules');
         return [] as any[];
       }
-      throw error;
+      return [] as any[];
     }
   },
 

@@ -4,6 +4,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { databaseService } from '@/services/database';
 import { useUser } from './user-store';
+import { safeJsonParse } from '@/lib/safe-json';
 
 export interface CatSitter {
   id: string;
@@ -100,7 +101,7 @@ export const [BookingContext, useBooking] = createContextHook(() => {
         console.error('Error fetching cat sitters from Firebase:', error);
         // Fallback to AsyncStorage
         const stored = await AsyncStorage.getItem('catSitters');
-        const sitters: CatSitter[] = stored ? JSON.parse(stored) : [];
+        const sitters: CatSitter[] = safeJsonParse<CatSitter[]>(stored, []);
         return sitters;
       }
     },
@@ -131,7 +132,7 @@ export const [BookingContext, useBooking] = createContextHook(() => {
       } catch (error) {
         console.error('Error fetching bookings from Firebase:', error);
         const stored = await AsyncStorage.getItem('bookings');
-        const bookings: BookingRequest[] = stored ? JSON.parse(stored) : [];
+        const bookings: BookingRequest[] = safeJsonParse<BookingRequest[]>(stored, []);
         return bookings;
       }
     },
@@ -157,7 +158,7 @@ export const [BookingContext, useBooking] = createContextHook(() => {
       } catch (error) {
         console.error('Error fetching reviews from Firebase:', error);
         const stored = await AsyncStorage.getItem('reviews');
-        const reviews: Review[] = stored ? JSON.parse(stored) : [];
+        const reviews: Review[] = safeJsonParse<Review[]>(stored, []);
         return reviews;
       }
     },
@@ -195,7 +196,7 @@ export const [BookingContext, useBooking] = createContextHook(() => {
         console.error('Error creating booking in Firebase:', error);
         // Fallback to AsyncStorage
         const stored = await AsyncStorage.getItem('bookings');
-        const bookings: BookingRequest[] = stored ? JSON.parse(stored) : [];
+        const bookings: BookingRequest[] = safeJsonParse<BookingRequest[]>(stored, []);
         
         const newBooking: BookingRequest = {
           ...booking,
@@ -241,7 +242,7 @@ export const [BookingContext, useBooking] = createContextHook(() => {
         console.error('Error updating booking in Firebase:', error);
         // Fallback to AsyncStorage
         const stored = await AsyncStorage.getItem('bookings');
-        const bookings: BookingRequest[] = stored ? JSON.parse(stored) : [];
+        const bookings: BookingRequest[] = safeJsonParse<BookingRequest[]>(stored, []);
         
         const bookingIndex = bookings.findIndex(b => b.id === bookingId);
         if (bookingIndex === -1) throw new Error('Booking not found');
@@ -292,7 +293,7 @@ export const [BookingContext, useBooking] = createContextHook(() => {
         console.error('Error creating review in Firebase:', error);
         // Fallback to AsyncStorage
         const stored = await AsyncStorage.getItem('reviews');
-        const reviews: Review[] = stored ? JSON.parse(stored) : [];
+        const reviews: Review[] = safeJsonParse<Review[]>(stored, []);
         
         const newReview: Review = {
           ...review,
@@ -318,13 +319,13 @@ export const [BookingContext, useBooking] = createContextHook(() => {
   // Helper function to update cat sitter rating
   const updateCatSitterRating = async (catSitterId: string) => {
     const reviewsStored = await AsyncStorage.getItem('reviews');
-    const reviews: Review[] = reviewsStored ? JSON.parse(reviewsStored) : [];
+    const reviews: Review[] = safeJsonParse<Review[]>(reviewsStored, []);
     
     const sitterReviews = reviews.filter(r => r.catSitterId === catSitterId);
-    const averageRating = sitterReviews.reduce((sum, r) => sum + r.rating, 0) / sitterReviews.length;
+    const averageRating = sitterReviews.length > 0 ? sitterReviews.reduce((sum, r) => sum + r.rating, 0) / sitterReviews.length : 0;
     
     const sittersStored = await AsyncStorage.getItem('catSitters');
-    const sitters: CatSitter[] = sittersStored ? JSON.parse(sittersStored) : [];
+    const sitters: CatSitter[] = safeJsonParse<CatSitter[]>(sittersStored, []);
     
     const sitterIndex = sitters.findIndex(s => s.id === catSitterId);
     if (sitterIndex !== -1) {
