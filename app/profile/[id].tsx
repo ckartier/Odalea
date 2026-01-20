@@ -5,21 +5,51 @@ import {
   View,
   ScrollView,
   Alert,
-  FlatList,
   ActivityIndicator,
+  TouchableOpacity,
+  Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { COLORS, SHADOWS } from '@/constants/colors';
-import Button from '@/components/Button';
-import PetCard from '@/components/PetCard';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/hooks/auth-store';
 import { useMessaging } from '@/hooks/messaging-store';
 import { useCatSitter } from '@/hooks/cat-sitter-store';
 import type { Gender, Pet, User } from '@/types';
-import { MapPin, MessageSquare, Phone, Shield, UserCheck, UserPlus, Calendar, Clock, Euro } from 'lucide-react-native';
+import { 
+  MapPin, 
+  MessageSquare, 
+  Phone, 
+  Shield, 
+  UserCheck, 
+  UserPlus, 
+  Calendar, 
+  Clock, 
+  Euro,
+  Star,
+  Heart,
+  PawPrint,
+  ChevronRight,
+} from 'lucide-react-native';
 import { db } from '@/services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const COLORS = {
+  primary: '#0B2A3C',
+  primaryLight: '#1A4A5E',
+  accent: '#FF6B6B',
+  success: '#4CAF50',
+  white: '#FFFFFF',
+  background: '#F8F9FA',
+  surface: '#FFFFFF',
+  textPrimary: '#1A1A2E',
+  textSecondary: '#6B7280',
+  border: '#E5E7EB',
+  cardBg: '#FFFFFF',
+};
 
 function isGender(v: unknown): v is Gender {
   return v === 'male' || v === 'female';
@@ -103,21 +133,23 @@ export default function UserProfileScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const router = useRouter();
   const { user } = useAuth();
-  const { areFriends, hasPendingRequest, sendFriendRequest } = useMessaging();
+  const { areFriends, hasPendingRequest, sendFriendRequest, createConversation } = useMessaging();
   const { loadProfile: loadCatSitterProfile } = useCatSitter();
 
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [catSitterProfile, setCatSitterProfile] = useState<any>(null);
+  const [actionLoading, setActionLoading] = useState<boolean>(false);
 
-  const canSeePhone = useMemo(() => (profileUser ? areFriends(profileUser.id) : false), [profileUser, areFriends]);
+  const isFriend = useMemo(() => (profileUser ? areFriends(profileUser.id) : false), [profileUser, areFriends]);
+  const isPending = useMemo(() => (profileUser ? hasPendingRequest(profileUser.id) : false), [profileUser, hasPendingRequest]);
 
   const load = useCallback(async () => {
     if (!id) return;
     try {
       setLoading(true);
       if (user?.id === id) {
-        router.replace('/profile');
+        router.replace('/(tabs)/profile');
         return;
       }
       const ref = doc(db, 'users', String(id));
@@ -155,23 +187,32 @@ export default function UserProfileScreen() {
     load();
   }, [load]);
 
-  const handleSendMessage = useCallback(() => {
-    if (profileUser) {
-      router.push(`/messages/new?userId=${profileUser.id}`);
+  const handleSendMessage = useCallback(async () => {
+    if (!profileUser || !user) return;
+    setActionLoading(true);
+    try {
+      const conversationId = await createConversation.mutateAsync(profileUser.id);
+      router.push(`/messages/${conversationId}`);
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      Alert.alert('Erreur', 'Impossible de créer la conversation');
+    } finally {
+      setActionLoading(false);
     }
-  }, [profileUser, router]);
+  }, [profileUser, user, createConversation, router]);
 
   const handleAddFriend = useCallback(async () => {
     if (!profileUser) return;
     try {
-      setLoading(true);
+      setActionLoading(true);
       await sendFriendRequest.mutateAsync(profileUser.id);
-      Alert.alert('Succès', 'Demande d’ami envoyée');
-    } catch (error) {
-      Alert.alert('Erreur', "Échec de l'envoi de la demande");
+      Alert.alert('Succès', 'Demande d\'ami envoyée !');
+    } catch (error: any) {
+      const message = error?.message || "Échec de l'envoi de la demande";
+      Alert.alert('Info', message);
       console.error(error);
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   }, [profileUser, sendFriendRequest]);
 
@@ -183,7 +224,7 @@ export default function UserProfileScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer} testID="profile-loading">
-        <ActivityIndicator color={COLORS.primary} />
+        <ActivityIndicator size="large" color={COLORS.primary} />
         <Text style={styles.loadingText}>Chargement du profil...</Text>
       </View>
     );
@@ -192,118 +233,135 @@ export default function UserProfileScreen() {
   if (!profileUser) {
     return (
       <View style={styles.loadingContainer} testID="profile-empty">
-        <Text>Profil introuvable</Text>
+        <Text style={styles.emptyText}>Profil introuvable</Text>
       </View>
     );
   }
 
+  const heroPhoto = profileUser.photo || 
+    (profileUser.pets && profileUser.pets.length > 0 ? profileUser.pets[0].mainPhoto : null) ||
+    'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=500';
+
   return (
     <View style={styles.container} testID="user-profile-screen">
-      <StatusBar style="dark" />
-      <Stack.Screen options={{ title: `@${profileUser.pseudo}` }} />
+      <StatusBar style="light" />
+      <Stack.Screen options={{ headerShown: false }} />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerSection}>
-          <View style={styles.header}>
-            <View style={styles.profileInfo}>
-              <View style={styles.nameContainer}>
-                <Text style={styles.name}>@{profileUser.pseudo}</Text>
-                {profileUser.isCatSitter && (
-                  <View style={styles.badgeContainer}>
-                    <Text style={styles.badgeText}>Cat Sitter</Text>
-                  </View>
-                )}
-              </View>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Hero Section */}
+        <View style={styles.heroSection}>
+          <Image
+            source={{ uri: heroPhoto }}
+            style={styles.heroImage}
+            contentFit="cover"
+          />
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.7)']}
+            style={styles.heroGradient}
+          />
+          
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <ChevronRight size={24} color={COLORS.white} style={{ transform: [{ rotate: '180deg' }] }} />
+          </TouchableOpacity>
 
-              <View style={styles.detailsContainer}>
-                <View style={styles.detailItem}>
-                  <MapPin size={16} color={COLORS.darkGray} />
-                  <Text style={styles.detailText}>{profileUser.city}</Text>
+          <View style={styles.heroContent}>
+            <View style={styles.nameRow}>
+              <Text style={styles.heroName}>@{profileUser.pseudo}</Text>
+              {profileUser.isCatSitter && (
+                <View style={styles.catSitterBadge}>
+                  <PawPrint size={12} color={COLORS.white} />
+                  <Text style={styles.catSitterBadgeText}>Cat Sitter</Text>
                 </View>
-
-                {canSeePhone && (
-                  <View style={styles.detailItem}>
-                    <Phone size={16} color={COLORS.darkGray} />
-                    <Text style={styles.detailText}>
-                      {profileUser.countryCode} {profileUser.phoneNumber}
-                    </Text>
-                  </View>
-                )}
-              </View>
+              )}
             </View>
-          </View>
-        </View>
-
-        <View style={styles.actionSection}>
-          <View style={styles.actionButtons}>
-            {canSeePhone ? (
-              <Button
-                title="Message"
-                onPress={handleSendMessage}
-                icon={<MessageSquare size={20} color={COLORS.white} />}
-                style={styles.actionButton}
-                testID="btn-message"
-              />
-            ) : hasPendingRequest(profileUser.id) ? (
-              <Button
-                title="En attente"
-                onPress={() => {}}
-                disabled
-                icon={<UserCheck size={20} color={COLORS.white} />}
-                style={styles.actionButton}
-                testID="btn-request-pending"
-              />
-            ) : (
-              <Button
-                title="Ajouter en ami"
-                onPress={handleAddFriend}
-                icon={<UserPlus size={20} color={COLORS.white} />}
-                style={styles.actionButton}
-                testID="btn-add-friend"
-              />
+            
+            {profileUser.city && (
+              <View style={styles.locationRow}>
+                <MapPin size={14} color={COLORS.white} />
+                <Text style={styles.heroLocation}>{profileUser.city}</Text>
+              </View>
             )}
           </View>
         </View>
 
-        {profileUser.isCatSitter && (
-          <View style={styles.membershipSection}>
-            <View style={[styles.membershipCard, SHADOWS.medium]}>
-              <View style={styles.membershipInfo}>
-                <Shield size={24} color={COLORS.maleAccent} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.membershipTitle}>Cat Sitter vérifié</Text>
-                  <Text style={styles.membershipSubtitle}>Profil vérifié sur la plateforme</Text>
-                </View>
-              </View>
-              <Button
-                title="Réserver"
-                onPress={handleBookService}
-                icon={<Calendar size={18} color={COLORS.white} />}
-                style={styles.bookButton}
-                testID="btn-book-service"
-              />
+        {/* Action Buttons */}
+        <View style={styles.actionsContainer}>
+          {isFriend ? (
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.primaryButton]}
+              onPress={handleSendMessage}
+              disabled={actionLoading}
+            >
+              <MessageSquare size={20} color={COLORS.white} />
+              <Text style={styles.primaryButtonText}>Message</Text>
+            </TouchableOpacity>
+          ) : isPending ? (
+            <View style={[styles.actionButton, styles.pendingButton]}>
+              <UserCheck size={20} color={COLORS.textSecondary} />
+              <Text style={styles.pendingButtonText}>En attente</Text>
             </View>
+          ) : (
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.primaryButton]}
+              onPress={handleAddFriend}
+              disabled={actionLoading}
+            >
+              {actionLoading ? (
+                <ActivityIndicator size="small" color={COLORS.white} />
+              ) : (
+                <>
+                  <UserPlus size={20} color={COLORS.white} />
+                  <Text style={styles.primaryButtonText}>Ajouter</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+
+          {profileUser.isCatSitter && (
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.secondaryButton]}
+              onPress={handleBookService}
+            >
+              <Calendar size={20} color={COLORS.primary} />
+              <Text style={styles.secondaryButtonText}>Réserver</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Cat Sitter Section */}
+        {profileUser.isCatSitter && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Shield size={20} color={COLORS.success} />
+              <Text style={styles.cardTitle}>Cat Sitter vérifié</Text>
+            </View>
+            <Text style={styles.cardDescription}>
+              Professionnel vérifié sur la plateforme Odalea
+            </Text>
 
             {catSitterProfile?.customServices && catSitterProfile.customServices.length > 0 && (
-              <View style={styles.servicesContainer}>
-                <Text style={styles.servicesTitle}>Prestations proposées</Text>
+              <View style={styles.servicesSection}>
+                <Text style={styles.servicesTitle}>Services proposés</Text>
                 {catSitterProfile.customServices
                   .filter((s: any) => s.isActive)
+                  .slice(0, 3)
                   .map((service: any) => (
                     <View key={service.id} style={styles.serviceItem}>
-                      <View style={styles.serviceInfo}>
+                      <View style={styles.serviceLeft}>
                         <Text style={styles.serviceName}>{service.name}</Text>
-                        <Text style={styles.serviceDescription}>{service.description}</Text>
                         <View style={styles.serviceDetails}>
-                          <View style={styles.serviceDetail}>
-                            <Clock size={14} color={COLORS.darkGray} />
-                            <Text style={styles.serviceDetailText}>{service.duration} min</Text>
-                          </View>
-                          <View style={styles.serviceDetail}>
-                            <Euro size={14} color={COLORS.darkGray} />
-                            <Text style={styles.serviceDetailText}>{service.price}€</Text>
-                          </View>
+                          <Clock size={12} color={COLORS.textSecondary} />
+                          <Text style={styles.serviceDetailText}>{service.duration} min</Text>
                         </View>
+                      </View>
+                      <View style={styles.serviceRight}>
+                        <Text style={styles.servicePrice}>{service.price}€</Text>
                       </View>
                     </View>
                   ))}
@@ -312,26 +370,56 @@ export default function UserProfileScreen() {
           </View>
         )}
 
-        <View style={styles.petsSection}>
-          <Text style={styles.sectionTitle}>Animaux de @{profileUser.pseudo}</Text>
-          <FlatList
-            data={profileUser.pets}
-            renderItem={({ item }) => <PetCard pet={item} style={styles.petCard} />}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.petsContainer}
-          />
-        </View>
-
-        {!canSeePhone && (
-          <View style={styles.privacySection}>
-            <View style={[styles.privacyCard, SHADOWS.small]}>
-              <Text style={styles.privacyTitle}>Ajoutez @{profileUser.pseudo} comme ami pour voir plus</Text>
-              <Text style={styles.privacyText}>Certaines infos ne sont visibles qu’aux amis</Text>
+        {/* Pets Section */}
+        {profileUser.pets && profileUser.pets.length > 0 && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Heart size={20} color={COLORS.accent} />
+              <Text style={styles.cardTitle}>Ses compagnons</Text>
             </View>
+            
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.petsScroll}
+            >
+              {profileUser.pets.map((pet) => (
+                <TouchableOpacity 
+                  key={pet.id} 
+                  style={styles.petCard}
+                  onPress={() => router.push(`/pet/${pet.id}`)}
+                  activeOpacity={0.8}
+                >
+                  <Image
+                    source={{ uri: pet.mainPhoto || 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131' }}
+                    style={styles.petImage}
+                    contentFit="cover"
+                  />
+                  <View style={styles.petInfo}>
+                    <Text style={styles.petName}>{pet.name}</Text>
+                    <Text style={styles.petBreed}>{pet.breed}</Text>
+                  </View>
+                  <View style={[
+                    styles.genderIndicator, 
+                    { backgroundColor: pet.gender === 'male' ? '#3B82F6' : '#EC4899' }
+                  ]} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
         )}
+
+        {/* Privacy Notice */}
+        {!isFriend && (
+          <View style={styles.privacyCard}>
+            <Text style={styles.privacyTitle}>Profil limité</Text>
+            <Text style={styles.privacyText}>
+              Ajoutez @{profileUser.pseudo} comme ami pour voir plus d'informations
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.bottomSpacer} />
       </ScrollView>
     </View>
   );
@@ -340,136 +428,269 @@ export default function UserProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.background,
   },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.background,
   },
   loadingText: {
-    marginTop: 8,
-    color: COLORS.darkGray,
+    marginTop: 12,
+    fontSize: 16,
+    color: COLORS.textSecondary,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
   },
   scrollContent: {
     paddingBottom: 40,
   },
-  headerSection: {
-    backgroundColor: COLORS.white,
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    marginBottom: 8,
+  heroSection: {
+    height: 320,
+    position: 'relative',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  heroImage: {
+    width: '100%',
+    height: '100%',
   },
-  profileInfo: { flex: 1 },
-  nameContainer: {
+  heroGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 160,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 56,
+    left: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroContent: {
+    position: 'absolute',
+    bottom: 24,
+    left: 20,
+    right: 20,
+  },
+  nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
+    gap: 12,
     marginBottom: 8,
   },
-  name: {
-    fontSize: 24,
+  heroName: {
+    fontSize: 28,
     fontWeight: '700' as const,
-    color: COLORS.black,
-    marginRight: 8,
+    color: COLORS.white,
   },
-  badgeContainer: {
-    backgroundColor: COLORS.maleAccent,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+  catSitterBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 12,
   },
-  badgeText: {
-    color: COLORS.white,
+  catSitterBadgeText: {
     fontSize: 12,
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
+    color: COLORS.white,
   },
-  detailsContainer: { gap: 4 },
-  detailItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  detailText: { fontSize: 14, color: COLORS.darkGray },
-  actionSection: {
-    backgroundColor: '#F8F9FA',
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    marginBottom: 8,
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  actionButtons: {},
-  actionButton: { width: '100%' },
-  membershipSection: {
-    backgroundColor: '#E8F5E8',
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    marginBottom: 8,
+  heroLocation: {
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.9)',
   },
-  membershipCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+  actionsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 12,
+    backgroundColor: COLORS.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
-  membershipInfo: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
-  membershipTitle: { fontSize: 16, fontWeight: '600' as const, color: COLORS.black, marginBottom: 2 },
-  membershipSubtitle: { fontSize: 12, color: COLORS.darkGray },
-  bookButton: { width: '100%' },
-  servicesContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 16,
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
   },
-  servicesTitle: {
+  primaryButton: {
+    backgroundColor: COLORS.primary,
+  },
+  primaryButtonText: {
     fontSize: 16,
     fontWeight: '600' as const,
-    color: COLORS.black,
+    color: COLORS.white,
+  },
+  secondaryButton: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: COLORS.primary,
+  },
+  pendingButton: {
+    backgroundColor: COLORS.border,
+  },
+  pendingButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: COLORS.textSecondary,
+  },
+  card: {
+    backgroundColor: COLORS.cardBg,
+    marginHorizontal: 20,
+    marginTop: 16,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    color: COLORS.textPrimary,
+  },
+  cardDescription: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+  },
+  servicesSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  servicesTitle: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: COLORS.textPrimary,
     marginBottom: 12,
   },
   serviceItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.lightGray,
+    borderBottomColor: COLORS.border,
   },
-  serviceInfo: {
+  serviceLeft: {
     flex: 1,
   },
   serviceName: {
     fontSize: 15,
-    fontWeight: '600' as const,
-    color: COLORS.black,
+    fontWeight: '500' as const,
+    color: COLORS.textPrimary,
     marginBottom: 4,
   },
-  serviceDescription: {
-    fontSize: 13,
-    color: COLORS.darkGray,
-    marginBottom: 8,
-  },
   serviceDetails: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  serviceDetail: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
   serviceDetailText: {
     fontSize: 13,
-    color: COLORS.darkGray,
+    color: COLORS.textSecondary,
   },
-  petsSection: {
-    backgroundColor: '#FFF8E1',
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    marginBottom: 8,
+  serviceRight: {
+    alignItems: 'flex-end',
   },
-  sectionTitle: { fontSize: 18, fontWeight: '600' as const, color: COLORS.black, marginBottom: 16 },
-  petsContainer: { paddingRight: 16, gap: 12 },
-  petCard: { marginRight: 12 },
-  privacySection: { backgroundColor: '#F3E5F5', paddingHorizontal: 16, paddingVertical: 20 },
-  privacyCard: { backgroundColor: COLORS.white, borderRadius: 16, padding: 16, alignItems: 'center' },
-  privacyTitle: { fontSize: 16, fontWeight: '600' as const, color: COLORS.black, marginBottom: 4, textAlign: 'center' },
-  privacyText: { fontSize: 14, color: COLORS.darkGray, textAlign: 'center' },
+  servicePrice: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: COLORS.primary,
+  },
+  petsScroll: {
+    gap: 12,
+    paddingTop: 8,
+  },
+  petCard: {
+    width: 140,
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  petImage: {
+    width: '100%',
+    height: 120,
+  },
+  petInfo: {
+    padding: 12,
+  },
+  petName: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: COLORS.textPrimary,
+    marginBottom: 2,
+  },
+  petBreed: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+  },
+  genderIndicator: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  privacyCard: {
+    backgroundColor: COLORS.surface,
+    marginHorizontal: 20,
+    marginTop: 16,
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderStyle: 'dashed',
+  },
+  privacyTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: COLORS.textPrimary,
+    marginBottom: 6,
+  },
+  privacyText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
+  bottomSpacer: {
+    height: 40,
+  },
 });

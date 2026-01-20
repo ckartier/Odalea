@@ -20,6 +20,7 @@ import GenderSelector from '@/components/GenderSelector';
 import DatePicker from '@/components/DatePicker';
 
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
+import { useQueryClient } from '@tanstack/react-query';
 import { StorageService } from '@/services/storage';
 import { Gender } from '@/types';
 import { ArrowLeft, Plus, Trash2, Tag } from 'lucide-react-native';
@@ -27,6 +28,7 @@ import { ArrowLeft, Plus, Trash2, Tag } from 'lucide-react-native';
 export default function AddPetScreen() {
   const router = useRouter();
   const { user, addPet } = useFirebaseUser();
+  const queryClient = useQueryClient();
   
   const [loading, setLoading] = useState(false);
   const [uploadingMainPhoto, setUploadingMainPhoto] = useState(false);
@@ -172,18 +174,16 @@ export default function AddPetScreen() {
       const result = await addPet(petData);
       
       if (result.success) {
+        await queryClient.invalidateQueries({ queryKey: ['allPets-firestore'] });
+        
         Alert.alert(
-          'Success',
-          `${name} has been added to your pets!`,
+          'Succès',
+          `${name} a été ajouté à vos animaux !`,
           [
             { 
               text: 'OK', 
               onPress: () => {
-                if (router.canGoBack()) {
-                  router.back();
-                } else {
-                  router.replace('/(tabs)/home');
-                }
+                router.replace('/(tabs)/profile');
               },
             },
           ]

@@ -182,26 +182,37 @@ export default function SettingsScreen() {
     },
   ];
 
-  const renderSettingItem = (item: any) => (
+  const renderSettingItem = (item: any, isFirst: boolean, isLast: boolean) => (
     <TouchableOpacity
       key={item.id}
-      style={[styles.settingItem, { backgroundColor: COLORS.white }]}
+      style={[
+        styles.settingItem,
+        isFirst && styles.settingItemFirst,
+        isLast && styles.settingItemLast,
+        !isLast && styles.settingItemBorder,
+      ]}
       onPress={item.onPress}
-      activeOpacity={0.7}
+      activeOpacity={0.6}
     >
-      <View style={styles.settingIcon}>
+      <View style={[styles.settingIcon, { backgroundColor: item.iconBg || '#F2F2F7' }]}>
         {item.icon}
       </View>
       <View style={styles.settingContent}>
-        <Text style={[styles.settingTitle, { color: item.textColor || COLORS.black }]}>
+        <Text style={[styles.settingTitle, { color: item.textColor || '#000' }]}>
           {item.title}
         </Text>
         {item.subtitle && (
           <Text style={styles.settingSubtitle}>{item.subtitle}</Text>
         )}
       </View>
-      <ChevronRight size={20} color={COLORS.gray} />
+      <ChevronRight size={18} color="#C7C7CC" />
     </TouchableOpacity>
+  );
+
+  const renderSection = (items: any[]) => (
+    <View style={styles.sectionCard}>
+      {items.map((item, index) => renderSettingItem(item, index === 0, index === items.length - 1))}
+    </View>
   );
 
   const languages = [
@@ -227,27 +238,27 @@ export default function SettingsScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('settings.preferences')}</Text>
-          {preferencesItems.map(renderSettingItem)}
+          {renderSection(preferencesItems)}
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('settings.security')}</Text>
-          {securityItems.map(renderSettingItem)}
+          {renderSection(securityItems)}
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('settings.support')}</Text>
-          {supportItems.map(renderSettingItem)}
+          {renderSection(supportItems)}
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('settings.legal')}</Text>
-          {legalItems.map(renderSettingItem)}
+          {renderSection(legalItems)}
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('settings.account')}</Text>
-          {dangerousItems.map(renderSettingItem)}
+          {renderSection(dangerousItems)}
         </View>
 
         <View style={styles.footer}>
@@ -297,37 +308,52 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: '#F2F2F7',
   },
   content: {
     flex: 1,
   },
   section: {
-    marginTop: 24,
+    marginTop: 20,
     paddingHorizontal: 16,
   },
   sectionTitle: {
     fontSize: 13,
-    fontWeight: '600' as const,
-    color: COLORS.gray,
+    fontWeight: '400' as const,
+    color: '#6D6D72',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 12,
-    paddingHorizontal: 4,
+    letterSpacing: -0.08,
+    marginBottom: 8,
+    paddingHorizontal: 16,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 1,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
+    backgroundColor: COLORS.white,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    minHeight: 44,
+  },
+  settingItemFirst: {
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
+  settingItemLast: {
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+  },
+  settingItemBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#C6C6C8',
+  },
+  sectionCard: {
+    borderRadius: 10,
+    overflow: 'hidden',
   },
   settingIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 29,
+    height: 29,
+    borderRadius: 6,
     backgroundColor: COLORS.lightGray,
     justifyContent: 'center',
     alignItems: 'center',
@@ -337,23 +363,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   settingTitle: {
-    fontSize: 16,
-    fontWeight: '500' as const,
-    marginBottom: 2,
+    fontSize: 17,
+    fontWeight: '400' as const,
+    letterSpacing: -0.41,
   },
   settingSubtitle: {
     fontSize: 14,
-    color: COLORS.gray,
+    color: '#8E8E93',
+    marginTop: 1,
   },
   footer: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 32,
     paddingHorizontal: 16,
-    marginTop: 20,
+    marginTop: 16,
   },
   footerText: {
-    fontSize: 12,
-    color: COLORS.gray,
+    fontSize: 13,
+    color: '#8E8E93',
     textAlign: 'center',
     marginBottom: 4,
   },

@@ -20,6 +20,7 @@ import { StorageService } from '@/services/storage';
 import { usePremium } from '@/hooks/premium-store';
 import { useActivePet } from '@/hooks/active-pet-store';
 import { usePets } from '@/hooks/pets-store';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSocial } from '@/hooks/social-store';
 import { PostCard } from '@/components/PostCard';
 import { Post } from '@/types';
@@ -41,7 +42,16 @@ export default function ProfileScreen() {
   const { friends } = useFriends();
   const { isPremium } = usePremium();
   const { activePetId, setActivePet } = useActivePet();
-  const { userPets } = usePets();
+  const { syncUserPets } = usePets();
+  const queryClient = useQueryClient();
+  
+  const userPets = user?.pets || [];
+  
+  useEffect(() => {
+    if (user?.pets) {
+      syncUserPets(user.pets);
+    }
+  }, [user?.pets, syncUserPets]);
   const { 
     getUserPosts, 
     deletePost, 
