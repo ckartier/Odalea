@@ -34,7 +34,9 @@ import AdaptiveHeader from "@/components/AdaptiveHeader";
 import { useNotifications } from "@/hooks/use-notifications";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // Ignore errors - splash screen may not be available on all platforms
+});
 
 // Optimize QueryClient with better defaults
 const queryClient = new QueryClient({
