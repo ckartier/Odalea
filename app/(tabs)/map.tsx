@@ -14,6 +14,7 @@ import {
   Animated,
   Easing,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -74,6 +75,8 @@ export default function MapScreen() {
   const insets = useSafeAreaInsets();
   const { sendFriendRequest, isFriend, isRequestSent } = useFriends();
   const { isFavorite } = useFavorites();
+  const [mapReady, setMapReady] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
 
   const [region, setRegion] = useState<Region>({
     latitude: DEFAULT_LAT,
@@ -573,9 +576,35 @@ export default function MapScreen() {
     return undefined;
   };
 
+  if (mapError) {
+    return (
+      <View style={styles.errorContainer}>
+        <StatusBar style="dark" />
+        <Text style={styles.errorTitle}>Erreur de chargement</Text>
+        <Text style={styles.errorMessage}>{mapError}</Text>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={() => {
+            setMapError(null);
+            setMapReady(false);
+          }}
+        >
+          <Text style={styles.retryText}>Réessayer</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}> 
       <StatusBar style="dark" />
+
+      {!mapReady && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#0f172a" />
+          <Text style={styles.loadingText}>Chargement de la carte...</Text>
+        </View>
+      )}
 
       <MapView
         provider={Platform.OS === 'android' ? (PROVIDER_GOOGLE as any) : undefined}
@@ -589,6 +618,10 @@ export default function MapScreen() {
         pitchEnabled={false}
         onRegionChange={Platform.OS === 'web' ? handleRegionChange : undefined}
         onRegionChangeComplete={Platform.OS !== 'web' ? handleRegionChange : undefined}
+        onMapReady={() => {
+          console.log('📍 Map ready');
+          setMapReady(true);
+        }}
         testID="map-view"
       >
         {Platform.OS !== 'web' && filteredPets.map((pet) => (
@@ -966,6 +999,49 @@ const styles = StyleSheet.create({
   },
   map: {
     ...StyleSheet.absoluteFillObject,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#64748b',
+    fontWeight: '500' as const,
+  },
+  errorContainer: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: '#0f172a',
+    marginBottom: 8,
+  },
+  errorMessage: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center' as const,
+    marginBottom: 24,
+  },
+  retryButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: '#0f172a',
+    borderRadius: 12,
+  },
+  retryText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: '#ffffff',
   },
   filterButtonContainer: {
     position: 'absolute',

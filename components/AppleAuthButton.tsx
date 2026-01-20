@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, TouchableOpacity, View, Platform } from 'react-native';
+import { StyleSheet, TouchableOpacity, View, Platform, Text } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { Apple } from 'lucide-react-native';
 import { appleAuth, AppleUser } from '@/services/apple-auth';
@@ -50,8 +50,32 @@ export function AppleSignInButton({
     }
   };
 
-  if (Platform.OS === 'web' || !isAvailable) {
-    return null;
+  if (Platform.OS === 'web') {
+    return (
+      <TouchableOpacity
+        style={[styles.socialButton, style]}
+        onPress={() => onSignInError('Apple Sign-In n\'est pas disponible sur le web')}
+        activeOpacity={0.8}
+      >
+        <View style={styles.appleIconContainer}>
+          <Apple size={20} color="#000" fill="#000" />
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
+  if (!isAvailable) {
+    return (
+      <TouchableOpacity
+        style={[styles.socialButton, styles.disabledButton, style]}
+        disabled
+        activeOpacity={0.5}
+      >
+        <View style={styles.appleIconContainer}>
+          <Apple size={20} color="#999" />
+        </View>
+      </TouchableOpacity>
+    );
   }
 
   if (Platform.OS === 'ios') {
@@ -102,6 +126,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   appleIconContainer: {
     width: 24,

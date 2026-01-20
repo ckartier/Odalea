@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, View } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, View, Alert, Platform } from 'react-native';
 import { useGoogleAuth } from '@/hooks/use-google-auth';
 import { COLORS } from '@/constants/colors';
 
@@ -34,7 +34,20 @@ export function GoogleSignInButton({
 
   const handlePress = async () => {
     if (!isLoading && !disabled) {
-      await signIn();
+      try {
+        await signIn();
+      } catch (err) {
+        console.error('[GoogleSignInButton] Sign-in failed:', err);
+        const message = err instanceof Error ? err.message : 'Connexion Google échouée';
+        if (message.includes('client ID missing') || message.includes('Missing client')) {
+          Alert.alert(
+            'Configuration requise',
+            'La connexion Google nécessite une configuration. Veuillez utiliser la connexion par email.',
+          );
+        } else if (onSignInError) {
+          onSignInError(message);
+        }
+      }
     }
   };
 

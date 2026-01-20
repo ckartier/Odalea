@@ -14,6 +14,7 @@ interface MapViewProps {
   region?: MapRegion;
   showsUserLocation?: boolean;
   onRegionChange?: (region: MapRegion) => void;
+  onMapReady?: () => void;
   [key: string]: unknown;
 }
 
@@ -78,6 +79,7 @@ const MapView: React.FC<MapViewProps> = ({
   region,
   showsUserLocation,
   onRegionChange,
+  onMapReady,
   ...props
 }) => {
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -102,6 +104,10 @@ const MapView: React.FC<MapViewProps> = ({
 
     googleMapRef.current = new window.google.maps.Map(mapRef.current, mapOptions);
     setIsLoaded(true);
+    
+    if (onMapReady) {
+      onMapReady();
+    }
 
     if (onRegionChange && googleMapRef.current) {
       googleMapRef.current.addListener('bounds_changed', () => {
@@ -124,7 +130,7 @@ const MapView: React.FC<MapViewProps> = ({
         }
       });
     }
-  }, [onRegionChange, region?.latitude, region?.longitude]);
+  }, [onRegionChange, onMapReady, region?.latitude, region?.longitude]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
