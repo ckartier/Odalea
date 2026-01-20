@@ -13,6 +13,8 @@ import {
 
 WebBrowser.maybeCompleteAuthSession();
 
+const GOOGLE_WEB_CLIENT_ID = '636879478460-35suv6bcvirou1k1ma8e7emggq9odsth.apps.googleusercontent.com';
+
 export interface GoogleUser {
   id: string;
   email: string;
@@ -33,17 +35,14 @@ class GoogleAuthService {
   private redirectUri: string;
 
   constructor() {
-    const web = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
+    const web = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || GOOGLE_WEB_CLIENT_ID;
     const ios = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
     const android = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? '';
 
-    const chosenClientId = Platform.select<string>({
-      web: web || ios || android || '',
-      ios: ios || web || android || '',
-      android: android || web || ios || '',
-      default: web || ios || android || '',
-    }) ?? '';
-    this.clientId = chosenClientId;
+    this.clientId = web;
+    
+    console.log('[GoogleAuth] HARDCODED WEB CLIENT ID:', GOOGLE_WEB_CLIENT_ID);
+    console.log('[GoogleAuth] FINAL CLIENT ID:', this.clientId);
 
     const scheme = (Constants.expoConfig?.scheme as string | undefined)
       ?? (Constants.expoConfig?.slug as string | undefined)
