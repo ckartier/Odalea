@@ -20,6 +20,7 @@ import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { useI18n } from '@/hooks/i18n-store';
 import { Mail, Lock, ArrowLeft, Smartphone, MessageSquare, Briefcase, Shield, ShieldCheck, Apple } from 'lucide-react-native';
 import { GoogleSignInButton } from '@/components/GoogleAuthButton';
+import { AppleSignInButton } from '@/components/AppleAuthButton';
 import ResponsiveModal from '@/components/ResponsiveModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { emailService } from '@/services/email';
@@ -368,14 +369,16 @@ function SignInScreen() {
               style={styles.socialButton}
             />
             
-            <TouchableOpacity
+            <AppleSignInButton
+              onSignInSuccess={(user) => {
+                console.log('Apple Sign-In Success:', user);
+                router.replace('/(tabs)/map');
+              }}
+              onSignInError={(error) => {
+                Alert.alert('Erreur Apple', error);
+              }}
               style={styles.socialButton}
-              onPress={() => handleSocialSignIn('apple')}
-            >
-              <View style={styles.appleIconContainer}>
-                <Apple size={20} color="#000" fill="#000" />
-              </View>
-            </TouchableOpacity>
+            />
           </View>
         </GlassView>
         </Animated.View>
