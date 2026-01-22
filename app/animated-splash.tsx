@@ -80,16 +80,17 @@ export default function AnimatedSplashScreen() {
     };
   }, []);
 
-  const hideNativeSplash = useCallback(() => {
+  const hideNativeSplash = useCallback(async () => {
     console.log('[AnimatedSplash] hide native splash');
     if (Platform.OS === 'web') return;
     
-    // Use setTimeout to ensure we're not in a promise chain that could throw
-    setTimeout(() => {
-      SplashScreen.hideAsync().catch(() => {
-        // Safe to ignore - splash screen may already be hidden or not registered
-      });
-    }, 0);
+    try {
+      await SplashScreen.hideAsync();
+    } catch (error) {
+      // Safe to ignore - splash screen may already be hidden or not registered
+      // This is expected on some platforms/timing scenarios
+      console.log('[AnimatedSplash] hideAsync skipped (already hidden or not registered)');
+    }
   }, []);
 
   const waitingToExitRef = useRef<boolean>(false);

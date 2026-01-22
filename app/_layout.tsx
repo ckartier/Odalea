@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useMemo } from "react";
 import type { NativeStackHeaderProps } from '@react-navigation/native-stack';
+import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -34,9 +35,12 @@ import AdaptiveHeader from "@/components/AdaptiveHeader";
 import { useNotifications } from "@/hooks/use-notifications";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync().catch(() => {
-  // Ignore errors - splash screen may not be available on all platforms
-});
+// Wrapped in try-catch to handle web and edge cases where splash isn't available
+if (Platform.OS !== 'web') {
+  SplashScreen.preventAutoHideAsync().catch(() => {
+    // Ignore errors - splash screen may not be available on all platforms
+  });
+}
 
 // Optimize QueryClient with better defaults
 const queryClient = new QueryClient({
