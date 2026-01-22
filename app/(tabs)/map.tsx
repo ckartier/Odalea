@@ -628,7 +628,6 @@ export default function MapScreen() {
           console.log('📍 Map ready');
           setMapReady(true);
         }}
-        onError={handleMapError}
         testID="map-view"
       >
         {Platform.OS !== 'web' && filteredPets.map((pet) => (
