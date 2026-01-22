@@ -7,7 +7,6 @@ import {
   Alert,
   ActivityIndicator,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -20,14 +19,11 @@ import type { Gender, Pet, User } from '@/types';
 import { 
   MapPin, 
   MessageSquare, 
-  Phone, 
   Shield, 
   UserCheck, 
   UserPlus, 
   Calendar, 
   Clock, 
-  Euro,
-  Star,
   Heart,
   PawPrint,
   ChevronRight,
@@ -35,7 +31,7 @@ import {
 import { db } from '@/services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 
 const COLORS = {
   primary: '#0B2A3C',
@@ -414,7 +410,7 @@ export default function UserProfileScreen() {
           <View style={styles.privacyCard}>
             <Text style={styles.privacyTitle}>Profil limité</Text>
             <Text style={styles.privacyText}>
-              Ajoutez @{profileUser.pseudo} comme ami pour voir plus d'informations
+              Ajoutez @{profileUser.pseudo} comme ami pour voir plus d{"'"}informations
             </Text>
           </View>
         )}

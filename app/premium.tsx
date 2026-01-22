@@ -1,13 +1,10 @@
-import React, { useState } from 'react';
-import RevenueCatPaywall from '@/components/RevenueCatPaywall';
-import CustomerCenter from '@/components/CustomerCenter';
+import React from 'react';
 import {
   StyleSheet,
   Text,
   View,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
   Alert,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
@@ -15,7 +12,7 @@ import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import { useI18n } from '@/hooks/i18n-store';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
-import { useRevenueCat } from '@/hooks/revenuecat-store';
+import { usePremium } from '@/hooks/premium-store';
 
 import {
   Crown,
@@ -34,7 +31,7 @@ import {
   CreditCard,
 } from 'lucide-react-native';
 
-const { width } = Dimensions.get('window');
+
 
 interface PremiumFeature {
   id: string;
@@ -116,7 +113,7 @@ interface PricingPlan {
   popular?: boolean;
 }
 
-const getPricingPlans = (t: (key: string) => string): PricingPlan[] => [
+const pricingPlans: PricingPlan[] = [
   {
     id: 'monthly',
     name: 'Mensuel',
@@ -144,43 +141,39 @@ export default function PremiumScreen() {
   const router = useRouter();
   const { t } = useI18n();
   const { user } = useFirebaseUser();
-  const { isPro, packages, isLoading, purchasePackage } = useRevenueCat();
+  const { isPremium, upgradeToPremium } = usePremium();
   const premiumFeatures = getPremiumFeatures(t);
-  const pricingPlans = getPricingPlans(t);
-  const [showPaywall, setShowPaywall] = useState(false);
-  const [showCustomerCenter, setShowCustomerCenter] = useState(false);
+  const [selectedPlan, setSelectedPlan] = React.useState<string>('yearly');
+  const [isLoading, setIsLoading] = React.useState(false);
 
-  const handleUpgrade = () => {
+  const handleUpgrade = async () => {
     if (!user) {
       Alert.alert(t('auth.sign_in'), t('auth.create_account'));
       return;
     }
-    setShowPaywall(true);
-  };
-
-  const handleRestorePurchases = () => {
-    setShowCustomerCenter(true);
-  };
-
-  const handlePurchaseComplete = () => {
-    Alert.alert(
-      'Bienvenue dans Odalea Pro ! 🎉',
-      'Vous avez maintenant accès à toutes les fonctionnalités premium. Profitez de votre expérience améliorée !',
-      [
-        {
-          text: 'Commencer l\'exploration',
-          onPress: () => router.replace('/(tabs)/map'),
-        },
-      ]
-    );
-  };
-
-  const handlePurchaseError = (error: string) => {
-    Alert.alert(
-      'Achat Échoué',
-      error || 'Impossible de traiter l\'achat. Veuillez réessayer.',
-      [{ text: 'OK' }]
-    );
+    
+    setIsLoading(true);
+    try {
+      const result = await upgradeToPremium(selectedPlan);
+      if (result.success) {
+        Alert.alert(
+          'Bienvenue dans Odalea Pro ! 🎉',
+          'Vous avez maintenant accès à toutes les fonctionnalités premium. Profitez de votre expérience améliorée !',
+          [
+            {
+              text: 'Commencer l\'exploration',
+              onPress: () => router.replace('/(tabs)/map'),
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Erreur', result.error || 'Une erreur est survenue');
+      }
+    } catch {
+      Alert.alert('Erreur', 'Une erreur est survenue lors de la mise à niveau');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderFeature = (feature: PremiumFeature) => (
@@ -211,16 +204,18 @@ export default function PremiumScreen() {
   );
 
   const renderPricingPlan = (plan: PricingPlan) => {
-    const pkg = plan.id === 'monthly' ? packages.monthly : plan.id === 'yearly' ? packages.yearly : packages.lifetime;
-    const price = pkg?.product.priceString || `€${plan.price}`;
+    const isSelected = selectedPlan === plan.id;
     
     return (
-      <View
+      <TouchableOpacity
         key={plan.id}
         style={[
           styles.pricingPlan,
           plan.popular && styles.popularPlan,
+          isSelected && styles.selectedPlan,
         ]}
+        onPress={() => setSelectedPlan(plan.id)}
+        activeOpacity={0.7}
       >
         {plan.popular && (
           <View style={styles.popularBadge}>
@@ -231,18 +226,24 @@ export default function PremiumScreen() {
         
         <Text style={styles.planName}>{plan.name}</Text>
         <View style={styles.priceContainer}>
-          <Text style={styles.price}>{price}</Text>
+          <Text style={styles.price}>€{plan.price}</Text>
           <Text style={styles.period}>/{plan.period}</Text>
         </View>
         
         {plan.savings && (
           <Text style={styles.savings}>{plan.savings}</Text>
         )}
-      </View>
+        
+        {isSelected && (
+          <View style={styles.selectedIndicator}>
+            <CheckCircle size={20} color={COLORS.success} />
+          </View>
+        )}
+      </TouchableOpacity>
     );
   };
 
-  if (isPro) {
+  if (isPremium) {
     return (
       <View style={styles.container}>
         <StatusBar style="dark" />
@@ -271,14 +272,6 @@ export default function PremiumScreen() {
           >
             <Text style={styles.exploreButtonText}>Explorer les fonctionnalités Premium</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.managementButton}
-            onPress={() => setShowCustomerCenter(true)}
-          >
-            <CreditCard size={20} color={COLORS.premium} />
-            <Text style={styles.managementButtonText}>Gérer mon abonnement</Text>
-          </TouchableOpacity>
         </View>
       </View>
     );
@@ -300,7 +293,6 @@ export default function PremiumScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Header */}
         <View style={[styles.header, SHADOWS.medium]}>
           <Crown size={60} color={COLORS.premium} />
           <Text style={styles.headerTitle}>Passer à Premium</Text>
@@ -309,13 +301,11 @@ export default function PremiumScreen() {
           </Text>
         </View>
 
-        {/* Features */}
         <View style={[styles.section, SHADOWS.small]}>
           <Text style={styles.sectionTitle}>Fonctionnalités Premium</Text>
           {premiumFeatures.map(renderFeature)}
         </View>
 
-        {/* Pricing */}
         <View style={[styles.section, SHADOWS.small]}>
           <Text style={styles.sectionTitle}>Choisissez votre plan</Text>
           <View style={styles.pricingContainer}>
@@ -323,7 +313,6 @@ export default function PremiumScreen() {
           </View>
         </View>
 
-        {/* Benefits Summary */}
         <View style={[styles.section, SHADOWS.small]}>
           <Text style={styles.sectionTitle}>Pourquoi passer Premium ?</Text>
           
@@ -356,7 +345,6 @@ export default function PremiumScreen() {
           </View>
         </View>
 
-        {/* Testimonials */}
         <View style={[styles.section, SHADOWS.small]}>
           <Text style={styles.sectionTitle}>Ce que disent les utilisateurs Premium</Text>
           
@@ -376,7 +364,6 @@ export default function PremiumScreen() {
         </View>
       </ScrollView>
 
-      {/* Upgrade Button */}
       <View style={[styles.upgradeContainer, SHADOWS.large]}>
         <TouchableOpacity
           style={[styles.upgradeButton, isLoading && styles.disabledButton]}
@@ -388,23 +375,7 @@ export default function PremiumScreen() {
             {isLoading ? 'Chargement...' : 'Passer à Premium'}
           </Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.restoreButton} onPress={handleRestorePurchases}>
-          <Text style={styles.restoreButtonText}>Restaurer les achats</Text>
-        </TouchableOpacity>
       </View>
-      
-      <RevenueCatPaywall
-        visible={showPaywall}
-        onClose={() => setShowPaywall(false)}
-        onPurchaseComplete={handlePurchaseComplete}
-        onPurchaseError={handlePurchaseError}
-      />
-      
-      <CustomerCenter
-        visible={showCustomerCenter}
-        onClose={() => setShowCustomerCenter(false)}
-      />
     </View>
   );
 }
@@ -434,7 +405,7 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 16,
     color: COLORS.darkGray,
-    textAlign: 'center',
+    textAlign: 'center' as const,
   },
   section: {
     backgroundColor: COLORS.white,
@@ -607,20 +578,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 20,
   },
-  priceInfo: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  selectedPlanText: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: COLORS.black,
-  },
-  savingsText: {
-    fontSize: 14,
-    color: COLORS.success,
-    marginTop: 4,
-  },
   upgradeButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -629,7 +586,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     gap: 8,
-    marginBottom: 12,
   },
   upgradeButtonText: {
     fontSize: 18,
@@ -638,14 +594,6 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.6,
-  },
-  restoreButton: {
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  restoreButtonText: {
-    fontSize: 14,
-    color: COLORS.primary,
   },
   alreadyPremiumContainer: {
     flex: 1,
@@ -659,12 +607,12 @@ const styles = StyleSheet.create({
     color: COLORS.black,
     marginTop: 24,
     marginBottom: 16,
-    textAlign: 'center',
+    textAlign: 'center' as const,
   },
   alreadyPremiumSubtitle: {
     fontSize: 16,
     color: COLORS.darkGray,
-    textAlign: 'center',
+    textAlign: 'center' as const,
     lineHeight: 24,
     marginBottom: 32,
   },
@@ -673,27 +621,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 12,
-    marginBottom: 16,
   },
   exploreButtonText: {
     fontSize: 16,
     fontWeight: '600' as const,
     color: COLORS.white,
-  },
-  managementButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: COLORS.premium,
-  },
-  managementButtonText: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: COLORS.premium,
   },
 });

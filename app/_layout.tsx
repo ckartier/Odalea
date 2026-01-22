@@ -26,7 +26,7 @@ import { FriendsContext } from "@/hooks/friends-store";
 import { MatchingContext } from "@/hooks/matching-store";
 import { FavoritesContext } from "@/hooks/favorites-store";
 import { ActivePetContext } from "@/hooks/active-pet-store";
-import { RevenueCatContext } from "@/hooks/revenuecat-store";
+
 import { OnboardingContext } from "@/hooks/onboarding-store";
 import { trpc, trpcClient } from "@/lib/trpc";
 import AppBackground from "@/components/AppBackground";
@@ -136,7 +136,6 @@ LanguageWrapper.displayName = 'LanguageWrapper';
 const AppProviders = React.memo(({ children }: { children: React.ReactNode }) => {
   return (
     <FirebaseUserContext>
-      <RevenueCatContext>
         <OnboardingContext>
           <NotificationsProvider>
           <EmergencyContext>
@@ -176,7 +175,6 @@ const AppProviders = React.memo(({ children }: { children: React.ReactNode }) =>
           </EmergencyContext>
           </NotificationsProvider>
         </OnboardingContext>
-      </RevenueCatContext>
     </FirebaseUserContext>
   );
 });
