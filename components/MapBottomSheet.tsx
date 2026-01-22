@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
-  PanResponder,
   Platform,
   Linking,
 } from 'react-native';
@@ -20,11 +19,7 @@ import { getPetImageUrl, DEFAULT_PET_PLACEHOLDER } from '@/lib/image-helpers';
 import * as Haptics from 'expo-haptics';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const SNAP_POINTS = {
-  COLLAPSED: SCREEN_HEIGHT * 0.35,
-  HALF: SCREEN_HEIGHT * 0.6,
-  FULL: SCREEN_HEIGHT * 0.85,
-};
+const TAB_BAR_HEIGHT = 90;
 
 interface MapBottomSheetProps {
   pet?: Pet;
@@ -60,62 +55,42 @@ export default function MapBottomSheet({
   onClose,
 }: MapBottomSheetProps) {
   const insets = useSafeAreaInsets();
-  const translateY = useRef(new Animated.Value(SNAP_POINTS.COLLAPSED)).current;
-  const [currentSnap, setCurrentSnap] = useState(SNAP_POINTS.COLLAPSED);
+
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    Animated.spring(translateY, {
-      toValue: SNAP_POINTS.COLLAPSED,
-      useNativeDriver: true,
-      friction: 9,
-    }).start();
-  }, [translateY]);
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return Math.abs(gestureState.dy) > 5;
-      },
-      onPanResponderMove: (_, gestureState) => {
-        const newY = currentSnap + gestureState.dy;
-        if (newY >= 0 && newY <= SNAP_POINTS.COLLAPSED) {
-          translateY.setValue(newY);
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        const velocity = gestureState.vy;
-        const newY = currentSnap + gestureState.dy;
-
-        if (velocity > 0.5 || newY > SNAP_POINTS.COLLAPSED * 0.7) {
-          onClose();
-        } else if (velocity < -0.5 || newY < SNAP_POINTS.COLLAPSED * 0.3) {
-          snapTo(0);
-        } else {
-          snapTo(SNAP_POINTS.COLLAPSED);
-        }
-      },
-    })
-  ).current;
-
-  const snapTo = (point: number) => {
-    setCurrentSnap(point);
-    Animated.spring(translateY, {
-      toValue: point,
-      useNativeDriver: true,
-      friction: 9,
-    }).start();
-  };
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        friction: 8,
+        tension: 65,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [scaleAnim, opacityAnim]);
 
   const handleClose = () => {
-    Animated.timing(translateY, {
-      toValue: SCREEN_HEIGHT,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => onClose());
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: 0.9,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start(() => onClose());
   };
 
   const petImageUrl = pet ? (getPetImageUrl(pet) || DEFAULT_PET_PLACEHOLDER) : (googlePlace?.photos?.[0] || DEFAULT_PET_PLACEHOLDER);
@@ -143,17 +118,19 @@ export default function MapBottomSheet({
     );
   };
 
+  const bottomOffset = Math.max(insets.bottom, 20) + TAB_BAR_HEIGHT;
+
   if (googlePlace) {
     return (
       <Animated.View
         style={[
           styles.container,
           {
-            transform: [{ translateY }],
-            paddingBottom: insets.bottom + 16,
+            bottom: bottomOffset,
+            opacity: opacityAnim,
+            transform: [{ scale: scaleAnim }],
           },
         ]}
-        {...panResponder.panHandlers}
       >
         <View style={styles.handle} />
 
@@ -271,11 +248,11 @@ export default function MapBottomSheet({
       style={[
         styles.container,
         {
-          transform: [{ translateY }],
-          paddingBottom: insets.bottom + 16,
+          bottom: bottomOffset,
+          opacity: opacityAnim,
+          transform: [{ scale: scaleAnim }],
         },
       ]}
-      {...panResponder.panHandlers}
     >
       <View style={styles.handle} />
 
@@ -457,41 +434,39 @@ export default function MapBottomSheet({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 0,
-    left: '4%',
-    right: '4%',
-    width: '92%',
-    alignSelf: 'center',
+    left: 16,
+    right: 16,
     backgroundColor: '#ffffff',
-    borderRadius: 28,
+    borderRadius: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -8 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
-    shadowRadius: 20,
+    shadowRadius: 16,
     elevation: 12,
+    maxHeight: SCREEN_HEIGHT * 0.55,
   },
   handle: {
-    width: 40,
+    width: 36,
     height: 4,
     backgroundColor: '#e2e8f0',
     borderRadius: 2,
     alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 8,
+    marginTop: 10,
+    marginBottom: 4,
   },
   content: {
-    padding: 20,
+    padding: 16,
   },
   header: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 20,
+    gap: 14,
+    marginBottom: 16,
   },
   imageContainer: {
     position: 'relative',
-    width: 100,
-    height: 100,
-    borderRadius: 20,
+    width: 90,
+    height: 90,
+    borderRadius: 18,
     overflow: 'hidden',
     backgroundColor: '#f8fafc',
   },
@@ -526,13 +501,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   name: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700',
     color: '#0f172a',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   breed: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     color: '#64748b',
   },
@@ -573,8 +548,8 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
+    gap: 10,
+    marginBottom: 16,
   },
   actionButton: {
     flex: 1,
@@ -585,14 +560,14 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   actionIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     justifyContent: 'center',
     alignItems: 'center',
   },
   actionLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#0f172a',
   },
@@ -600,7 +575,7 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
   },
   ownerSection: {
-    paddingTop: 20,
+    paddingTop: 14,
     borderTopWidth: 1,
     borderTopColor: '#f1f5f9',
   },
