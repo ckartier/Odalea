@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 export interface GooglePlace {
   id: string;
   name: string;
@@ -46,6 +48,13 @@ class GooglePlacesService {
     if (!this.apiKey) {
       console.error('[GooglePlaces] ❌ EXPO_PUBLIC_GOOGLE_PLACES_API_KEY is missing!');
       console.error('[GooglePlaces] Configure it in your .env file');
+      return [];
+    }
+
+    // Google Places REST API doesn't support CORS - skip on web
+    if (Platform.OS === 'web') {
+      console.log('[GooglePlaces] ⚠️ Places API not available on web (CORS restriction)');
+      console.log('[GooglePlaces] 💡 Google Places will only work on native devices');
       return [];
     }
 
@@ -118,6 +127,12 @@ class GooglePlacesService {
   async getPlaceDetails(placeId: string): Promise<GooglePlace | null> {
     if (!this.apiKey) {
       console.error('[GooglePlaces] API key not configured');
+      return null;
+    }
+
+    // Google Places REST API doesn't support CORS - skip on web
+    if (Platform.OS === 'web') {
+      console.log('[GooglePlaces] ⚠️ Places API not available on web (CORS restriction)');
       return null;
     }
 
