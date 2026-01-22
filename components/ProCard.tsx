@@ -1,10 +1,11 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MapPin, Phone, ExternalLink } from 'lucide-react-native';
-import { COLORS, DIMENSIONS, SHADOWS } from '@/constants/colors';
-import { TYPOGRAPHY } from '@/constants/typography';
+import { COLORS, SHADOWS } from '@/constants/colors';
 import { User } from '@/types';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface ProCardProps {
   professional: User;
@@ -138,50 +139,52 @@ export default function ProCard({ professional, distance, compact = false }: Pro
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: DIMENSIONS.SPACING.md,
-    marginHorizontal: DIMENSIONS.SPACING.md,
-    marginBottom: DIMENSIONS.SPACING.sm,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 12,
     ...SHADOWS.medium,
     borderWidth: 1,
-    borderColor: COLORS.borderLight,
+    borderColor: '#F3F4F6',
   },
   header: {
     flexDirection: 'row',
-    marginBottom: DIMENSIONS.SPACING.sm,
+    marginBottom: 12,
   },
   photo: {
-    width: 64,
-    height: 64,
+    width: Math.min(64, SCREEN_WIDTH * 0.16),
+    height: Math.min(64, SCREEN_WIDTH * 0.16),
     borderRadius: 12,
-    marginRight: DIMENSIONS.SPACING.sm,
-    backgroundColor: COLORS.lightGray,
+    marginRight: 12,
+    backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
   },
   photoEmoji: {
-    fontSize: 32,
+    fontSize: 28,
   },
   headerInfo: {
     flex: 1,
     justifyContent: 'center',
   },
   name: {
-    ...TYPOGRAPHY.h6,
-    color: COLORS.black,
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: '#111111',
     marginBottom: 4,
+    letterSpacing: -0.2,
   },
   badge: {
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 10,
     marginBottom: 6,
   },
   badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '600' as const,
   },
   location: {
     flexDirection: 'row',
@@ -189,18 +192,20 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   locationText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.darkGray,
+    fontSize: 12,
+    fontWeight: '500' as const,
+    color: '#6B7280',
   },
   description: {
-    ...TYPOGRAPHY.body2,
-    color: COLORS.textSecondary,
-    marginBottom: DIMENSIONS.SPACING.md,
-    lineHeight: 20,
+    fontSize: 13,
+    fontWeight: '400' as const,
+    color: '#6B7280',
+    marginBottom: 14,
+    lineHeight: 19,
   },
   actions: {
     flexDirection: 'row',
-    gap: DIMENSIONS.SPACING.sm,
+    gap: 10,
   },
   button: {
     flex: 1,
@@ -208,42 +213,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     borderRadius: 12,
     gap: 6,
     minHeight: 44,
   },
   buttonPrimary: {
-    backgroundColor: COLORS.black,
+    backgroundColor: '#000000',
   },
   buttonPrimaryText: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.white,
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#FFFFFF',
   },
   buttonSecondary: {
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: '#F3F4F6',
     borderWidth: 1,
-    borderColor: COLORS.borderLight,
+    borderColor: '#E5E7EB',
   },
   buttonSecondaryText: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.black,
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#111111',
   },
-
-  // Compact style
   cardCompact: {
-    backgroundColor: COLORS.white,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: DIMENSIONS.SPACING.sm,
-    marginHorizontal: DIMENSIONS.SPACING.md,
-    marginBottom: DIMENSIONS.SPACING.xs,
+    padding: 12,
+    marginHorizontal: 16,
+    marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: COLORS.borderLight,
+    borderColor: '#F3F4F6',
   },
   compactLeft: {
     flexDirection: 'row',
@@ -251,25 +254,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   compactPhoto: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     borderRadius: 10,
-    marginRight: DIMENSIONS.SPACING.sm,
-    backgroundColor: COLORS.lightGray,
+    marginRight: 10,
+    backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
   },
   compactEmoji: {
-    fontSize: 24,
+    fontSize: 22,
   },
   compactInfo: {
     flex: 1,
   },
   compactName: {
-    ...TYPOGRAPHY.body1,
-    color: COLORS.black,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#111111',
+    marginBottom: 3,
   },
   compactBadge: {
     alignSelf: 'flex-start',
@@ -278,18 +281,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   compactBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '600' as const,
   },
   compactDistance: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginLeft: DIMENSIONS.SPACING.xs,
+    marginLeft: 8,
   },
   compactDistanceText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.darkGray,
-    fontSize: 12,
+    fontSize: 11,
+    fontWeight: '500' as const,
+    color: '#6B7280',
   },
 });

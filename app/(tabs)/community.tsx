@@ -13,6 +13,7 @@ import {
   TextInput,
   ScrollView,
   Image,
+  Dimensions,
 } from 'react-native';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -38,6 +39,9 @@ import { realtimeService, userService } from '@/services/database';
 import { Post, User } from '@/types';
 import { useQuery } from '@tanstack/react-query';
 import { calculateDistance } from '@/services/location-privacy';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const HEADER_HEIGHT = 60;
 
 interface LocalComment {
   id: string;
@@ -533,9 +537,11 @@ export default function CommunityScreen() {
     );
   }, [itemsToRender.length]);
 
+  const headerTotalHeight = HEADER_HEIGHT + insets.top + 16;
+
   return (
     <View style={styles.screen}>
-      <View style={[styles.stickyHeader, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.stickyHeader, { paddingTop: insets.top + 12, height: headerTotalHeight }]}>
         <View style={styles.searchRow}>
           <View style={styles.searchBar}>
             <Search size={18} color={ENDEL.colors.textSecondary} />
@@ -557,7 +563,7 @@ export default function CommunityScreen() {
             style={styles.headerIcon}
             onPress={() => router.push('/messages')}
           >
-            <Inbox size={24} color={ENDEL.colors.text} />
+            <Inbox size={22} color={ENDEL.colors.text} />
             {unreadCount > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
@@ -569,7 +575,7 @@ export default function CommunityScreen() {
             style={styles.headerIcon}
             onPress={handleCreatePost}
           >
-            <Plus size={24} color={ENDEL.colors.text} />
+            <Plus size={22} color={ENDEL.colors.text} />
           </TouchableOpacity>
         </View>
       </View>
@@ -583,7 +589,7 @@ export default function CommunityScreen() {
         ListFooterComponent={renderFooter}
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.listContent, { paddingTop: 120 + insets.top }]}
+        contentContainerStyle={[styles.listContent, { paddingTop: headerTotalHeight + 8 }]}
         removeClippedSubviews={Platform.OS === 'android'}
         maxToRenderPerBatch={5}
         updateCellsBatchingPeriod={50}
@@ -635,34 +641,36 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: ENDEL.colors.border,
-    paddingHorizontal: ENDEL.spacing.md,
-    paddingBottom: ENDEL.spacing.sm,
+    paddingHorizontal: 16,
+    justifyContent: 'flex-end',
+    paddingBottom: 12,
   },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: ENDEL.spacing.sm,
+    gap: 10,
   },
   searchBar: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: ENDEL.colors.borderSubtle,
-    borderRadius: ENDEL.radii.pill,
-    paddingHorizontal: ENDEL.spacing.md,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 22,
+    paddingHorizontal: 14,
     height: 44,
-    gap: ENDEL.spacing.sm,
+    gap: 8,
   },
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: ENDEL.colors.text,
+    color: '#111111',
+    paddingVertical: 0,
   },
   headerIcon: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: ENDEL.colors.borderSubtle,
+    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -684,28 +692,28 @@ const styles = StyleSheet.create({
     color: COLORS.white,
   },
   storiesContainer: {
-    marginBottom: ENDEL.spacing.md,
+    marginBottom: 16,
   },
   storiesScroll: {
-    paddingHorizontal: ENDEL.spacing.md,
-    gap: ENDEL.spacing.md,
+    paddingHorizontal: 16,
+    gap: 12,
   },
   storyItem: {
     alignItems: 'center',
-    width: 70,
+    width: 72,
   },
   storyRing: {
     width: 64,
     height: 64,
     borderRadius: 32,
     borderWidth: 2,
-    borderColor: ENDEL.colors.border,
+    borderColor: '#E5E7EB',
     padding: 2,
-    marginBottom: ENDEL.spacing.xs,
+    marginBottom: 6,
   },
   storyRingActive: {
-    borderColor: ENDEL.colors.accent,
-    borderWidth: 3,
+    borderColor: '#000000',
+    borderWidth: 2.5,
   },
   storyImage: {
     width: '100%',
@@ -713,107 +721,112 @@ const styles = StyleSheet.create({
     borderRadius: 28,
   },
   storyName: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600' as const,
-    color: ENDEL.colors.text,
-    textAlign: 'center',
+    color: '#111111',
+    textAlign: 'center' as const,
+    maxWidth: 70,
   },
   filtersRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: ENDEL.spacing.md,
+    marginBottom: 16,
   },
   chipsScroll: {
-    paddingHorizontal: ENDEL.spacing.md,
-    gap: ENDEL.spacing.sm,
+    paddingHorizontal: 16,
+    gap: 8,
+    flexGrow: 1,
   },
   chip: {
-    paddingHorizontal: ENDEL.spacing.md,
-    paddingVertical: ENDEL.spacing.sm,
-    borderRadius: ENDEL.radii.pill,
-    backgroundColor: ENDEL.colors.borderSubtle,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
     minHeight: 36,
     justifyContent: 'center',
   },
   chipActive: {
-    backgroundColor: ENDEL.colors.accent,
+    backgroundColor: '#000000',
   },
   chipText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
-    color: ENDEL.colors.text,
+    color: '#111111',
   },
   chipTextActive: {
-    color: COLORS.white,
+    color: '#FFFFFF',
   },
   filterButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: ENDEL.colors.borderSubtle,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: ENDEL.spacing.md,
+    marginRight: 16,
+    flexShrink: 0,
   },
   urgentSection: {
-    marginBottom: ENDEL.spacing.md,
+    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700' as const,
-    color: ENDEL.colors.text,
-    marginHorizontal: ENDEL.spacing.md,
-    marginBottom: ENDEL.spacing.sm,
+    color: '#111111',
+    marginHorizontal: 16,
+    marginBottom: 10,
+    letterSpacing: -0.2,
   },
   urgentScroll: {
-    paddingHorizontal: ENDEL.spacing.md,
-    gap: ENDEL.spacing.sm,
+    paddingHorizontal: 16,
+    gap: 10,
   },
   urgentCard: {
-    width: 140,
-    borderRadius: ENDEL.radii.card,
-    backgroundColor: COLORS.white,
+    width: Math.min(140, (SCREEN_WIDTH - 48) / 2.5),
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: ENDEL.colors.border,
+    borderColor: '#E5E7EB',
   },
   urgentImage: {
     width: '100%',
-    height: 140,
-    backgroundColor: ENDEL.colors.borderSubtle,
+    height: 130,
+    backgroundColor: '#F3F4F6',
   },
   urgentBadge: {
     position: 'absolute',
-    top: ENDEL.spacing.sm,
-    left: ENDEL.spacing.sm,
-    backgroundColor: COLORS.error,
-    paddingHorizontal: ENDEL.spacing.sm,
+    top: 8,
+    left: 8,
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
   },
   foundBadge: {
-    backgroundColor: COLORS.success,
+    backgroundColor: '#10B981',
   },
   urgentBadgeText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700' as const,
-    color: COLORS.white,
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
   urgentInfo: {
-    padding: ENDEL.spacing.sm,
+    padding: 10,
   },
   urgentName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
-    color: ENDEL.colors.text,
+    color: '#111111',
     marginBottom: 2,
   },
   urgentLocation: {
-    fontSize: 12,
-    color: ENDEL.colors.textSecondary,
+    fontSize: 11,
+    color: '#6B7280',
   },
   prosSection: {
-    marginBottom: ENDEL.spacing.md,
+    marginBottom: 16,
   },
   headerContainer: {
     backgroundColor: COLORS.white,
@@ -863,30 +876,33 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   sheetTitle: {
-    ...ENDEL.typography.title,
-    marginBottom: ENDEL.spacing.md,
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: '#111111',
+    marginBottom: 16,
+    letterSpacing: -0.3,
   },
   sheetFilters: {
-    gap: ENDEL.spacing.sm,
+    gap: 10,
   },
   sheetFilterItem: {
-    paddingVertical: ENDEL.spacing.md,
-    paddingHorizontal: ENDEL.spacing.lg,
-    borderRadius: ENDEL.radii.card,
-    backgroundColor: ENDEL.colors.borderSubtle,
-    minHeight: 52,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    backgroundColor: '#F3F4F6',
+    minHeight: 50,
     justifyContent: 'center',
   },
   sheetFilterItemActive: {
-    backgroundColor: ENDEL.colors.accent,
+    backgroundColor: '#000000',
   },
   sheetFilterText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600' as const,
-    color: ENDEL.colors.text,
+    color: '#111111',
   },
   sheetFilterTextActive: {
-    color: COLORS.white,
+    color: '#FFFFFF',
   },
   loadingContainer: {
     flex: 1,

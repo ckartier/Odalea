@@ -15,6 +15,7 @@ import {
   Easing,
   TouchableOpacity,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -576,9 +577,14 @@ export default function MapScreen() {
     return undefined;
   };
 
+  const handleMapError = useCallback((error: any) => {
+    console.error('❌ Map error:', error);
+    setMapError('Une erreur est survenue lors du chargement de la carte');
+  }, []);
+
   if (mapError) {
     return (
-      <View style={styles.errorContainer}>
+      <View style={[styles.errorContainer, { paddingTop: insets.top }]}>
         <StatusBar style="dark" />
         <Text style={styles.errorTitle}>Erreur de chargement</Text>
         <Text style={styles.errorMessage}>{mapError}</Text>
@@ -622,6 +628,7 @@ export default function MapScreen() {
           console.log('📍 Map ready');
           setMapReady(true);
         }}
+        onError={handleMapError}
         testID="map-view"
       >
         {Platform.OS !== 'web' && filteredPets.map((pet) => (
@@ -866,7 +873,7 @@ export default function MapScreen() {
             activeOpacity={1}
             onPress={() => setIsFiltersOpen(false)}
           />
-          <View style={[styles.filtersSheet, { bottom: insets.bottom + 20 }]} testID="map-filters-modal">
+          <View style={[styles.filtersSheet, { bottom: Math.max(insets.bottom, 20) + 16 }]} testID="map-filters-modal">
             <View style={styles.filtersHeader}>
               <Text style={styles.filtersTitle}>Filtres</Text>
               <TouchableOpacity
@@ -879,7 +886,11 @@ export default function MapScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.filtersContent}>
+            <ScrollView 
+              style={styles.filtersScrollView}
+              contentContainerStyle={styles.filtersContent}
+              showsVerticalScrollIndicator={false}
+            >
               {([
                 { key: 'users', label: 'Utilisateurs', color: '#0f172a' },
                 { key: 'catSitters', label: 'Cat Sitters', color: '#0f172a' },
@@ -908,7 +919,7 @@ export default function MapScreen() {
                   </TouchableOpacity>
                 );
               })}
-            </View>
+            </ScrollView>
 
             <View style={styles.filtersActions}>
               <TouchableOpacity
@@ -1075,9 +1086,9 @@ const styles = StyleSheet.create({
   },
   filtersSheet: {
     position: 'absolute',
-    left: '4%',
-    right: '4%',
-    width: '92%',
+    left: 16,
+    right: 16,
+    maxHeight: '70%',
     alignSelf: 'center',
     backgroundColor: '#ffffff',
     borderRadius: 28,
@@ -1087,6 +1098,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 24,
     elevation: 16,
+  },
+  filtersScrollView: {
+    maxHeight: 280,
   },
   filtersHeader: {
     flexDirection: 'row',
@@ -1111,7 +1125,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginBottom: 24,
+    paddingBottom: 16,
   },
   filterChip: {
     flexDirection: 'row',
