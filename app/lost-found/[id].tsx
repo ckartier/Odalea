@@ -47,10 +47,30 @@ export default function LostPetDetailsScreen() {
 
   const pet = lostPets.find(p => p.id === id);
 
+  console.log('[LostPetDetails] id:', id);
+  console.log('[LostPetDetails] lostPets count:', lostPets.length);
+  console.log('[LostPetDetails] found pet:', pet?.petName);
+
   if (!pet) {
     return (
-      <View style={styles.container}>
-        <Text>Animal non trouvé</Text>
+      <View style={[styles.container, styles.emptyContainer]}>
+        <Stack.Screen options={{ title: 'Animal perdu' }} />
+        <StatusBar style="dark" />
+        <View style={styles.emptyContent}>
+          <View style={styles.emptyIconContainer}>
+            <AlertTriangle size={48} color={COLORS.warning} />
+          </View>
+          <Text style={styles.emptyTitle}>Animal non trouvé</Text>
+          <Text style={styles.emptyDescription}>
+            Cette annonce n'existe plus ou a été supprimée.
+          </Text>
+          <Button
+            title="Retour"
+            onPress={() => router.back()}
+            variant="primary"
+            style={styles.backButton}
+          />
+        </View>
       </View>
     );
   }
@@ -391,6 +411,41 @@ export default function LostPetDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  emptyContainer: {
+    backgroundColor: COLORS.white,
+  },
+  emptyContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: COLORS.black,
+    marginBottom: 8,
+    textAlign: 'center' as const,
+  },
+  emptyDescription: {
+    fontSize: 15,
+    color: COLORS.darkGray,
+    textAlign: 'center' as const,
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  backButton: {
+    minWidth: 160,
   },
   headerButton: {
     padding: 8,

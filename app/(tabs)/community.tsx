@@ -24,6 +24,7 @@ import { TYPOGRAPHY } from '@/constants/typography';
 
 import { useSocial } from '@/hooks/social-store';
 import { usePremium } from '@/hooks/premium-store';
+import { useLostFound } from '@/hooks/lost-found-store';
 import { usePets } from '@/hooks/pets-store';
 import { useUnifiedMessaging } from '@/hooks/unified-messaging-store';
 import { useActivePet } from '@/hooks/active-pet-store';
@@ -346,9 +347,11 @@ export default function CommunityScreen() {
     );
   }, [comments, expandedPostId, user?.id, handleLike, handleSubmitComment, handleShare, handleDeletePost, handleReportPost, handleBlockUser, isTogglingLike, isAddingComment, isDeletingPost, isCommentsLoading, isPostLiked, handleToggleComments, getDistance]);
 
+  const { lostPets } = useLostFound();
+
   const urgentPosts = useMemo(() => {
-    return posts.filter(p => (p.type === 'lost' || p.type === 'found') && p.location).slice(0, 5);
-  }, [posts]);
+    return lostPets.filter(p => p.status === 'lost' || p.status === 'found').slice(0, 5);
+  }, [lostPets]);
 
   const recommendedPros = useMemo(() => {
     return (professionalsQuery.data || []).slice(0, 3);
@@ -386,36 +389,44 @@ export default function CommunityScreen() {
       <View style={styles.urgentSection}>
         <Text style={styles.sectionTitle}>🚨 Urgent près de toi</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.urgentScroll}>
-          {urgentPosts.map(post => (
+          {urgentPosts.map(pet => (
             <TouchableOpacity
-              key={post.id}
+              key={pet.id}
               style={styles.urgentCard}
-              onPress={() => {
-                if (post.type === 'lost' || post.type === 'found') {
-                  router.push(`/lost-found/${post.id.replace('lost-', '')}`);
-                }
-              }}
+              onPress={() => router.push(`/lost-found/${pet.id}`)}
+              activeOpacity={0.8}
             >
-              {post.images && post.images[0] && (
-                <Image source={{ uri: post.images[0] }} style={styles.urgentImage} />
-              )}
-              <View style={[styles.urgentBadge, post.type === 'found' && styles.foundBadge]}>
+              <View style={styles.urgentImageContainer}>
+                {pet.photos && pet.photos.length > 0 && pet.photos[0] ? (
+                  <Image 
+                    source={{ uri: pet.photos[0] }} 
+                    style={styles.urgentImage}
+                    resizeMode="cover"
+                    onError={() => console.log('[UrgentCarousel] Image load error:', pet.photos[0])}
+                  />
+                ) : (
+                  <View style={[styles.urgentImage, styles.urgentImagePlaceholder]}>
+                    <Text style={styles.placeholderEmoji}>{pet.species === 'Chien' ? '🐶' : '🐱'}</Text>
+                  </View>
+                )}
+              </View>
+              <View style={[styles.urgentBadge, pet.status === 'found' && styles.foundBadge]}>
                 <Text style={styles.urgentBadgeText}>
-                  {post.type === 'found' ? 'TROUVÉ' : 'PERDU'}
+                  {pet.status === 'found' ? 'TROUVÉ' : 'PERDU'}
                 </Text>
               </View>
               <View style={styles.urgentInfo}>
-                <Text style={styles.urgentName} numberOfLines={1}>{post.authorName}</Text>
-                {post.location?.name && (
-                  <Text style={styles.urgentLocation} numberOfLines={1}>{post.location.name}</Text>
-                )}
+                <Text style={styles.urgentName} numberOfLines={1}>{pet.petName || 'Animal'}</Text>
+                <Text style={styles.urgentLocation} numberOfLines={1}>
+                  {pet.lastSeenLocation?.address || 'Localisation inconnue'}
+                </Text>
               </View>
             </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
     );
-  }, [urgentPosts, activeFilter]);
+  }, [urgentPosts, activeFilter, router]);
 
   const renderRecommendedPros = useCallback(() => {
     if (recommendedPros.length === 0 || activeFilter !== 'all' || filteredPosts.length > 10) return null;
@@ -789,10 +800,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
+  urgentImageContainer: {
+    width: '100%',
+    height: 100,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    overflow: 'hidden',
+  },
   urgentImage: {
     width: '100%',
-    height: 130,
+    height: '100%',
     backgroundColor: '#F3F4F6',
+  },
+  urgentImagePlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEE2E2',
+  },
+  placeholderEmoji: {
+    fontSize: 32,
   },
   urgentBadge: {
     position: 'absolute',

@@ -47,9 +47,9 @@ export default function TabLayout() {
             tabBarStyle: {
               position: 'absolute',
               bottom: insets.bottom + 20,
-              left: '5%',
-              right: '5%',
+              marginHorizontal: '5%',
               width: '90%',
+              alignSelf: 'center',
               backgroundColor: '#FFFFFF',
               borderTopWidth: 0,
               borderRadius: 28,
