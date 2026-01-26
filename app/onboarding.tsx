@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -16,8 +16,8 @@ import { ChevronRight } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { COLORS } from '@/theme/tokens';
 import { useOnboarding } from '@/hooks/onboarding-store';
+import { useAuth } from '@/hooks/auth-store';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -40,14 +40,26 @@ const SLIDES = [
 ];
 
 const MODAL_HEIGHT = 260;
-const LOGO_URI = 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/qg65dezpx8zrcqopuuggc';
+const ODALEA_LOGO = 'https://firebasestorage.googleapis.com/v0/b/copattes.firebasestorage.app/o/branding%2Fodalea-logo-black.png?alt=media';
 
 export default function OnboardingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { complete } = useOnboarding();
+  const { complete, hasCompleted } = useOnboarding();
+  const { user } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    if (user) {
+      console.log('[Onboarding] User already logged in, redirecting...');
+      if (user.isProfessional) {
+        router.replace('/(pro)/dashboard');
+      } else if (hasCompleted) {
+        router.replace('/(tabs)/map');
+      }
+    }
+  }, [user, hasCompleted, router]);
 
   const handleNext = async () => {
     if (Platform.OS !== 'web') {
@@ -84,7 +96,7 @@ export default function OnboardingScreen() {
       {/* Logo at top */}
       <View style={[styles.logoContainer, { top: insets.top + 16 }]}>
         <Image 
-          source={{ uri: LOGO_URI }} 
+          source={{ uri: ODALEA_LOGO }} 
           style={styles.logo} 
           resizeMode="contain" 
         />
@@ -171,9 +183,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: 40,
-    height: 40,
-    tintColor: '#000000',
+    width: 36,
+    height: 36,
   },
   scrollView: {
     flex: 1,

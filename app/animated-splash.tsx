@@ -5,7 +5,6 @@ import {
   Easing,
   Platform,
   StyleSheet,
-  View,
   Dimensions,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -19,13 +18,11 @@ import { useOnboarding } from '@/hooks/onboarding-store';
 
 const VIDEO_URL = 'https://firebasestorage.googleapis.com/v0/b/copattes.firebasestorage.app/o/Coppet%2Flogo%20splash.m4v?alt=media&token=896a8261-2dbd-4700-b206-0be8f0848616';
 
+
+
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-type TargetRoute =
-  | '/(tabs)/map'
-  | '/onboarding'
-  | '/(pro)/dashboard'
-  | '/(tabs)/community';
+type TargetRoute = '/onboarding';
 
 export default function AnimatedSplashScreen() {
   const router = useRouter();
@@ -39,21 +36,13 @@ export default function AnimatedSplashScreen() {
   const [videoError, setVideoError] = useState<boolean>(false);
 
   const videoRef = useRef<Video>(null);
-  const opacity = useRef(new Animated.Value(1)).current;
   const fadeOutOpacity = useRef(new Animated.Value(1)).current;
 
   const canNavigate = useMemo(() => {
     return !i18nLoading && onboardingReady;
   }, [i18nLoading, onboardingReady]);
 
-  const target = useMemo((): TargetRoute => {
-    if (user?.isProfessional) return '/(pro)/dashboard';
-    if (user) {
-      if (hasCompleted) return '/(tabs)/map';
-      return '/onboarding';
-    }
-    return '/onboarding';
-  }, [hasCompleted, user]);
+  const target: TargetRoute = '/onboarding';
 
   useEffect(() => {
     let mounted = true;
@@ -87,7 +76,7 @@ export default function AnimatedSplashScreen() {
     
     try {
       await SplashScreen.hideAsync();
-    } catch (error) {
+    } catch {
       // Safe to ignore - splash screen may already be hidden or not registered
       // This is expected on some platforms/timing scenarios
       console.log('[AnimatedSplash] hideAsync skipped (already hidden or not registered)');
@@ -197,7 +186,7 @@ export default function AnimatedSplashScreen() {
         }
       }}
     >
-      <StatusBar style="light" />
+      <StatusBar style="light" hidden />
 
       <Video
         ref={videoRef}
@@ -206,7 +195,7 @@ export default function AnimatedSplashScreen() {
         resizeMode={ResizeMode.COVER}
         shouldPlay={false}
         isLooping={false}
-        isMuted={false}
+        isMuted={true}
         onPlaybackStatusUpdate={handleVideoStatusUpdate}
         onError={(error) => handleVideoError(String(error))}
         testID="animated-splash-video"

@@ -95,8 +95,7 @@ const Logo: React.FC<LogoProps> = ({
     outputRange: ['0deg', '360deg'],
   });
 
-  // Use the new Odalea logo (cat and dog forming a heart)
-  const logoSource = { uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/swqhd67xcl389m8z8l1iy' };
+  const logoSource = { uri: 'https://firebasestorage.googleapis.com/v0/b/copattes.firebasestorage.app/o/branding%2Fodalea-logo-black.png?alt=media' };
   
   return (
     <View style={[styles.container, style]}>
