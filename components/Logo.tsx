@@ -95,7 +95,7 @@ const Logo: React.FC<LogoProps> = ({
     outputRange: ['0deg', '360deg'],
   });
 
-  const logoSource = { uri: 'https://firebasestorage.googleapis.com/v0/b/copattes.firebasestorage.app/o/branding%2Fodalea-logo-black.png?alt=media' };
+  const logoSource = { uri: 'https://firebasestorage.googleapis.com/v0/b/copattes.firebasestorage.app/o/Coppet%2Flogo%2FOdalea%20Logo.png?alt=media&token=e36e5c80-f424-4c96-9243-d99e499f9652' };
   
   return (
     <View style={[styles.container, style]}>
