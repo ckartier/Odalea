@@ -345,8 +345,8 @@ export default function ProfileScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.actionLeft}>
-                <View style={[styles.actionIcon, { backgroundColor: 'rgba(255, 193, 7, 0.1)' }]}>
-                  <Star size={20} color="#FFC107" fill={isPremium ? "#FFC107" : "none"} />
+                <View style={[styles.actionIcon, { backgroundColor: COLORS.primarySoft }]}>
+                  <Star size={20} color={COLORS.primary} fill={isPremium ? COLORS.primary : "none"} />
                 </View>
                 <Text style={styles.actionText}>
                   {isPremium ? 'Premium actif' : 'Passer à Premium'}
@@ -363,8 +363,8 @@ export default function ProfileScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.actionLeft}>
-                <View style={[styles.actionIcon, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
-                  <Shield size={20} color="#4CAF50" />
+                <View style={[styles.actionIcon, { backgroundColor: COLORS.primarySoft }]}>
+                  <Shield size={20} color={COLORS.primary} />
                 </View>
                 <Text style={styles.actionText}>Sécurité</Text>
               </View>

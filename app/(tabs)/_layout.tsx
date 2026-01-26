@@ -70,6 +70,13 @@ export default function TabLayout() {
           }}
         >
           <Tabs.Screen 
+            name="profile" 
+            options={{ 
+              title: "Profil",
+              tabBarIcon: ({ color, size }) => <User size={22} color={color} strokeWidth={2} />,
+            }} 
+          />
+          <Tabs.Screen 
             name="home" 
             options={{ 
               title: "Découvrir",
@@ -83,7 +90,6 @@ export default function TabLayout() {
               tabBarIcon: ({ color, size }) => <Heart size={22} color={color} strokeWidth={2} />,
             }} 
           />
-          <Tabs.Screen name="shop" options={{ href: null }} />
           <Tabs.Screen 
             name="messages" 
             options={{ 
@@ -91,13 +97,7 @@ export default function TabLayout() {
               tabBarIcon: ({ color, size }) => <MessageCircle size={22} color={color} strokeWidth={2} />,
             }} 
           />
-          <Tabs.Screen 
-            name="profile" 
-            options={{ 
-              title: "Profil",
-              tabBarIcon: ({ color, size }) => <User size={22} color={color} strokeWidth={2} />,
-            }} 
-          />
+          <Tabs.Screen name="shop" options={{ href: null }} />
           <Tabs.Screen name="map" options={{ href: null }} />
           <Tabs.Screen name="community" options={{ href: null }} />
           <Tabs.Screen name="cat-sitter" options={{ href: null }} />

@@ -244,10 +244,10 @@ export default function CatSitterScreen() {
         <Button
           title={t('sitters.book_now')}
           onPress={() => handleBookSitter(item.id)}
-          variant="male"
+          variant="solid"
           size="small"
           disabled={!item.isAvailable}
-          icon={<Calendar size={16} color={COLORS.black} />}
+          icon={<Calendar size={16} color={COLORS.white} />}
           style={styles.bookButton}
         />
       </View>
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
   price: {
     fontSize: DIMENSIONS.FONT_SIZES.xl,
     fontWeight: '700' as const,
-    color: COLORS.catSitter,
+    color: COLORS.black,
   },
   priceUnit: {
     fontSize: DIMENSIONS.FONT_SIZES.xs,
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
   },
   moreServices: {
     fontSize: DIMENSIONS.FONT_SIZES.xs,
-    color: COLORS.catSitter,
+    color: COLORS.black,
     fontWeight: '500' as const,
   },
   statsContainer: {
@@ -492,10 +492,10 @@ const styles = StyleSheet.create({
     borderRadius: DIMENSIONS.SPACING.sm + 4,
   },
   available: {
-    backgroundColor: COLORS.available,
+    backgroundColor: COLORS.black,
   },
   busy: {
-    backgroundColor: COLORS.busy,
+    backgroundColor: COLORS.darkGray,
   },
   availabilityText: {
     fontSize: DIMENSIONS.FONT_SIZES.xs,

@@ -16,8 +16,10 @@ import Button from '@/components/Button';
 import Input from '@/components/Input';
 import PhotoUploader from '@/components/PhotoUploader';
 import BreedSelector from '@/components/BreedSelector';
+import SpeciesSelector from '@/components/SpeciesSelector';
 import GenderSelector from '@/components/GenderSelector';
 import DatePicker from '@/components/DatePicker';
+import { CHARACTER_TRAITS, COLOR_OPTIONS } from '@/constants/species';
 
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { useQueryClient } from '@tanstack/react-query';
@@ -45,6 +47,7 @@ export default function AddPetScreen() {
   const [microchipNumber, setMicrochipNumber] = useState('');
   const [mainPhoto, setMainPhoto] = useState<string | null>(null);
   const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
+  const [speciesType, setSpeciesType] = useState('');
   const [vetName, setVetName] = useState('');
   const [vetAddress, setVetAddress] = useState('');
   const [vetPhone, setVetPhone] = useState('');
@@ -53,24 +56,7 @@ export default function AddPetScreen() {
   // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
   
-  const CHARACTER_TRAITS = [
-    { id: 'joueur', label: 'Joueur', emoji: '🎾' },
-    { id: 'calme', label: 'Calme', emoji: '😌' },
-    { id: 'calin', label: 'Câlin', emoji: '🤗' },
-    { id: 'independant', label: 'Indépendant', emoji: '🦅' },
-    { id: 'sociable', label: 'Sociable', emoji: '😊' },
-    { id: 'peureux', label: 'Peureux', emoji: '😰' },
-  ];
-  
-  const COLOR_OPTIONS = [
-    { id: 'noir', label: 'Noir', color: '#000000' },
-    { id: 'marron', label: 'Marron', color: '#8B4513' },
-    { id: 'fauve', label: 'Fauve', color: '#D2691E' },
-    { id: 'blanc', label: 'Blanc', color: '#FFFFFF' },
-    { id: 'gris', label: 'Gris', color: '#808080' },
-    { id: 'multicolore', label: 'Multicolore', color: 'linear-gradient' },
-    { id: 'autre', label: 'Autre', color: '#9E9E9E' },
-  ];
+  const [species, setSpecies] = useState('');
   
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -322,7 +308,7 @@ export default function AddPetScreen() {
                 style={[styles.addPhotoButton, SHADOWS.small]}
                 onPress={handleAddGalleryPhoto}
               >
-                <Plus size={24} color={COLORS.maleAccent} />
+                <Plus size={24} color={COLORS.black} />
                 <Text style={styles.addPhotoText}>Add Photo</Text>
               </TouchableOpacity>
             )}
@@ -335,6 +321,12 @@ export default function AddPetScreen() {
           value={name}
           onChangeText={setName}
           error={errors.name}
+        />
+        
+        <SpeciesSelector
+          value={speciesType}
+          onChange={(id, name) => setSpeciesType(name)}
+          error={errors.species}
         />
         
         <BreedSelector
@@ -372,19 +364,6 @@ export default function AddPetScreen() {
               ]}
               onPress={() => setColor(colorOption.id)}
             >
-              <View style={[
-                styles.colorCircle,
-                { backgroundColor: colorOption.color === 'linear-gradient' ? COLORS.maleAccent : colorOption.color },
-                colorOption.color === '#FFFFFF' && { borderWidth: 1, borderColor: COLORS.lightGray }
-              ]}>
-                {colorOption.id === 'multicolore' && (
-                  <View style={styles.multicolorIndicator}>
-                    <View style={[styles.colorSegment, { backgroundColor: '#FF0000' }]} />
-                    <View style={[styles.colorSegment, { backgroundColor: '#00FF00' }]} />
-                    <View style={[styles.colorSegment, { backgroundColor: '#0000FF' }]} />
-                  </View>
-                )}
-              </View>
               <Text style={[
                 styles.colorText,
                 color === colorOption.id && styles.colorTextActive
@@ -412,7 +391,6 @@ export default function AddPetScreen() {
               ]}
               onPress={() => toggleCharacterTrait(trait.id)}
             >
-              <Text style={styles.characterEmoji}>{trait.emoji}</Text>
               <Text style={[
                 styles.characterText,
                 character.includes(trait.id) && styles.characterTextActive
@@ -491,7 +469,7 @@ export default function AddPetScreen() {
           style={styles.addWalkTimeButton}
           onPress={handleAddWalkTime}
         >
-          <Plus size={16} color={COLORS.maleAccent} />
+          <Plus size={16} color={COLORS.black} />
           <Text style={styles.addWalkTimeText}>Ajouter une heure</Text>
         </TouchableOpacity>
         
@@ -589,7 +567,7 @@ const styles = StyleSheet.create({
   },
   addPhotoText: {
     fontSize: 14,
-    color: COLORS.maleAccent,
+    color: COLORS.black,
     marginTop: 8,
   },
   walkTimeContainer: {
@@ -613,7 +591,7 @@ const styles = StyleSheet.create({
   },
   addWalkTimeText: {
     fontSize: 14,
-    color: COLORS.maleAccent,
+    color: COLORS.black,
     marginLeft: 8,
   },
   button: {
@@ -642,12 +620,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   characterTraitActive: {
-    backgroundColor: COLORS.maleAccent,
-    borderColor: COLORS.maleAccent,
-  },
-  characterEmoji: {
-    fontSize: 16,
-    marginRight: 6,
+    backgroundColor: COLORS.black,
+    borderColor: COLORS.black,
   },
   characterText: {
     fontSize: 14,
@@ -679,27 +653,8 @@ const styles = StyleSheet.create({
     minWidth: 80,
   },
   colorOptionActive: {
-    backgroundColor: COLORS.maleAccent,
-    borderColor: COLORS.maleAccent,
-  },
-  colorCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    marginBottom: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  multicolorIndicator: {
-    flexDirection: 'row',
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    overflow: 'hidden',
-  },
-  colorSegment: {
-    flex: 1,
-    height: '100%',
+    backgroundColor: COLORS.black,
+    borderColor: COLORS.black,
   },
   colorText: {
     fontSize: 12,

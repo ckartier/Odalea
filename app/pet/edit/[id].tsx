@@ -23,19 +23,8 @@ import { usePets } from '@/hooks/pets-store';
 import { StorageService } from '@/services/storage';
 import { Gender, Pet } from '@/types';
 import { Plus, Trash2, Palette, Tag } from 'lucide-react-native';
-
-const CHARACTER_TRAITS = [
-  { id: 'joueur', label: 'Joueur', emoji: '🎾' },
-  { id: 'calme', label: 'Calme', emoji: '😌' },
-  { id: 'timide', label: 'Timide', emoji: '🙈' },
-  { id: 'sociable', label: 'Sociable', emoji: '😊' },
-  { id: 'protecteur', label: 'Protecteur', emoji: '🛡️' },
-  { id: 'calin', label: 'Câlin', emoji: '🤗' },
-  { id: 'independant', label: 'Indépendant', emoji: '🦅' },
-  { id: 'energique', label: 'Énergique', emoji: '⚡' },
-  { id: 'gourmand', label: 'Gourmand', emoji: '🍖' },
-  { id: 'curieux', label: 'Curieux', emoji: '🔍' },
-];
+import { CHARACTER_TRAITS, COLOR_OPTIONS } from '@/constants/species';
+import SpeciesSelector from '@/components/SpeciesSelector';
 
 export default function EditPetScreen() {
   const { id } = useLocalSearchParams();
@@ -63,6 +52,7 @@ export default function EditPetScreen() {
   const [vetAddress, setVetAddress] = useState('');
   const [vetPhone, setVetPhone] = useState('');
   const [walkTimes, setWalkTimes] = useState<string[]>(['']);
+  const [speciesType, setSpeciesType] = useState('');
   
   // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -334,7 +324,7 @@ export default function EditPetScreen() {
                 style={[styles.addPhotoButton, SHADOWS.small]}
                 onPress={handleAddGalleryPhoto}
               >
-                <Plus size={24} color={COLORS.maleAccent} />
+                <Plus size={24} color={COLORS.black} />
                 <Text style={styles.addPhotoText}>Add Photo</Text>
               </TouchableOpacity>
             )}
@@ -347,6 +337,11 @@ export default function EditPetScreen() {
           value={name}
           onChangeText={setName}
           error={errors.name}
+        />
+        
+        <SpeciesSelector
+          value={speciesType}
+          onChange={(id, name) => setSpeciesType(name)}
         />
         
         <BreedSelector
@@ -368,14 +363,27 @@ export default function EditPetScreen() {
           error={errors.dateOfBirth}
         />
         
-        <Input
-          label="Couleur *"
-          placeholder="Ex: Noir, Blanc, Marron, Tigré..."
-          value={color}
-          onChangeText={setColor}
-          error={errors.color}
-          leftIcon={<Palette size={20} color={COLORS.darkGray} />}
-        />
+        <Text style={styles.sectionTitle}>Couleur *</Text>
+        <View style={styles.colorGrid}>
+          {COLOR_OPTIONS.map((colorOption) => (
+            <TouchableOpacity
+              key={colorOption.id}
+              style={[
+                styles.colorOption,
+                color === colorOption.id && styles.colorOptionActive
+              ]}
+              onPress={() => setColor(colorOption.id)}
+            >
+              <Text style={[
+                styles.colorText,
+                color === colorOption.id && styles.colorTextActive
+              ]}>
+                {colorOption.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        {errors.color && <Text style={styles.errorText}>{errors.color}</Text>}
         
         {/* Character Traits */}
         <Text style={styles.sectionTitle}>Caractère *</Text>
@@ -393,7 +401,6 @@ export default function EditPetScreen() {
               ]}
               onPress={() => toggleCharacterTrait(trait.id)}
             >
-              <Text style={styles.characterEmoji}>{trait.emoji}</Text>
               <Text style={[
                 styles.characterText,
                 character.includes(trait.id) && styles.characterTextActive
@@ -472,7 +479,7 @@ export default function EditPetScreen() {
           style={styles.addWalkTimeButton}
           onPress={handleAddWalkTime}
         >
-          <Plus size={16} color={COLORS.maleAccent} />
+          <Plus size={16} color={COLORS.black} />
           <Text style={styles.addWalkTimeText}>Ajouter une heure</Text>
         </TouchableOpacity>
         
@@ -555,7 +562,7 @@ const styles = StyleSheet.create({
   },
   addPhotoText: {
     fontSize: 14,
-    color: COLORS.maleAccent,
+    color: COLORS.black,
     marginTop: 8,
   },
   walkTimeContainer: {
@@ -579,7 +586,7 @@ const styles = StyleSheet.create({
   },
   addWalkTimeText: {
     fontSize: 14,
-    color: COLORS.maleAccent,
+    color: COLORS.black,
     marginLeft: 8,
   },
   sectionSubtitle: {
@@ -605,12 +612,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   characterTraitActive: {
-    backgroundColor: COLORS.maleAccent,
-    borderColor: COLORS.maleAccent,
-  },
-  characterEmoji: {
-    fontSize: 16,
-    marginRight: 6,
+    backgroundColor: COLORS.black,
+    borderColor: COLORS.black,
   },
   characterText: {
     fontSize: 14,
@@ -627,5 +630,34 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 16,
+  },
+  colorGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 16,
+  },
+  colorOption: {
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.lightGray,
+    backgroundColor: COLORS.white,
+    minWidth: 80,
+  },
+  colorOptionActive: {
+    backgroundColor: COLORS.black,
+    borderColor: COLORS.black,
+  },
+  colorText: {
+    fontSize: 12,
+    color: COLORS.darkGray,
+    textAlign: 'center',
+  },
+  colorTextActive: {
+    color: COLORS.white,
+    fontWeight: '600' as const,
   },
 });
