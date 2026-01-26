@@ -9,6 +9,7 @@ import {
   StorageReference
 } from 'firebase/storage';
 import { Platform } from 'react-native';
+import { storageLogger } from '@/lib/logger';
 
 export interface UploadProgress {
   bytesTransferred: number;
@@ -23,22 +24,22 @@ export interface UploadOptions {
 
 export class StorageService {
   private static async uriToBlob(uri: string): Promise<Blob> {
-    console.log('📦 Converting URI to blob:', uri.substring(0, 50) + '...');
+    storageLogger.log('📦 Converting URI to blob:', uri.substring(0, 50) + '...');
     
     if (Platform.OS !== 'web' && (uri.startsWith('file://') || uri.startsWith('content://'))) {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.onload = function () {
           if (xhr.status === 200) {
-            console.log('✅ Blob created via XHR, size:', xhr.response?.size || 0);
+            storageLogger.log('✅ Blob created via XHR, size:', xhr.response?.size || 0);
             resolve(xhr.response as Blob);
           } else {
-            console.error('❌ XHR failed with status:', xhr.status);
+            storageLogger.error('❌ XHR failed with status:', xhr.status);
             reject(new Error(`XHR failed with status ${xhr.status}`));
           }
         };
         xhr.onerror = function (e) {
-          console.error('❌ XHR error:', e);
+          storageLogger.error('❌ XHR error:', e);
           reject(new Error('XHR network error'));
         };
         xhr.responseType = 'blob';
@@ -47,14 +48,14 @@ export class StorageService {
       });
     }
     
-    console.log('📦 Using fetch for web/https URI');
+    storageLogger.log('📦 Using fetch for web/https URI');
     const response = await fetch(uri);
     if (!response.ok) {
-      console.error('❌ Fetch failed:', response.status, response.statusText);
+      storageLogger.error('❌ Fetch failed:', response.status, response.statusText);
       throw new Error(`Fetch failed: ${response.status} ${response.statusText}`);
     }
     const blob = await response.blob();
-    console.log('✅ Blob created via fetch, size:', blob.size);
+    storageLogger.log('✅ Blob created via fetch, size:', blob.size);
     return blob;
   }
 
@@ -64,12 +65,12 @@ export class StorageService {
     options?: UploadOptions
   ): Promise<string> {
     try {
-      console.log('📤 [UPLOAD START] Path:', path);
-      console.log('📤 [UPLOAD START] URI:', uri.substring(0, 100));
-      console.log('📤 [UPLOAD START] Platform:', Platform.OS);
+      storageLogger.log('📤 [UPLOAD START] Path:', path);
+      storageLogger.log('📤 [UPLOAD START] URI:', uri.substring(0, 100));
+      storageLogger.log('📤 [UPLOAD START] Platform:', Platform.OS);
       
       const currentUser = auth.currentUser;
-      console.log('👤 [UPLOAD] Current user:', currentUser?.uid || 'NOT AUTHENTICATED');
+      storageLogger.log('👤 [UPLOAD] Current user:', currentUser?.uid ? 'authenticated' : 'NOT AUTHENTICATED');
       
       if (!currentUser) {
         throw new Error('Vous devez être connecté pour uploader des images');
@@ -80,17 +81,15 @@ export class StorageService {
       }
       
       const blob = await this.uriToBlob(uri);
-      console.log('📤 [UPLOAD] Blob ready, size:', blob.size, 'type:', blob.type);
+      storageLogger.log('📤 [UPLOAD] Blob ready, size:', blob.size, 'type:', blob.type);
       
       if (!blob || blob.size === 0) {
         throw new Error('Blob is empty or invalid');
       }
       
       const storageRef = ref(storage, path);
-      console.log('📤 [UPLOAD] Storage ref created:', path);
-      console.log('📤 [UPLOAD] Storage bucket:', storage.app.options.storageBucket);
-      console.log('📤 [UPLOAD] Full path:', storageRef.fullPath);
-      console.log('📤 [UPLOAD] Bucket:', storageRef.bucket);
+      storageLogger.log('📤 [UPLOAD] Storage ref created:', path);
+      storageLogger.log('📤 [UPLOAD] Storage bucket:', storage.app.options.storageBucket);
 
       if (options?.onProgress) {
         const uploadTask = uploadBytesResumable(storageRef, blob, {
@@ -107,63 +106,44 @@ export class StorageService {
                 progress: (snapshot.bytesTransferred / snapshot.totalBytes) * 100,
               };
               options.onProgress?.(progress);
-              console.log(`📊 Upload progress: ${progress.progress.toFixed(2)}%`);
+              storageLogger.log(`📊 Upload progress: ${progress.progress.toFixed(2)}%`);
             },
             (error) => {
-              console.error('❌ Upload error:', error);
+              storageLogger.error('❌ Upload error:', error);
               reject(error);
             },
             async () => {
               const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-              console.log('✅ [UPLOAD SUCCESS] Download URL:', downloadURL);
+              storageLogger.log('✅ [UPLOAD SUCCESS]');
               if (!downloadURL.startsWith('https://')) {
-                console.warn('⚠️ [UPLOAD] URL is not https:', downloadURL);
+                storageLogger.warn('⚠️ [UPLOAD] URL is not https');
               }
               resolve(downloadURL);
             }
           );
         });
       } else {
-        console.log('📤 [UPLOAD] Starting uploadBytes...');
+        storageLogger.log('📤 [UPLOAD] Starting uploadBytes...');
         const snapshot = await uploadBytes(storageRef, blob, {
           contentType: options?.contentType || 'image/jpeg',
         });
-        console.log('📤 [UPLOAD] uploadBytes complete, getting URL...');
+        storageLogger.log('📤 [UPLOAD] uploadBytes complete, getting URL...');
         const downloadURL = await getDownloadURL(snapshot.ref);
-        console.log('✅ [UPLOAD SUCCESS] Download URL:', downloadURL);
+        storageLogger.log('✅ [UPLOAD SUCCESS]');
         if (!downloadURL.startsWith('https://')) {
-          console.warn('⚠️ [UPLOAD] URL is not https:', downloadURL);
+          storageLogger.warn('⚠️ [UPLOAD] URL is not https');
         }
         return downloadURL;
       }
     } catch (error: any) {
-      console.error('❌ [UPLOAD FAILED] Error details:');
-      console.error('  - Message:', error?.message || 'Unknown error');
-      console.error('  - Code:', error?.code || 'N/A');
-      console.error('  - Name:', error?.name || 'N/A');
-      console.error('  - Auth user:', auth.currentUser?.uid || 'none');
-      console.error('  - Storage bucket:', storage.app.options.storageBucket || 'none');
-      
-      if (error?.customData) {
-        console.error('  - CustomData:', JSON.stringify(error.customData, null, 2));
-      }
-      if (error?.serverResponse) {
-        console.error('  - ServerResponse:', JSON.stringify(error.serverResponse, null, 2));
-      }
-      
-      console.error('  - Stack:', error?.stack?.substring(0, 500));
+      storageLogger.error('❌ [UPLOAD FAILED] Error:', error?.message || 'Unknown error', error?.code || 'N/A');
       
       if (error?.code === 'storage/unauthorized') {
-        const detailMsg = `Accès refusé au Storage Firebase.\n\nPath: ${path}\nUtilisateur: ${auth.currentUser?.uid || 'non connecté'}\n\nVérifiez que:\n1. Vous êtes bien connecté\n2. Le path correspond à votre UID\n3. Les règles Storage autorisent l'accès`;
-        console.error('💡 [STORAGE/UNAUTHORIZED]:', detailMsg);
         throw new Error('Accès refusé. Vérifiez votre connexion et réessayez.');
       } else if (error?.code === 'storage/canceled') {
         throw new Error('Upload annulé.');
       } else if (error?.code === 'storage/unknown') {
-        const userMsg = auth.currentUser ? `Utilisateur: ${auth.currentUser.uid}` : 'Non authentifié';
-        const detailMsg = `Erreur inconnue lors de l'upload.\n${userMsg}\nBucket: ${storage.app.options.storageBucket || 'non configuré'}\n\nVérifiez:\n1. Votre connexion internet\n2. Les règles Firebase Storage\n3. Que le bucket existe`;
-        console.error('💡 Détails complets:', detailMsg);
-        throw new Error(detailMsg);
+        throw new Error('Erreur inconnue lors de l\'upload. Vérifiez votre connexion.');
       } else if (error?.code === 'storage/object-not-found') {
         throw new Error('Objet non trouvé.');
       } else if (error?.code === 'storage/bucket-not-found') {
@@ -193,7 +173,7 @@ export class StorageService {
     }
     
     if (currentUser.uid !== userId) {
-      console.warn(`⚠️ userId mismatch: store=${userId}, auth=${currentUser.uid}. Using auth UID.`);
+      storageLogger.warn(`⚠️ userId mismatch, using auth UID.`);
     }
     
     const timestamp = Date.now();
@@ -213,12 +193,12 @@ export class StorageService {
     }
     
     if (currentUser.uid !== userId) {
-      console.warn(`⚠️ userId mismatch: store=${userId}, auth=${currentUser.uid}. Using auth UID.`);
+      storageLogger.warn(`⚠️ userId mismatch, using auth UID.`);
     }
     
     const timestamp = Date.now();
     const path = `users/${currentUser.uid}/pets/${petId}/${timestamp}.jpg`;
-    console.log('📤 [PET PHOTO] Upload path:', path);
+    storageLogger.log('📤 [PET PHOTO] Upload path:', path);
     return this.uploadImage(uri, path, options);
   }
 
@@ -234,7 +214,7 @@ export class StorageService {
     }
     
     if (currentUser.uid !== userId) {
-      console.warn(`⚠️ userId mismatch: store=${userId}, auth=${currentUser.uid}. Using auth UID.`);
+      storageLogger.warn(`⚠️ userId mismatch, using auth UID.`);
     }
     
     const timestamp = Date.now();
@@ -254,7 +234,7 @@ export class StorageService {
     }
     
     if (currentUser.uid !== userId) {
-      console.warn(`⚠️ userId mismatch: store=${userId}, auth=${currentUser.uid}. Using auth UID.`);
+      storageLogger.warn(`⚠️ userId mismatch, using auth UID.`);
     }
     
     const timestamp = Date.now();
@@ -274,7 +254,7 @@ export class StorageService {
     }
     
     if (currentUser.uid !== userId) {
-      console.warn(`⚠️ userId mismatch: store=${userId}, auth=${currentUser.uid}. Using auth UID.`);
+      storageLogger.warn(`⚠️ userId mismatch, using auth UID.`);
     }
     
     const timestamp = Date.now();
@@ -284,19 +264,19 @@ export class StorageService {
 
   static async deleteImage(url: string): Promise<void> {
     try {
-      console.log('🗑️ Deleting image:', url);
+      storageLogger.log('🗑️ Deleting image');
       const imageRef = ref(storage, url);
       await deleteObject(imageRef);
-      console.log('✅ Image deleted successfully');
+      storageLogger.log('✅ Image deleted successfully');
     } catch (error) {
-      console.error('❌ Failed to delete image:', error);
+      storageLogger.error('❌ Failed to delete image:', error);
       throw error;
     }
   }
 
   static async deleteFolder(path: string): Promise<void> {
     try {
-      console.log('🗑️ Deleting folder:', path);
+      storageLogger.log('🗑️ Deleting folder:', path);
       const folderRef = ref(storage, path);
       const listResult = await listAll(folderRef);
 
@@ -305,9 +285,9 @@ export class StorageService {
       );
 
       await Promise.all(deletePromises);
-      console.log('✅ Folder deleted successfully');
+      storageLogger.log('✅ Folder deleted successfully');
     } catch (error) {
-      console.error('❌ Failed to delete folder:', error);
+      storageLogger.error('❌ Failed to delete folder:', error);
       throw error;
     }
   }
@@ -318,7 +298,7 @@ export class StorageService {
     options?: UploadOptions
   ): Promise<string[]> {
     try {
-      console.log(`📤 Uploading ${uris.length} images to:`, basePath);
+      storageLogger.log(`📤 Uploading ${uris.length} images to:`, basePath);
       
       const uploadPromises = uris.map((uri, index) => {
         const timestamp = Date.now();
@@ -327,10 +307,10 @@ export class StorageService {
       });
 
       const urls = await Promise.all(uploadPromises);
-      console.log(`✅ All ${urls.length} images uploaded successfully`);
+      storageLogger.log(`✅ All ${urls.length} images uploaded successfully`);
       return urls;
     } catch (error) {
-      console.error('❌ Failed to upload multiple images:', error);
+      storageLogger.error('❌ Failed to upload multiple images:', error);
       throw error;
     }
   }
@@ -340,7 +320,7 @@ export class StorageService {
       const imageRef = ref(storage, path);
       return getDownloadURL(imageRef);
     } catch (error) {
-      console.error('❌ Failed to get image URL:', error);
+      storageLogger.error('❌ Failed to get image URL:', error);
       throw error;
     }
   }
@@ -351,7 +331,7 @@ export class StorageService {
       const listResult = await listAll(folderRef);
       return listResult.items;
     } catch (error) {
-      console.error('❌ Failed to list images:', error);
+      storageLogger.error('❌ Failed to list images:', error);
       throw error;
     }
   }

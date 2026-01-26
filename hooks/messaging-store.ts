@@ -1,9 +1,11 @@
 import createContextHook from '@nkzw/create-context-hook';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useMemo, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Message, FriendRequest, Conversation, User } from '@/types';
 import { useUser } from './user-store';
 import { databaseService } from '@/services/database';
+
+const MESSAGES_PAGE_SIZE = 30;
 
 export const [MessagingContext, useMessaging] = createContextHook(() => {
   const { user } = useUser();
@@ -15,7 +17,7 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
     queryKey: ['conversations', userId],
     queryFn: async () => {
       if (!userId) return [] as Conversation[];
-      console.log('[Messaging] Fetching conversations for', userId);
+      if (__DEV__) console.log('[Messaging] Fetching conversations for', userId);
       const data = await databaseService.messaging.getConversations(userId);
       return data;
     },
@@ -26,7 +28,7 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
   useEffect(() => {
     if (!user?.id) return;
     const unsub = databaseService.realtime.listenToConversations(user.id, (convs: any) => {
-      console.log('[Messaging] Realtime conversations update', convs.length);
+      if (__DEV__) console.log('[Messaging] Realtime conversations update', convs.length);
       setLiveConversations(convs);
     });
     return () => { try { unsub && (unsub as any)(); } catch { /* ignore cleanup errors */ } };
@@ -72,7 +74,7 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
     queryKey: ['friendRequests', userId],
     queryFn: async () => {
       if (!userId) return [] as FriendRequest[];
-      console.log('[Messaging] Fetching friend requests for', userId);
+      if (__DEV__) console.log('[Messaging] Fetching friend requests for', userId);
       const data = await databaseService.friendRequest.getFriendRequests(userId);
       return data;
     },
@@ -81,14 +83,39 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
 
   const friendRequests = friendRequestsQuery.data ?? [];
 
-  const getMessages = async (conversationId: string) => {
+  const getMessages = async (conversationId: string, limit: number = MESSAGES_PAGE_SIZE) => {
     if (!conversationId) return [] as Message[];
-    if (messagesByConv[conversationId]) return messagesByConv[conversationId];
-    console.log('[Messaging] Fetching messages for', conversationId);
-    const data = await databaseService.messaging.getMessages(conversationId, 100);
+    if (messagesByConv[conversationId] && messagesByConv[conversationId].length > 0) {
+      return messagesByConv[conversationId];
+    }
+    if (__DEV__) console.log('[Messaging] Fetching messages for', conversationId);
+    const data = await databaseService.messaging.getMessages(conversationId, limit);
     setMessagesByConv(prev => ({ ...prev, [conversationId]: data }));
     return data;
   };
+
+  const loadMoreMessages = useCallback(async (conversationId: string) => {
+    if (!conversationId) return [] as Message[];
+    const currentMessages = messagesByConv[conversationId] || [];
+    const lastMessage = currentMessages[currentMessages.length - 1];
+    
+    if (!lastMessage) return currentMessages;
+    
+    if (__DEV__) console.log('[Messaging] Loading more messages for', conversationId);
+    const olderMessages = await databaseService.messaging.getMessages(
+      conversationId, 
+      MESSAGES_PAGE_SIZE,
+      lastMessage.timestamp
+    );
+    
+    if (olderMessages.length > 0) {
+      const combined = [...currentMessages, ...olderMessages];
+      setMessagesByConv(prev => ({ ...prev, [conversationId]: combined }));
+      return combined;
+    }
+    
+    return currentMessages;
+  }, [messagesByConv]);
 
   const conversationIds = useMemo(() => conversations.map(c => c.id), [conversations]);
   const conversationIdsKey = conversationIds.join(',');
@@ -96,7 +123,7 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
   useEffect(() => {
     if (conversationIds.length === 0) return;
     
-    console.log('[Messaging] Setting up message listeners for', conversationIds.length, 'conversations');
+    if (__DEV__) console.log('[Messaging] Setting up message listeners for', conversationIds.length, 'conversations');
     const unsubs: (() => void)[] = [];
     
     for (const convId of conversationIds) {
@@ -107,10 +134,10 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
     }
     
     return () => {
-      console.log('[Messaging] Cleaning up message listeners');
+      if (__DEV__) console.log('[Messaging] Cleaning up message listeners');
       unsubs.forEach(u => {
         try { u(); } catch (err) {
-          console.warn('[Messaging] Failed to unsubscribe:', err);
+          if (__DEV__) console.warn('[Messaging] Failed to unsubscribe:', err);
         }
       });
     };
@@ -123,7 +150,7 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
       let conv = conversations.find(c => c.id === conversationId);
       
       if (!conv) {
-        console.log('[Messaging] Conversation not in local state, fetching from database');
+        if (__DEV__) console.log('[Messaging] Conversation not in local state, fetching from database');
         try {
           const allConversations = await databaseService.messaging.getConversations(user.id);
           conv = allConversations.find(c => c.id === conversationId);
@@ -131,7 +158,7 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
             throw new Error('Conversation not found in database');
           }
         } catch (error) {
-          console.error('[Messaging] Failed to fetch conversation from database:', error);
+          if (__DEV__) console.error('[Messaging] Failed to fetch conversation from database:', error);
           throw new Error('Conversation not found');
         }
       }
@@ -199,7 +226,7 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
           try {
             createdConversationId = await databaseService.messaging.createConversation([user.id, otherId]);
           } catch (e) {
-            console.error('[Messaging] Failed to auto-create conversation after accepting request', e);
+            if (__DEV__) console.error('[Messaging] Failed to auto-create conversation after accepting request', e);
           }
         }
         await qc.invalidateQueries({ queryKey: ['conversations', user.id] });
@@ -289,6 +316,7 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
     hasPendingRequest,
     createConversation,
     markConversationAsRead,
+    loadMoreMessages,
     isLoading: conversationsQuery.isLoading || friendRequestsQuery.isLoading || usersQuery.isLoading,
   };
 });

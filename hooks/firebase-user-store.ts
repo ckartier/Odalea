@@ -21,10 +21,21 @@ interface AuthState {
 }
 
 let setImpersonateRef: ((id: string | null) => void) | null = null;
+
+// DEV ONLY: Impersonation functions for testing
 export function impersonateUser(userId: string) {
+  if (!__DEV__) {
+    console.warn('impersonateUser is only available in development mode');
+    return;
+  }
   setImpersonateRef?.(userId);
 }
+
 export function stopImpersonation() {
+  if (!__DEV__) {
+    console.warn('stopImpersonation is only available in development mode');
+    return;
+  }
   setImpersonateRef?.(null);
 }
 

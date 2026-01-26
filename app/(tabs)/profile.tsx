@@ -428,15 +428,6 @@ export default function ProfileScreen() {
           )}
         </View>
       </ScrollView>
-
-      {/* FAB for adding pet */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={handleAddPet}
-        activeOpacity={0.8}
-      >
-        <Plus size={24} color={COLORS.surface} />
-      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -642,16 +633,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...SHADOWS.card,
   },
-  fab: {
-    position: 'absolute',
-    bottom: SPACING.lg,
-    right: SPACING.lg,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...SHADOWS.floatingBar,
-  },
+
 });

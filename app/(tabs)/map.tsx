@@ -222,7 +222,7 @@ export default function MapScreen() {
   }, []);
 
   const handleMarkerPress = useCallback(async (pet: Pet & { owner?: User }) => {
-    console.log('📍 Marker pressed:', pet.id, pet.name);
+    if (__DEV__) console.log('📍 Marker pressed:', pet.id);
     setSelectedPet(pet);
     setSelectedGooglePlace(null);
     
@@ -233,7 +233,7 @@ export default function MapScreen() {
         const owner = await userService.getUser(pet.ownerId);
         setSelectedUser(owner);
       } catch (error) {
-        console.error('❌ Error fetching owner:', error);
+        if (__DEV__) console.error('❌ Error fetching owner:', error);
         setSelectedUser(null);
       }
     } else {
@@ -244,7 +244,7 @@ export default function MapScreen() {
   }, [incrementActionCount]);
 
   const handleGooglePlacePress = useCallback(async (place: GooglePlace) => {
-    console.log('📍 Google Place pressed:', place.id, place.name);
+    if (__DEV__) console.log('📍 Google Place pressed:', place.id);
     setSelectedPet(null);
     setSelectedUser(null);
     
@@ -252,7 +252,7 @@ export default function MapScreen() {
       const details = await googlePlacesService.getPlaceDetails(place.id);
       setSelectedGooglePlace(details || place);
     } catch (error) {
-      console.error('❌ Error fetching place details:', error);
+      if (__DEV__) console.error('❌ Error fetching place details:', error);
       setSelectedGooglePlace(place);
     }
     
@@ -267,7 +267,7 @@ export default function MapScreen() {
     if (selectedPet) {
       incrementActionCount();
       if (shouldShowInterstitialAd()) {
-        console.log('🎬 Should show interstitial ad');
+        if (__DEV__) console.log('🎬 Should show interstitial ad');
       }
       router.push(`/pet/${selectedPet.id}`);
     }

@@ -171,11 +171,11 @@ service cloud.firestore {
       allow delete: if false;
     }
     
-    // Challenge Submissions collection
+    // Challenge Submissions collection - verified via userId
     match /challengeSubmissions/{submissionId} {
       allow read: if isAuth();
-      allow create: if isAuth();
-      allow update: if isAuth();
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuth() && resource.data.userId == request.auth.uid;
       allow delete: if false;
     }
     
@@ -292,19 +292,19 @@ service cloud.firestore {
       allow delete: if false;
     }
     
-    // Health Records collections
+    // Health Records collections - verified via petOwnerId
     match /healthRecords/{recordId} {
-      allow read: if isAuth();
-      allow create: if isAuth();
-      allow update: if isAuth();
-      allow delete: if isAuth();
+      allow read: if isAuth() && resource.data.petOwnerId == request.auth.uid;
+      allow create: if isAuth() && request.resource.data.petOwnerId == request.auth.uid;
+      allow update: if isAuth() && resource.data.petOwnerId == request.auth.uid;
+      allow delete: if isAuth() && resource.data.petOwnerId == request.auth.uid;
     }
     
     match /vaccinations/{vaccinationId} {
-      allow read: if isAuth();
-      allow create: if isAuth();
-      allow update: if isAuth();
-      allow delete: if isAuth();
+      allow read: if isAuth() && resource.data.petOwnerId == request.auth.uid;
+      allow create: if isAuth() && request.resource.data.petOwnerId == request.auth.uid;
+      allow update: if isAuth() && resource.data.petOwnerId == request.auth.uid;
+      allow delete: if isAuth() && resource.data.petOwnerId == request.auth.uid;
     }
     
     // Emergency Contacts collection
