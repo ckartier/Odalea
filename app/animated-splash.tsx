@@ -40,6 +40,7 @@ export default function AnimatedSplashScreen() {
   const fadeOutOpacity = useRef(new Animated.Value(1)).current;
   const logoScale = useRef(new Animated.Value(0.8)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
+  const splashHiddenRef = useRef<boolean>(false);
 
   const canNavigate = useMemo(() => {
     return !i18nLoading && onboardingReady;
@@ -82,15 +83,22 @@ export default function AnimatedSplashScreen() {
   }, []);
 
   const hideNativeSplash = useCallback(async () => {
-    console.log('[AnimatedSplash] hide native splash');
     if (Platform.OS === 'web') return;
+    if (splashHiddenRef.current) {
+      console.log('[AnimatedSplash] splash already hidden, skipping');
+      return;
+    }
+    
+    console.log('[AnimatedSplash] hide native splash');
+    splashHiddenRef.current = true;
     
     try {
       await SplashScreen.hideAsync();
-    } catch {
+      console.log('[AnimatedSplash] native splash hidden successfully');
+    } catch (error: unknown) {
       // Safe to ignore - splash screen may already be hidden or not registered
       // This is expected on some platforms/timing scenarios
-      console.log('[AnimatedSplash] hideAsync skipped (already hidden or not registered)');
+      console.log('[AnimatedSplash] hideAsync skipped:', error instanceof Error ? error.message : 'unknown error');
     }
   }, []);
 
