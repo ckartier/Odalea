@@ -1,8 +1,10 @@
 import createContextHook from '@nkzw/create-context-hook';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { petSitterService, userService } from '@/services/database';
 import { safeJsonParse } from '@/lib/safe-json';
+import { onSnapshot, doc } from 'firebase/firestore';
+import { db } from '@/services/firebase';
 
 export interface CustomService {
   id: string;
@@ -122,6 +124,57 @@ const defaultAvailability: CatSitterProfile['availability'] = {
 };
 
 const STORAGE_PROFILE_KEY = 'catSitterProfile';
+const COLLECTION_NAME = 'petSitterProfiles';
+
+function sanitizeCustomService(s: any): CustomService {
+  return {
+    id: String(s?.id ?? makeId('svc')),
+    name: String(s?.name ?? 'Prestation'),
+    description: String(s?.description ?? ''),
+    price: Number(s?.price ?? 0),
+    duration: Number(s?.duration ?? 60),
+    icon: String(s?.icon ?? 'service'),
+    isActive: Boolean(s?.isActive ?? true),
+  };
+}
+
+function sanitizeProfileForFirestore(profile: CatSitterProfile): Record<string, any> {
+  const sanitized: Record<string, any> = {};
+  
+  for (const [key, value] of Object.entries(profile)) {
+    if (value === undefined) continue;
+    
+    if (key === 'customServices' && Array.isArray(value)) {
+      sanitized[key] = value.map(sanitizeCustomService);
+    } else if (key === 'verification' && value) {
+      const v = value as ProVerification;
+      sanitized[key] = {
+        status: v.status ?? 'unverified',
+        ...(v.siret !== undefined && { siret: v.siret }),
+        ...(v.companyName !== undefined && { companyName: v.companyName }),
+        ...(v.checkedAt !== undefined && { checkedAt: v.checkedAt }),
+        ...(v.reason !== undefined && { reason: v.reason }),
+        ...(v.documents !== undefined && { documents: v.documents }),
+      };
+    } else if (key === 'availability' && value && typeof value === 'object') {
+      const avail: Record<string, any> = {};
+      for (const [day, schedule] of Object.entries(value)) {
+        if (schedule && typeof schedule === 'object') {
+          avail[day] = {
+            start: String((schedule as any).start ?? '08:00'),
+            end: String((schedule as any).end ?? '18:00'),
+            available: Boolean((schedule as any).available ?? false),
+          };
+        }
+      }
+      sanitized[key] = avail;
+    } else {
+      sanitized[key] = value;
+    }
+  }
+  
+  return sanitized;
+}
 
 function toMillisSafe(v: any): number {
   if (!v) return Date.now();
@@ -308,6 +361,7 @@ export const [CatSitterContext, useCatSitter] = createContextHook(() => {
   const [messages, setMessages] = useState<CatSitterMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
 
   // Load cached profile early (fast UI)
   useEffect(() => {
@@ -340,6 +394,41 @@ export const [CatSitterContext, useCatSitter] = createContextHook(() => {
     })();
   }, [profile, initializing]);
 
+  // Setup real-time listener for profile changes
+  const setupProfileListener = useCallback((userId: string) => {
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+    }
+    
+    try {
+      const profileRef = doc(db, COLLECTION_NAME, userId);
+      const unsubscribe = onSnapshot(profileRef, (snapshot) => {
+        if (snapshot.exists()) {
+          console.log('📡 Real-time profile update received');
+          const data = snapshot.data();
+          const normalized = normalizeProfile({ id: snapshot.id, ...data });
+          const { profile: withDefaults } = ensureDefaults(normalized);
+          setProfile(withDefaults);
+        }
+      }, (error) => {
+        console.error('❌ Profile listener error:', error);
+      });
+      
+      unsubscribeRef.current = unsubscribe;
+    } catch (e) {
+      console.error('❌ Failed to setup profile listener:', e);
+    }
+  }, []);
+
+  // Cleanup listener on unmount
+  useEffect(() => {
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+      }
+    };
+  }, []);
+
   const refreshBookings = async (sitterUserId: string) => {
     const firebaseBookings = await petSitterService.listBookingsForSitter(sitterUserId);
     const mapped = Array.isArray(firebaseBookings) ? firebaseBookings.map(mapBooking) : [];
@@ -348,19 +437,26 @@ export const [CatSitterContext, useCatSitter] = createContextHook(() => {
   };
 
   const loadProfile = async (userId: string) => {
+    console.log('🔄 Loading cat-sitter profile for:', userId);
     setLoading(true);
     try {
       const firebaseProfileRaw = await petSitterService.getProfile(userId);
 
       if (firebaseProfileRaw) {
+        console.log('✅ Profile loaded from Firestore');
         const normalized = normalizeProfile(firebaseProfileRaw);
         const { profile: withDefaults, changed } = ensureDefaults(normalized);
 
         setProfile(withDefaults);
+        
+        // Setup real-time listener
+        setupProfileListener(userId);
 
         // mini-migration en base si on a ajouté des defaults
         if (changed) {
-          await petSitterService.saveProfile(userId, withDefaults);
+          console.log('🔄 Migrating profile with defaults...');
+          const sanitized = sanitizeProfileForFirestore(withDefaults);
+          await petSitterService.saveProfile(userId, sanitized);
         }
 
         await refreshBookings(userId);
@@ -370,6 +466,7 @@ export const [CatSitterContext, useCatSitter] = createContextHook(() => {
       // fallback cache
       const stored = await AsyncStorage.getItem(STORAGE_PROFILE_KEY);
       if (stored) {
+        console.log('📦 Using cached profile');
         const parsed = normalizeProfile(safeJsonParse(stored, null));
         const { profile: next } = ensureDefaults(parsed);
         setProfile(next);
@@ -441,21 +538,44 @@ export const [CatSitterContext, useCatSitter] = createContextHook(() => {
   };
 
   const updateProfile = async (updates: Partial<CatSitterProfile>) => {
-    if (!profile) return { success: false, error: 'No profile found' };
+    if (!profile) {
+      console.error('❌ updateProfile: No profile found');
+      return { success: false, error: 'No profile found' };
+    }
+    
+    console.log('🔄 Updating profile with:', Object.keys(updates));
     setLoading(true);
+    
+    // Optimistic update
+    const previousProfile = profile;
+    const updated: CatSitterProfile = {
+      ...profile,
+      ...updates,
+      updatedAt: Date.now(),
+    };
+    setProfile(updated);
+    
     try {
-      const updated: CatSitterProfile = {
-        ...profile,
-        ...updates,
-        updatedAt: Date.now(),
-      };
-
-      await petSitterService.saveProfile(profile.userId, updated);
-      setProfile(updated);
+      // Sanitize before sending to Firestore
+      const sanitized = sanitizeProfileForFirestore(updated);
+      console.log('📤 Sending sanitized profile to Firestore');
+      
+      await petSitterService.saveProfile(profile.userId, sanitized);
+      console.log('✅ Profile updated successfully');
       return { success: true, profile: updated };
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Failed to update profile:', error);
-      return { success: false, error: 'Failed to update profile' };
+      console.error('❌ Error code:', error?.code);
+      console.error('❌ Error message:', error?.message);
+      
+      // Rollback on error
+      setProfile(previousProfile);
+      
+      const errorMessage = error?.code === 'permission-denied' 
+        ? 'Permission refusée. Vérifiez que vous êtes connecté.'
+        : error?.message || 'Échec de la mise à jour';
+      
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
@@ -475,37 +595,56 @@ export const [CatSitterContext, useCatSitter] = createContextHook(() => {
 
   // ---- Prestations (CRUD) ----
   const addCustomService = async (data: Omit<CustomService, 'id'>) => {
-    if (!profile) return { success: false, error: 'No profile found' };
+    if (!profile) {
+      console.error('❌ addCustomService: No profile found');
+      return { success: false, error: 'Profil non trouvé' };
+    }
 
-    const next: CustomService = { ...data, id: makeId('svc') };
+    console.log('➕ Adding custom service:', data.name);
+    const next: CustomService = sanitizeCustomService({ ...data, id: makeId('svc') });
     const nextList = [...(profile.customServices ?? []), next];
 
     return updateProfile({ customServices: nextList });
   };
 
   const updateCustomService = async (serviceId: string, updates: Partial<Omit<CustomService, 'id'>>) => {
-    if (!profile) return { success: false, error: 'No profile found' };
+    if (!profile) {
+      console.error('❌ updateCustomService: No profile found');
+      return { success: false, error: 'Profil non trouvé' };
+    }
 
+    console.log('✏️ Updating service:', serviceId, updates);
     const nextList = (profile.customServices ?? []).map(s =>
-      s.id === serviceId ? { ...s, ...updates } : s
+      s.id === serviceId ? sanitizeCustomService({ ...s, ...updates }) : s
     );
 
     return updateProfile({ customServices: nextList });
   };
 
   const deleteCustomService = async (serviceId: string) => {
-    if (!profile) return { success: false, error: 'No profile found' };
+    if (!profile) {
+      console.error('❌ deleteCustomService: No profile found');
+      return { success: false, error: 'Profil non trouvé' };
+    }
 
+    console.log('🗑️ Deleting service:', serviceId);
     const nextList = (profile.customServices ?? []).filter(s => s.id !== serviceId);
     return updateProfile({ customServices: nextList });
   };
 
   const toggleCustomServiceActive = async (serviceId: string) => {
-    if (!profile) return { success: false, error: 'No profile found' };
+    if (!profile) {
+      console.error('❌ toggleCustomServiceActive: No profile found');
+      return { success: false, error: 'Profil non trouvé' };
+    }
 
     const target = profile.customServices?.find(s => s.id === serviceId);
-    if (!target) return { success: false, error: 'Service not found' };
+    if (!target) {
+      console.error('❌ toggleCustomServiceActive: Service not found:', serviceId);
+      return { success: false, error: 'Prestation non trouvée' };
+    }
 
+    console.log('🔄 Toggling service active:', serviceId, '->', !target.isActive);
     return updateCustomService(serviceId, { isActive: !target.isActive });
   };
 

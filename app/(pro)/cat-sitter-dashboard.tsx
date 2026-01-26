@@ -145,29 +145,29 @@ export default function CatSitterDashboardScreen() {
       title: 'Gains totaux',
       value: `${totalEarnings.toFixed(0)}€`,
       icon: Euro,
-      color: COLORS.success,
-      bgColor: COLORS.female,
+      color: COLORS.black,
+      bgColor: COLORS.lightGray,
     },
     {
       title: 'Note moyenne',
       value: profile?.rating?.toFixed?.(1) ?? '0.0',
       icon: Star,
-      color: COLORS.accent,
-      bgColor: COLORS.male,
+      color: COLORS.black,
+      bgColor: COLORS.lightGray,
     },
     {
       title: 'Avis',
       value: (profile?.reviewCount ?? 0).toString(),
       icon: MessageSquare,
-      color: COLORS.warning,
-      bgColor: COLORS.female,
+      color: COLORS.black,
+      bgColor: COLORS.lightGray,
     },
     {
       title: 'Prestations',
       value: (profile?.totalBookings ?? 0).toString(),
       icon: Users,
-      color: COLORS.catSitter,
-      bgColor: COLORS.male,
+      color: COLORS.black,
+      bgColor: COLORS.lightGray,
     },
   ];
 
@@ -178,13 +178,13 @@ export default function CatSitterDashboardScreen() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
-        return <AlertCircle size={18} color={COLORS.warning} />;
+        return <AlertCircle size={18} color={COLORS.darkGray} />;
       case 'accepted':
-        return <CheckCircle size={18} color={COLORS.success} />;
+        return <CheckCircle size={18} color={COLORS.black} />;
       case 'declined':
         return <XCircle size={18} color={COLORS.error} />;
       case 'completed':
-        return <CheckCircle size={18} color={COLORS.male} />;
+        return <CheckCircle size={18} color={COLORS.black} />;
       default:
         return <Clock size={18} color={COLORS.darkGray} />;
     }
@@ -458,7 +458,7 @@ export default function CatSitterDashboardScreen() {
                 onPress={handleToggleActive}
                 style={styles.headerIconButton}
               >
-                <Power size={22} color={profile.isActive ? COLORS.success : COLORS.darkGray} />
+                <Power size={22} color={profile.isActive ? COLORS.black : COLORS.darkGray} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -492,7 +492,7 @@ export default function CatSitterDashboardScreen() {
 
           {pendingBookings > 0 && (
             <View style={styles.alertBadge}>
-              <AlertCircle size={16} color={COLORS.warning} />
+              <AlertCircle size={16} color={COLORS.black} />
               <Text style={styles.alertText}>
                 {pendingBookings} demande{pendingBookings > 1 ? 's' : ''} en attente
               </Text>
@@ -554,7 +554,7 @@ export default function CatSitterDashboardScreen() {
                     <Switch
                       value={service.isActive}
                       onValueChange={() => handleToggleServiceActive(service.id)}
-                      trackColor={{ false: COLORS.darkGray, true: COLORS.success }}
+                      trackColor={{ false: COLORS.darkGray, true: COLORS.black }}
                       thumbColor={COLORS.white}
                     />
                     <TouchableOpacity
@@ -592,7 +592,7 @@ export default function CatSitterDashboardScreen() {
           <View style={styles.insuranceInfo}>
             <View style={styles.insuranceRow}>
               <Text style={styles.insuranceLabel}>Assurance :</Text>
-              <Text style={[styles.insuranceValue, { color: profile?.insurance ? COLORS.success : COLORS.darkGray }]}>
+              <Text style={[styles.insuranceValue, { color: profile?.insurance ? COLORS.black : COLORS.darkGray }]}>
                 {profile?.insurance ? 'Oui' : 'Non'}
               </Text>
             </View>
@@ -649,7 +649,7 @@ export default function CatSitterDashboardScreen() {
                   <View
                     style={[
                       styles.calendarDayStatus,
-                      isAvailable ? { backgroundColor: COLORS.available } : { backgroundColor: COLORS.busy },
+                      isAvailable ? { backgroundColor: COLORS.black } : { backgroundColor: COLORS.darkGray },
                     ]}
                   >
                     <Text style={styles.calendarDayTime}>
@@ -703,8 +703,8 @@ export default function CatSitterDashboardScreen() {
                     <Text style={styles.bookingInfoText}>{booking.totalHours}h</Text>
                   </View>
                   <View style={styles.bookingInfo}>
-                    <Euro size={14} color={COLORS.success} />
-                    <Text style={[styles.bookingInfoText, { color: COLORS.success, fontWeight: '600' }]}>
+                    <Euro size={14} color={COLORS.black} />
+                    <Text style={[styles.bookingInfoText, { color: COLORS.black, fontWeight: '600' as const }]}>
                       {booking.totalPrice}€
                     </Text>
                   </View>
@@ -757,19 +757,19 @@ export default function CatSitterDashboardScreen() {
         {/* Quick stats */}
         <View style={styles.quickStatsGrid}>
           <GlassCard tint="neutral" style={styles.quickStat}>
-            <AlertCircle size={20} color={COLORS.warning} />
+            <AlertCircle size={20} color={COLORS.darkGray} />
             <Text style={styles.quickStatValue}>{pendingBookings}</Text>
             <Text style={styles.quickStatLabel}>En attente</Text>
           </GlassCard>
 
           <GlassCard tint="neutral" style={styles.quickStat}>
-            <CheckCircle size={20} color={COLORS.success} />
+            <CheckCircle size={20} color={COLORS.black} />
             <Text style={styles.quickStatValue}>{acceptedBookings}</Text>
             <Text style={styles.quickStatLabel}>Acceptées</Text>
           </GlassCard>
 
           <GlassCard tint="neutral" style={styles.quickStat}>
-            <Award size={20} color={COLORS.male} />
+            <Award size={20} color={COLORS.black} />
             <Text style={styles.quickStatValue}>{completedBookings}</Text>
             <Text style={styles.quickStatLabel}>Terminées</Text>
           </GlassCard>
@@ -790,10 +790,10 @@ export default function CatSitterDashboardScreen() {
                 onPress={() => setEditAvailable(v => !v)}
                 style={[
                   styles.togglePill,
-                  editAvailable ? { backgroundColor: `${COLORS.success}20` } : { backgroundColor: `${COLORS.darkGray}15` },
+                  editAvailable ? { backgroundColor: `${COLORS.black}15` } : { backgroundColor: `${COLORS.darkGray}15` },
                 ]}
               >
-                <Text style={[styles.toggleText, { color: editAvailable ? COLORS.success : COLORS.darkGray }]}>
+                <Text style={[styles.toggleText, { color: editAvailable ? COLORS.black : COLORS.darkGray }]}>
                   {editAvailable ? 'Oui' : 'Non'}
                 </Text>
               </TouchableOpacity>
@@ -932,7 +932,7 @@ export default function CatSitterDashboardScreen() {
               <Switch
                 value={insuranceEnabled}
                 onValueChange={setInsuranceEnabled}
-                trackColor={{ false: COLORS.darkGray, true: COLORS.success }}
+                trackColor={{ false: COLORS.darkGray, true: COLORS.black }}
                 thumbColor={COLORS.white}
               />
             </View>
@@ -1034,7 +1034,7 @@ const styles = StyleSheet.create({
   alertBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: `${COLORS.warning}20`,
+    backgroundColor: `${COLORS.black}10`,
     paddingHorizontal: DIMENSIONS.SPACING.sm,
     paddingVertical: DIMENSIONS.SPACING.xs,
     borderRadius: 20,
@@ -1044,7 +1044,7 @@ const styles = StyleSheet.create({
   alertText: {
     fontSize: DIMENSIONS.FONT_SIZES.sm,
     fontWeight: '600' as const,
-    color: COLORS.warning,
+    color: COLORS.black,
     marginLeft: 6,
   },
 
@@ -1196,7 +1196,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
-  acceptBtn: { backgroundColor: COLORS.success },
+  acceptBtn: { backgroundColor: COLORS.black },
   declineBtn: { backgroundColor: COLORS.error },
   actionBtnText: { color: COLORS.white, fontWeight: '700' as const, fontSize: 13 },
 
@@ -1349,7 +1349,7 @@ const styles = StyleSheet.create({
   servicePrice: {
     fontSize: DIMENSIONS.FONT_SIZES.md,
     fontWeight: '700' as const,
-    color: COLORS.success,
+    color: COLORS.black,
   },
   serviceDuration: {
     fontSize: DIMENSIONS.FONT_SIZES.sm,
