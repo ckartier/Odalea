@@ -3,8 +3,8 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { petSitterService, userService } from '@/services/database';
 import { safeJsonParse } from '@/lib/safe-json';
-import { onSnapshot, doc } from 'firebase/firestore';
-import { db } from '@/services/firebase';
+import { onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { db, auth } from '@/services/firebase';
 
 export interface CustomService {
   id: string;
@@ -395,28 +395,62 @@ export const [CatSitterContext, useCatSitter] = createContextHook(() => {
   }, [profile, initializing]);
 
   // Setup real-time listener for profile changes
-  const setupProfileListener = useCallback((userId: string) => {
+  const setupProfileListener = useCallback(async (userId: string) => {
+    // Cleanup existing listener
     if (unsubscribeRef.current) {
       unsubscribeRef.current();
+      unsubscribeRef.current = null;
+    }
+    
+    // Check if user is authenticated before setting up listener
+    if (!auth.currentUser) {
+      console.log('⚠️ Cannot setup profile listener: user not authenticated');
+      return;
     }
     
     try {
       const profileRef = doc(db, COLLECTION_NAME, userId);
-      const unsubscribe = onSnapshot(profileRef, (snapshot) => {
-        if (snapshot.exists()) {
-          console.log('📡 Real-time profile update received');
-          const data = snapshot.data();
-          const normalized = normalizeProfile({ id: snapshot.id, ...data });
-          const { profile: withDefaults } = ensureDefaults(normalized);
-          setProfile(withDefaults);
+      
+      // First check if document exists to avoid permission errors on non-existent docs
+      const docSnap = await getDoc(profileRef);
+      if (!docSnap.exists()) {
+        console.log('⚠️ Profile document does not exist yet, skipping listener');
+        return;
+      }
+      
+      const unsubscribe = onSnapshot(
+        profileRef, 
+        (snapshot) => {
+          if (snapshot.exists()) {
+            console.log('📡 Real-time profile update received');
+            const data = snapshot.data();
+            const normalized = normalizeProfile({ id: snapshot.id, ...data });
+            const { profile: withDefaults } = ensureDefaults(normalized);
+            setProfile(withDefaults);
+          }
+        }, 
+        (error) => {
+          // Handle permission errors gracefully
+          if (error.code === 'permission-denied') {
+            console.log('⚠️ Profile listener permission denied - user may have logged out');
+            // Cleanup the listener
+            if (unsubscribeRef.current) {
+              unsubscribeRef.current();
+              unsubscribeRef.current = null;
+            }
+          } else {
+            console.error('❌ Profile listener error:', error);
+          }
         }
-      }, (error) => {
-        console.error('❌ Profile listener error:', error);
-      });
+      );
       
       unsubscribeRef.current = unsubscribe;
-    } catch (e) {
-      console.error('❌ Failed to setup profile listener:', e);
+    } catch (e: any) {
+      if (e?.code === 'permission-denied') {
+        console.log('⚠️ Cannot access profile: permission denied');
+      } else {
+        console.error('❌ Failed to setup profile listener:', e);
+      }
     }
   }, []);
 
