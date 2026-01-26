@@ -68,9 +68,12 @@ service cloud.firestore {
       allow delete: if false;
     }
     
-    // Messages collection
+    // Messages collection - restricted to participants only
     match /messages/{messageId} {
-      allow read: if isAuth();
+      allow read: if isAuth() && (
+        resource.data.senderId == request.auth.uid || 
+        resource.data.receiverId == request.auth.uid
+      );
       allow create: if isAuth() && request.resource.data.senderId == request.auth.uid;
       allow update: if isAuth() && resource.data.senderId == request.auth.uid;
       allow delete: if false;
@@ -248,24 +251,43 @@ service cloud.firestore {
       allow update: if false;
     }
     
-    // Pet Matching collections
+    // Pet Matching collections - with userId verification
     match /petLikes/{likeId} {
-      allow read: if isAuth();
-      allow create: if isAuth();
-      allow delete: if isAuth();
+      allow read: if isAuth() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.targetOwnerId == request.auth.uid
+      );
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuth() && resource.data.userId == request.auth.uid;
       allow update: if false;
     }
     
     match /petMatches/{matchId} {
-      allow read: if isAuth();
-      allow create: if isAuth();
-      allow update: if isAuth();
-      allow delete: if isAuth();
+      allow read: if isAuth() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.matchedUserId == request.auth.uid ||
+        resource.data.user1Id == request.auth.uid ||
+        resource.data.user2Id == request.auth.uid
+      );
+      allow create: if isAuth() && (
+        request.resource.data.userId == request.auth.uid ||
+        request.resource.data.user1Id == request.auth.uid
+      );
+      allow update: if isAuth() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.matchedUserId == request.auth.uid ||
+        resource.data.user1Id == request.auth.uid ||
+        resource.data.user2Id == request.auth.uid
+      );
+      allow delete: if isAuth() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.user1Id == request.auth.uid
+      );
     }
     
     match /petPasses/{passId} {
-      allow read: if isAuth();
-      allow create: if isAuth();
+      allow read: if isAuth() && resource.data.userId == request.auth.uid;
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
       allow update: if false;
       allow delete: if false;
     }
