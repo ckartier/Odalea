@@ -5,33 +5,21 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '@/services/firebase';
 import { Pet } from '@/types';
 import { useUserPets } from './useUserPets';
-import { useFirebaseUser } from './firebase-user-store';
 
 const ACTIVE_PET_KEY = 'activePetId';
 
 export const [ActivePetContext, useActivePet] = createContextHook(() => {
-  const { pets: userPets, isLoading: petsLoading } = useUserPets();
-  const { user } = useFirebaseUser();
   const [activePetId, setActivePetIdState] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // Load active pet from AsyncStorage on mount
   useEffect(() => {
     const loadActivePet = async () => {
       try {
-        // First check user's activePetId from Firestore (via user object)
-        const userActivePetId = (user as any)?.activePetId;
-        
-        if (userActivePetId) {
-          setActivePetIdState(userActivePetId);
-          await AsyncStorage.setItem(ACTIVE_PET_KEY, userActivePetId);
-        } else {
-          // Fallback to AsyncStorage
-          const stored = await AsyncStorage.getItem(ACTIVE_PET_KEY);
-          if (stored) {
-            setActivePetIdState(stored);
-          } else if (userPets.length > 0) {
-            setActivePetIdState(userPets[0].id);
-          }
+        const stored = await AsyncStorage.getItem(ACTIVE_PET_KEY);
+        if (stored) {
+          console.log('[ActivePetStore] Loaded active pet from storage:', stored);
+          setActivePetIdState(stored);
         }
       } catch (err) {
         console.error('[ActivePetStore] Error loading active pet:', err);
@@ -40,27 +28,8 @@ export const [ActivePetContext, useActivePet] = createContextHook(() => {
       }
     };
 
-    if (!petsLoading) {
-      loadActivePet();
-    }
-  }, [userPets, petsLoading, user]);
-
-  // Auto-select first pet if current active pet is deleted or doesn't exist
-  useEffect(() => {
-    if (petsLoading) return;
-    
-    const petExists = userPets.some(p => p.id === activePetId);
-    
-    if (userPets.length > 0 && (!activePetId || !petExists)) {
-      console.log('[ActivePetStore] Auto-selecting first pet');
-      setActivePetIdState(userPets[0].id);
-      AsyncStorage.setItem(ACTIVE_PET_KEY, userPets[0].id).catch(() => {});
-    } else if (userPets.length === 0 && activePetId) {
-      console.log('[ActivePetStore] No pets, clearing active pet');
-      setActivePetIdState(null);
-      AsyncStorage.removeItem(ACTIVE_PET_KEY).catch(() => {});
-    }
-  }, [userPets, activePetId, petsLoading]);
+    loadActivePet();
+  }, []);
 
   const setActivePet = useCallback(async (petId: string | null) => {
     try {
@@ -93,13 +62,40 @@ export const [ActivePetContext, useActivePet] = createContextHook(() => {
     }
   }, []);
 
+  return {
+    activePetId,
+    setActivePet,
+    isLoading,
+  };
+});
+
+// Helper hook to get the active pet with pets data - use this in components
+export function useActivePetWithData() {
+  const { activePetId, setActivePet, isLoading: activePetLoading } = useActivePet();
+  const { pets: userPets, isLoading: petsLoading } = useUserPets();
+
+  // Auto-select first pet if no active pet is set
+  useEffect(() => {
+    if (petsLoading || activePetLoading) return;
+    
+    const petExists = userPets.some(p => p.id === activePetId);
+    
+    if (userPets.length > 0 && (!activePetId || !petExists)) {
+      console.log('[useActivePetWithData] Auto-selecting first pet');
+      setActivePet(userPets[0].id);
+    } else if (userPets.length === 0 && activePetId) {
+      console.log('[useActivePetWithData] No pets, clearing active pet');
+      setActivePet(null);
+    }
+  }, [userPets, activePetId, petsLoading, activePetLoading, setActivePet]);
+
   const activePet: Pet | undefined = userPets.find(p => p.id === activePetId);
 
   return {
     activePetId,
     activePet,
     setActivePet,
-    isLoading: isLoading || petsLoading,
+    isLoading: activePetLoading || petsLoading,
     userPets,
   };
-});
+}

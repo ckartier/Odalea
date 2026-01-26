@@ -19,7 +19,7 @@ import { COLORS as THEME_COLORS, RADIUS, SPACING, TYPOGRAPHY } from '@/theme/tok
 
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { usePremium } from '@/hooks/premium-store';
-import { useActivePet } from '@/hooks/active-pet-store';
+import { useActivePetWithData } from '@/hooks/active-pet-store';
 import { useFriends } from '@/hooks/friends-store';
 import { useUserPets } from '@/hooks/useUserPets';
 import {
@@ -47,9 +47,9 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { user, signOut } = useFirebaseUser();
   const { isPremium } = usePremium();
-  const { activePetId, setActivePet } = useActivePet();
+  const { activePetId, setActivePet, userPets, isLoading: petsLoading } = useActivePetWithData();
   const { pendingRequests, friends } = useFriends();
-  const { pets: userPets, isLoading: petsLoading, error: petsError, deletePet, isDeletingPet, refetch: refetchPets } = useUserPets();
+  const { deletePet, isDeletingPet, refetch: refetchPets, error: petsError } = useUserPets();
 
   const [refreshing, setRefreshing] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);

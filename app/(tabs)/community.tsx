@@ -27,7 +27,7 @@ import { usePremium } from '@/hooks/premium-store';
 import { useLostFound } from '@/hooks/lost-found-store';
 import { usePets } from '@/hooks/pets-store';
 import { useUnifiedMessaging } from '@/hooks/unified-messaging-store';
-import { useActivePet } from '@/hooks/active-pet-store';
+import { useActivePetWithData } from '@/hooks/active-pet-store';
 import BottomSheet from '@/components/BottomSheet';
 import { ENDEL } from '@/constants/endel';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
@@ -72,7 +72,7 @@ export default function CommunityScreen() {
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState<boolean>(false);
   const { userPets } = usePets();
   const { getUnreadCount } = useUnifiedMessaging();
-  const { activePet } = useActivePet();
+  const { activePet } = useActivePetWithData();
   const {
     posts,
     isLoading,

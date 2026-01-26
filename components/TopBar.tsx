@@ -6,7 +6,7 @@ import { COLORS, DIMENSIONS } from '@/constants/colors';
 import { Menu } from 'lucide-react-native';
 import { useAuth } from '@/hooks/auth-store';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
-import { useActivePet } from '@/hooks/active-pet-store';
+import { useActivePetWithData } from '@/hooks/active-pet-store';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getUserAvatarUrl } from '@/lib/image-helpers';
 
@@ -30,7 +30,7 @@ const TopBar = React.memo(({ rightAction, onMenuPress, onBackPress }: TopBarProp
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { user: firebaseUser } = useFirebaseUser();
-  const { activePet } = useActivePet();
+  const { activePet } = useActivePetWithData();
 
 
 
