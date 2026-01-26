@@ -3,22 +3,23 @@ import {
   AccessibilityInfo,
   Animated,
   Easing,
-  Image,
   Platform,
   StyleSheet,
-  Text,
   View,
+  Dimensions,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
 
-import { ENDEL } from '@/constants/endel';
 import { useAuth } from '@/hooks/auth-store';
 import { useI18n } from '@/hooks/i18n-store';
 import { useOnboarding } from '@/hooks/onboarding-store';
 
-const LOGO = require('@/assets/images/splash-icon.png');
+const VIDEO_URL = 'https://firebasestorage.googleapis.com/v0/b/copattes.firebasestorage.app/o/Coppet%2Flogo%20splash.m4v?alt=media';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 type TargetRoute =
   | '/(tabs)/map'
@@ -34,12 +35,12 @@ export default function AnimatedSplashScreen() {
 
   const [reduceMotionEnabled, setReduceMotionEnabled] = useState<boolean>(false);
   const [isReadyToShow, setIsReadyToShow] = useState<boolean>(false);
+  const [videoFinished, setVideoFinished] = useState<boolean>(false);
+  const [videoError, setVideoError] = useState<boolean>(false);
 
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.96)).current;
-  const translateY = useRef(new Animated.Value(0)).current;
-
-  const glowOpacity = useRef(new Animated.Value(0)).current;
+  const videoRef = useRef<Video>(null);
+  const opacity = useRef(new Animated.Value(1)).current;
+  const fadeOutOpacity = useRef(new Animated.Value(1)).current;
 
   const canNavigate = useMemo(() => {
     return !i18nLoading && onboardingReady;
@@ -102,112 +103,83 @@ export default function AnimatedSplashScreen() {
 
     console.log('[AnimatedSplash] start exit');
 
-    Animated.parallel([
-      Animated.timing(translateY, {
-        toValue: -12,
-        duration: 400,
-        easing: Easing.inOut(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.timing(scale, {
-        toValue: 0.92,
-        duration: 400,
-        easing: Easing.inOut(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 400,
-        easing: Easing.inOut(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.timing(glowOpacity, {
-        toValue: 0,
-        duration: 320,
-        easing: Easing.inOut(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]).start(({ finished }) => {
+    Animated.timing(fadeOutOpacity, {
+      toValue: 0,
+      duration: 400,
+      easing: Easing.inOut(Easing.quad),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
       console.log('[AnimatedSplash] exit finished', { finished });
       if (!finished) return;
       router.replace(target as any);
     });
-  }, [glowOpacity, opacity, router, scale, target, translateY]);
+  }, [fadeOutOpacity, router, target]);
+
+  const handleVideoStatusUpdate = useCallback((status: AVPlaybackStatus) => {
+    if (!status.isLoaded) return;
+    
+    if (status.didJustFinish) {
+      console.log('[AnimatedSplash] video finished');
+      setVideoFinished(true);
+    }
+  }, []);
+
+  const handleVideoError = useCallback((error: string) => {
+    console.error('[AnimatedSplash] video error:', error);
+    setVideoError(true);
+    setVideoFinished(true);
+  }, []);
 
   useEffect(() => {
     if (!canNavigate) return;
     if (!waitingToExitRef.current) return;
+    if (!videoFinished) return;
     console.log('[AnimatedSplash] became ready while waiting -> exit');
     runExit();
-  }, [canNavigate, runExit]);
+  }, [canNavigate, runExit, videoFinished]);
 
-  const runAnimation = useCallback(() => {
-    console.log('[AnimatedSplash] runAnimation', { reduceMotionEnabled, canNavigate, target });
+  useEffect(() => {
+    if (!videoFinished) return;
+    if (!canNavigate) {
+      console.log('[AnimatedSplash] video finished but not ready to navigate yet');
+      waitingToExitRef.current = true;
+      return;
+    }
+    console.log('[AnimatedSplash] video finished and ready -> exit');
+    runExit();
+  }, [videoFinished, canNavigate, runExit]);
+
+  const startVideo = useCallback(async () => {
+    console.log('[AnimatedSplash] startVideo', { reduceMotionEnabled, canNavigate, target });
 
     waitingToExitRef.current = false;
     exitStartedRef.current = false;
 
-    const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
+    if (reduceMotionEnabled || videoError) {
+      console.log('[AnimatedSplash] skipping video (reduce motion or error)');
+      setTimeout(() => {
+        setVideoFinished(true);
+      }, 500);
+      return;
+    }
 
-    const enter = Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 250,
-        easing: easeOut,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scale, {
-        toValue: 1,
-        duration: 250,
-        easing: easeOut,
-        useNativeDriver: true,
-      }),
-      Animated.timing(glowOpacity, {
-        toValue: 1,
-        duration: 250,
-        easing: easeOut,
-        useNativeDriver: true,
-      }),
-    ]);
-
-    const pulseOnce = Animated.sequence([
-      Animated.timing(scale, {
-        toValue: 1.03,
-        duration: 130,
-        easing: easeOut,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scale, {
-        toValue: 1,
-        duration: 145,
-        easing: easeOut,
-        useNativeDriver: true,
-      }),
-    ]);
-
-    const holdOrPulses = reduceMotionEnabled
-      ? Animated.delay(350)
-      : Animated.sequence([pulseOnce, pulseOnce]);
-
-    Animated.sequence([enter, holdOrPulses]).start(({ finished }) => {
-      console.log('[AnimatedSplash] enter+pulses finished', { finished, canNavigate });
-      if (!finished) return;
-
-      if (canNavigate) {
-        runExit();
-        return;
+    try {
+      if (videoRef.current) {
+        await videoRef.current.playAsync();
+        console.log('[AnimatedSplash] video started playing');
       }
-
-      console.log('[AnimatedSplash] not ready yet -> waiting before exit');
-      waitingToExitRef.current = true;
-    });
-  }, [canNavigate, glowOpacity, opacity, reduceMotionEnabled, runExit, scale, target]);
+    } catch (error) {
+      console.error('[AnimatedSplash] failed to play video:', error);
+      setVideoError(true);
+      setVideoFinished(true);
+    }
+  }, [canNavigate, reduceMotionEnabled, target, videoError]);
 
   useEffect(() => {
     if (!isReadyToShow) return;
     hideNativeSplash();
-    runAnimation();
-  }, [hideNativeSplash, isReadyToShow, runAnimation]);
+    startVideo();
+  }, [hideNativeSplash, isReadyToShow, startVideo]);
 
   useEffect(() => {
     if (!canNavigate) return;
@@ -215,8 +187,8 @@ export default function AnimatedSplashScreen() {
   }, [canNavigate, hasCompleted, target, user]);
 
   return (
-    <View
-      style={styles.root}
+    <Animated.View
+      style={[styles.root, { opacity: fadeOutOpacity }]}
       testID="animated-splash-root"
       onLayout={() => {
         if (!isReadyToShow) {
@@ -225,101 +197,34 @@ export default function AnimatedSplashScreen() {
         }
       }}
     >
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
 
-      <Animated.View
-        style={{
-          opacity,
-          transform: [{ translateY }, { scale }],
-        }}
-        testID="animated-splash-content"
-      >
-        <View style={styles.center}>
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.glow,
-              {
-                opacity: glowOpacity.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, 1],
-                }),
-                transform: [{ scale: 1 }],
-              },
-            ]}
-            testID="animated-splash-glow"
-          />
-
-          <View style={styles.logoWrap} testID="animated-splash-logo-wrap">
-            <Image source={LOGO} style={styles.logo} resizeMode="contain" />
-          </View>
-
-          <Text style={styles.title} testID="animated-splash-title">
-            Odalea
-          </Text>
-        </View>
-      </Animated.View>
-
-      <View style={styles.bottomHint} pointerEvents="none" testID="animated-splash-bottom">
-        <View style={styles.hintBar} />
-      </View>
-    </View>
+      <Video
+        ref={videoRef}
+        source={{ uri: VIDEO_URL }}
+        style={styles.video}
+        resizeMode={ResizeMode.COVER}
+        shouldPlay={false}
+        isLooping={false}
+        isMuted={false}
+        onPlaybackStatusUpdate={handleVideoStatusUpdate}
+        onError={(error) => handleVideoError(String(error))}
+        testID="animated-splash-video"
+      />
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#000000',
   },
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-  },
-  logoWrap: {
-    width: 200,
-    height: 200,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  logo: {
-    width: 200,
-    height: 200,
-  },
-  title: {
-    fontSize: 24,
-    lineHeight: 28,
-    fontWeight: '700' as const,
-    color: ENDEL.colors.text,
-    letterSpacing: -0.2,
-  },
-  glow: {
+  video: {
     position: 'absolute',
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    backgroundColor: '#FFFFFF',
-    shadowColor: Platform.OS === 'android' ? '#000' : 'rgba(17, 17, 17, 0.10)',
-    shadowOpacity: Platform.OS === 'android' ? 0.18 : 1,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 4,
-  },
-  bottomHint: {
-    position: 'absolute',
-    bottom: 28,
+    top: 0,
     left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  hintBar: {
-    width: 56,
-    height: 4,
-    borderRadius: 999,
-    backgroundColor: 'rgba(17, 17, 17, 0.14)',
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
   },
 });
