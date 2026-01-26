@@ -1596,7 +1596,7 @@ export const messagingService = {
   },
 
   // Get messages for conversation
-  async getMessages(conversationId: string, limitCount = 50): Promise<Message[]> {
+  async getMessages(conversationId: string, limitCount = 50, beforeTimestamp?: number): Promise<Message[]> {
     try {
       const messagesRef = collection(db, COLLECTIONS.MESSAGES);
       const q = query(
@@ -1618,9 +1618,14 @@ export const messagingService = {
         return 0;
       };
       
-      return items
-        .sort((a: any, b: any) => toMillis(a.timestamp) - toMillis(b.timestamp))
-        .slice(-limitCount);
+      let sorted = items.sort((a: any, b: any) => toMillis(a.timestamp) - toMillis(b.timestamp));
+      
+      // If beforeTimestamp is provided, filter messages older than that timestamp
+      if (beforeTimestamp) {
+        sorted = sorted.filter((msg: any) => toMillis(msg.timestamp) < beforeTimestamp);
+      }
+      
+      return sorted.slice(-limitCount);
     } catch (error) {
       console.error('❌ Error getting messages:', error);
       if (isPermissionDenied(error)) {

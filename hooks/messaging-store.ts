@@ -1,5 +1,5 @@
 import createContextHook from '@nkzw/create-context-hook';
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Message, FriendRequest, Conversation, User } from '@/types';
 import { useUser } from './user-store';
