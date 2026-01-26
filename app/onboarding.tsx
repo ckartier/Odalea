@@ -40,7 +40,7 @@ const SLIDES = [
 ];
 
 const MODAL_HEIGHT = 260;
-const ODALEA_LOGO = 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/46a5ttc847zkodlm7x5yb';
+const ODALEA_LOGO = 'https://firebasestorage.googleapis.com/v0/b/copattes.firebasestorage.app/o/Coppet%2Flogo%2FOdalea%20Logo.png?alt=media&token=e36e5c80-f424-4c96-9243-d99e499f9652';
 
 export default function OnboardingScreen() {
   const router = useRouter();
