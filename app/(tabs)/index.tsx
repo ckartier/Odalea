@@ -21,6 +21,7 @@ import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { usePremium } from '@/hooks/premium-store';
 import { useActivePet } from '@/hooks/active-pet-store';
 import { useFriends } from '@/hooks/friends-store';
+import { useUserPets } from '@/hooks/useUserPets';
 import {
   Bell,
   Menu,
@@ -48,11 +49,10 @@ export default function HomeScreen() {
   const { isPremium } = usePremium();
   const { activePetId, setActivePet } = useActivePet();
   const { pendingRequests, friends } = useFriends();
+  const { pets: userPets, isLoading: petsLoading, error: petsError, deletePet, isDeletingPet, refetch: refetchPets } = useUserPets();
 
   const [refreshing, setRefreshing] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
-
-  const userPets = user?.pets || [];
 
   const petsSubtitle = useMemo(() => {
     if (userPets.length === 0) return 'Ajoutez votre premier compagnon';
@@ -61,9 +61,10 @@ export default function HomeScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    refetchPets();
     await new Promise(resolve => setTimeout(resolve, 800));
     setRefreshing(false);
-  }, []);
+  }, [refetchPets]);
 
   const handleMenuPress = useCallback(() => {
     router.push(toHref('/menu'));
@@ -80,6 +81,16 @@ export default function HomeScreen() {
   const handlePetPress = useCallback((petId: string) => {
     router.push(toHref(`/pet/edit/${petId}`));
   }, [router]);
+
+  const handleDeletePet = useCallback(async (petId: string, petName: string) => {
+    console.log('[Home] Deleting pet:', petId);
+    const result = await deletePet(petId);
+    if (result.success) {
+      console.log('[Home] Pet deleted successfully');
+    } else {
+      Alert.alert('Erreur', result.error || 'Impossible de supprimer cet animal.');
+    }
+  }, [deletePet]);
 
   const handlePetLongPress = useCallback((petId: string, petName: string) => {
     const isActive = activePetId === petId;
@@ -102,10 +113,14 @@ export default function HomeScreen() {
           onPress: () => {
             Alert.alert(
               'Supprimer',
-              `Êtes-vous sûr de vouloir supprimer ${petName} ?`,
+              `Êtes-vous sûr de vouloir supprimer ${petName} ? Cette action est irréversible.`,
               [
                 { text: 'Annuler', style: 'cancel' },
-                { text: 'Supprimer', style: 'destructive', onPress: () => console.log('Delete pet', petId) },
+                { 
+                  text: 'Supprimer', 
+                  style: 'destructive', 
+                  onPress: () => handleDeletePet(petId, petName),
+                },
               ]
             );
           },
@@ -113,7 +128,7 @@ export default function HomeScreen() {
         { text: 'Annuler', style: 'cancel' },
       ]
     );
-  }, [activePetId, router, setActivePet]);
+  }, [activePetId, router, setActivePet, handleDeletePet]);
 
   const handleSignOut = useCallback(() => {
     Alert.alert(
@@ -221,50 +236,81 @@ export default function HomeScreen() {
             <Text style={styles.sectionTitle}>Mes animaux</Text>
           </View>
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.petsScroll}
-          >
-            {userPets.map((pet) => {
-              const isActive = activePetId === pet.id;
-              return (
-                <Pressable
-                  key={pet.id}
-                  style={[styles.petCard, isActive && styles.petCardActive]}
-                  onPress={() => handlePetPress(pet.id)}
-                  onLongPress={() => handlePetLongPress(pet.id, pet.name)}
-                >
-                  <Image
-                    source={{ uri: pet.mainPhoto || 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=300' }}
-                    style={styles.petImage}
-                    contentFit="cover"
-                  />
-                  <View style={styles.petInfo}>
-                    <Text style={styles.petName} numberOfLines={1}>{pet.name}</Text>
-                    <Text style={styles.petBreed} numberOfLines={1}>{pet.breed || pet.type}</Text>
-                  </View>
-                  {isActive && (
-                    <View style={styles.activeBadge}>
-                      <Check size={14} color="#FFFFFF" strokeWidth={3} />
-                    </View>
-                  )}
-                </Pressable>
-              );
-            })}
-
-            {/* Add pet card */}
-            <TouchableOpacity
-              style={styles.addPetCard}
-              onPress={handleAddPet}
-              activeOpacity={0.8}
+          {petsLoading ? (
+            <View style={styles.petsLoadingContainer}>
+              <ActivityIndicator size="small" color="#000000" />
+              <Text style={styles.petsLoadingText}>Chargement...</Text>
+            </View>
+          ) : petsError ? (
+            <View style={styles.petsErrorContainer}>
+              <Text style={styles.petsErrorText}>{petsError}</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={refetchPets}>
+                <Text style={styles.retryButtonText}>Réessayer</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.petsScroll}
             >
-              <View style={styles.addPetIconContainer}>
-                <Plus size={28} color="#000000" strokeWidth={2} />
-              </View>
-              <Text style={styles.addPetText}>Ajouter</Text>
-            </TouchableOpacity>
-          </ScrollView>
+              {userPets.length === 0 ? (
+                <TouchableOpacity
+                  style={styles.emptyPetCard}
+                  onPress={handleAddPet}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.emptyPetIconContainer}>
+                    <Plus size={32} color="#000000" strokeWidth={2} />
+                  </View>
+                  <Text style={styles.emptyPetTitle}>Ajoutez votre premier compagnon</Text>
+                  <Text style={styles.emptyPetSubtitle}>Tapez ici pour commencer</Text>
+                </TouchableOpacity>
+              ) : (
+                <>
+                  {userPets.map((pet) => {
+                    const isActive = activePetId === pet.id;
+                    return (
+                      <Pressable
+                        key={pet.id}
+                        style={[styles.petCard, isActive && styles.petCardActive]}
+                        onPress={() => handlePetPress(pet.id)}
+                        onLongPress={() => handlePetLongPress(pet.id, pet.name)}
+                        disabled={isDeletingPet}
+                      >
+                        <Image
+                          source={{ uri: pet.mainPhoto || 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=300' }}
+                          style={styles.petImage}
+                          contentFit="cover"
+                          placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4"
+                        />
+                        <View style={styles.petInfo}>
+                          <Text style={styles.petName} numberOfLines={1}>{pet.name}</Text>
+                          <Text style={styles.petBreed} numberOfLines={1}>{pet.breed || pet.type}</Text>
+                        </View>
+                        {isActive && (
+                          <View style={styles.activeBadge}>
+                            <Check size={14} color="#FFFFFF" strokeWidth={3} />
+                          </View>
+                        )}
+                      </Pressable>
+                    );
+                  })}
+
+                  <TouchableOpacity
+                    style={styles.addPetCard}
+                    onPress={handleAddPet}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.addPetIconContainer}>
+                      <Plus size={28} color="#000000" strokeWidth={2} />
+                    </View>
+                    <Text style={styles.addPetText}>Ajouter</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </ScrollView>
+          )}
         </View>
 
         {/* Section: Texte éditorial */}
@@ -557,6 +603,72 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500' as const,
     color: '#64748B',
+  },
+  petsLoadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    gap: 10,
+  },
+  petsLoadingText: {
+    fontSize: 14,
+    color: '#64748B',
+  },
+  petsErrorContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 30,
+    gap: 12,
+  },
+  petsErrorText: {
+    fontSize: 14,
+    color: '#DC2626',
+    textAlign: 'center' as const,
+  },
+  retryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#000000',
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+    color: '#FFFFFF',
+  },
+  emptyPetCard: {
+    width: 220,
+    height: 160,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+  },
+  emptyPetIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  emptyPetTitle: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: '#0F172A',
+    textAlign: 'center' as const,
+  },
+  emptyPetSubtitle: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center' as const,
   },
   editorialSection: {
     paddingHorizontal: 16,
