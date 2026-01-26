@@ -227,7 +227,7 @@ export default function EditProfileScreen() {
   if (!user) {
     // Navigate back if no user, but only after component is mounted
     setTimeout(() => {
-      router.replace('/(tabs)/profile');
+      router.replace('/(tabs)');
     }, 0);
     
     return (

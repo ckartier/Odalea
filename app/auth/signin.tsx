@@ -127,7 +127,7 @@ function SignInScreen() {
       const result = await signIn(email, password);
       
       if (result.success) {
-        router.replace('/(tabs)/map');
+        router.replace('/(tabs)');
       } else {
         Alert.alert('Sign In Failed', result.error || 'Invalid email or password');
       }
@@ -361,7 +361,7 @@ function SignInScreen() {
             <GoogleSignInButton
               onSignInSuccess={(user) => {
                 console.log('Google Sign-In Success:', user);
-                router.replace('/(tabs)/map');
+                router.replace('/(tabs)');
               }}
               onSignInError={(error) => {
                 Alert.alert('Erreur Google', error);
@@ -372,7 +372,7 @@ function SignInScreen() {
             <AppleSignInButton
               onSignInSuccess={(user) => {
                 console.log('Apple Sign-In Success:', user);
-                router.replace('/(tabs)/map');
+                router.replace('/(tabs)');
               }}
               onSignInError={(error) => {
                 Alert.alert('Erreur Apple', error);

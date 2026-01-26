@@ -25,7 +25,7 @@ export default function OrderConfirmationScreen() {
 
   const handleViewOrders = () => {
     // Navigate to orders screen (would need to be implemented)
-    router.replace('/(tabs)/profile');
+    router.replace('/(tabs)');
   };
 
   return (

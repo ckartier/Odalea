@@ -169,7 +169,7 @@ export default function AddPetScreen() {
             { 
               text: 'OK', 
               onPress: () => {
-                router.replace('/(tabs)/profile');
+                router.replace('/(tabs)');
               },
             },
           ]

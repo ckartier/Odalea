@@ -56,7 +56,7 @@ export default function OnboardingScreen() {
       if (user.isProfessional) {
         router.replace('/(pro)/dashboard');
       } else if (hasCompleted) {
-        router.replace('/(tabs)/map');
+        router.replace('/(tabs)');
       }
     }
   }, [user, hasCompleted, router]);

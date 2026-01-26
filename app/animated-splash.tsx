@@ -23,7 +23,7 @@ const LOGO_URL = 'https://firebasestorage.googleapis.com/v0/b/copattes.firebases
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-type TargetRoute = '/onboarding' | '/(tabs)/profile' | '/auth/signin';
+type TargetRoute = '/onboarding' | '/(tabs)' | '/auth/signin';
 
 export default function AnimatedSplashScreen() {
   const router = useRouter();
@@ -48,7 +48,7 @@ export default function AnimatedSplashScreen() {
 
   const target: TargetRoute = useMemo(() => {
     if (user) {
-      return '/(tabs)/profile';
+      return '/(tabs)';
     }
     if (hasCompleted) {
       return '/auth/signin';
