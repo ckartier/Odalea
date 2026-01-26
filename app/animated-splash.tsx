@@ -18,11 +18,9 @@ import { useOnboarding } from '@/hooks/onboarding-store';
 
 const VIDEO_URL = 'https://firebasestorage.googleapis.com/v0/b/copattes.firebasestorage.app/o/Coppet%2Flogo%20splash.m4v?alt=media&token=896a8261-2dbd-4700-b206-0be8f0848616';
 
-
-
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-type TargetRoute = '/onboarding';
+type TargetRoute = '/onboarding' | '/(tabs)/map' | '/auth/signin';
 
 export default function AnimatedSplashScreen() {
   const router = useRouter();
@@ -42,7 +40,15 @@ export default function AnimatedSplashScreen() {
     return !i18nLoading && onboardingReady;
   }, [i18nLoading, onboardingReady]);
 
-  const target: TargetRoute = '/onboarding';
+  const target: TargetRoute = useMemo(() => {
+    if (user) {
+      return '/(tabs)/map';
+    }
+    if (hasCompleted) {
+      return '/auth/signin';
+    }
+    return '/onboarding';
+  }, [user, hasCompleted]);
 
   useEffect(() => {
     let mounted = true;
