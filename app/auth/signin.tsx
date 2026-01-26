@@ -240,7 +240,7 @@ function SignInScreen() {
             { scale: logoScale },
           ],
         }]}>
-          <Logo size="medium" />
+          <Logo size="large" showText={false} />
         </Animated.View>
         <Animated.Text style={[styles.welcomeText, dynamicStyles.title, {
           opacity: fadeAnim,

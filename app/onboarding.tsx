@@ -98,7 +98,8 @@ export default function OnboardingScreen() {
         <Image 
           source={{ uri: ODALEA_LOGO }} 
           style={styles.logo} 
-          resizeMode="contain" 
+          resizeMode="contain"
+          tintColor="#FFFFFF"
         />
       </View>
       
@@ -183,8 +184,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: 36,
-    height: 36,
+    width: 80,
+    height: 80,
   },
   scrollView: {
     flex: 1,

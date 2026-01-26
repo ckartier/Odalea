@@ -24,7 +24,13 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuth();
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
+      allow update: if isOwner(userId) || (
+        isAuth() && 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friends']) &&
+        request.resource.data.friends.hasAll(resource.data.friends) &&
+        request.resource.data.friends.size() == resource.data.friends.size() + 1 &&
+        request.resource.data.friends.toSet().difference(resource.data.friends.toSet()).hasOnly([request.auth.uid])
+      );
       allow delete: if isOwner(userId);
     }
     
