@@ -35,6 +35,7 @@ export default function AnimatedSplashScreen() {
   const [isReadyToShow, setIsReadyToShow] = useState<boolean>(false);
   const [videoFinished, setVideoFinished] = useState<boolean>(false);
   const [videoError, setVideoError] = useState<boolean>(false);
+  const [videoReady, setVideoReady] = useState<boolean>(false);
 
   const videoRef = useRef<Video>(null);
   const fadeOutOpacity = useRef(new Animated.Value(1)).current;
@@ -138,6 +139,11 @@ export default function AnimatedSplashScreen() {
     setVideoFinished(true);
   }, []);
 
+  const handleVideoReadyForDisplay = useCallback(() => {
+    console.log('[AnimatedSplash] video ready for display');
+    setVideoReady(true);
+  }, []);
+
   useEffect(() => {
     if (!canNavigate) return;
     if (!waitingToExitRef.current) return;
@@ -211,11 +217,26 @@ export default function AnimatedSplashScreen() {
     }
   }, [canNavigate, reduceMotionEnabled, target, videoError, runWebFallback]);
 
+  // Hide native splash only when video is ready (or on web/error)
   useEffect(() => {
     if (!isReadyToShow) return;
+    
+    if (Platform.OS === 'web' || reduceMotionEnabled || videoError) {
+      hideNativeSplash();
+      startVideo();
+    }
+  }, [hideNativeSplash, isReadyToShow, reduceMotionEnabled, videoError, startVideo]);
+
+  // For native: hide splash when video is ready to display
+  useEffect(() => {
+    if (!isReadyToShow) return;
+    if (Platform.OS === 'web') return;
+    if (!videoReady) return;
+    
+    console.log('[AnimatedSplash] video ready, hiding native splash and starting');
     hideNativeSplash();
     startVideo();
-  }, [hideNativeSplash, isReadyToShow, startVideo]);
+  }, [isReadyToShow, videoReady, hideNativeSplash, startVideo]);
 
   useEffect(() => {
     if (!canNavigate) return;
@@ -261,6 +282,7 @@ export default function AnimatedSplashScreen() {
           isMuted={true}
           onPlaybackStatusUpdate={handleVideoStatusUpdate}
           onError={(error) => handleVideoError(String(error))}
+          onReadyForDisplay={handleVideoReadyForDisplay}
           testID="animated-splash-video"
         />
       )}
