@@ -15,8 +15,8 @@ service cloud.firestore {
       return isAuth() && request.auth.uid in participants;
     }
     
-    function fieldUnchanged(field) {
-      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([field]);
+    function isAdmin() {
+      return isAuth() && request.auth.token.admin == true;
     }
     
     // ============================================
@@ -79,9 +79,15 @@ service cloud.firestore {
     // CONVERSATIONS
     // ============================================
     match /conversations/{conversationId} {
-      allow read: if isAuth() && isParticipant(resource.data.participants);
+      allow read: if isAuth() && (
+        resource.data.participants == null || 
+        isParticipant(resource.data.participants)
+      );
       allow create: if isAuth() && isParticipant(request.resource.data.participants);
-      allow update: if isAuth() && isParticipant(resource.data.participants);
+      allow update: if isAuth() && (
+        resource.data.participants == null || 
+        isParticipant(resource.data.participants)
+      );
       allow delete: if false;
     }
     
@@ -92,11 +98,15 @@ service cloud.firestore {
       allow read: if isAuth() && (
         resource.data.senderId == request.auth.uid || 
         resource.data.receiverId == request.auth.uid ||
-        exists(/databases/$(database)/documents/conversations/$(resource.data.conversationId)) &&
-        request.auth.uid in get(/databases/$(database)/documents/conversations/$(resource.data.conversationId)).data.participants
+        (resource.data.conversationId != null &&
+         exists(/databases/$(database)/documents/conversations/$(resource.data.conversationId)) &&
+         request.auth.uid in get(/databases/$(database)/documents/conversations/$(resource.data.conversationId)).data.participants)
       );
       allow create: if isAuth() && request.resource.data.senderId == request.auth.uid;
-      allow update: if isAuth() && resource.data.senderId == request.auth.uid;
+      allow update: if isAuth() && (
+        resource.data.senderId == request.auth.uid ||
+        resource.data.receiverId == request.auth.uid
+      );
       allow delete: if false;
     }
     
@@ -134,9 +144,9 @@ service cloud.firestore {
     // ============================================
     match /petSitterProfiles/{sitterId} {
       allow read: if isAuth();
-      allow create: if isOwner(sitterId);
-      allow update: if isOwner(sitterId);
-      allow delete: if isOwner(sitterId);
+      allow create: if isOwner(sitterId) || (isAuth() && request.resource.data.userId == request.auth.uid);
+      allow update: if isOwner(sitterId) || (isAuth() && resource.data.userId == request.auth.uid);
+      allow delete: if isOwner(sitterId) || (isAuth() && resource.data.userId == request.auth.uid);
     }
     
     // ============================================
@@ -147,21 +157,25 @@ service cloud.firestore {
         resource.data.clientId == request.auth.uid || 
         resource.data.catSitterId == request.auth.uid || 
         resource.data.userId == request.auth.uid ||
-        resource.data.sitterId == request.auth.uid
+        resource.data.sitterId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid
       );
       allow create: if isAuth() && (
         request.resource.data.clientId == request.auth.uid || 
-        request.resource.data.userId == request.auth.uid
+        request.resource.data.userId == request.auth.uid ||
+        request.resource.data.ownerId == request.auth.uid
       );
       allow update: if isAuth() && (
         resource.data.clientId == request.auth.uid || 
         resource.data.catSitterId == request.auth.uid || 
         resource.data.userId == request.auth.uid ||
-        resource.data.sitterId == request.auth.uid
+        resource.data.sitterId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid
       );
       allow delete: if isAuth() && (
         resource.data.clientId == request.auth.uid || 
-        resource.data.userId == request.auth.uid
+        resource.data.userId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid
       );
     }
     
@@ -170,9 +184,18 @@ service cloud.firestore {
     // ============================================
     match /lostFoundReports/{reportId} {
       allow read: if isAuth();
-      allow create: if isAuth() && request.resource.data.reporterId == request.auth.uid;
-      allow update: if isAuth() && resource.data.reporterId == request.auth.uid;
-      allow delete: if isAuth() && resource.data.reporterId == request.auth.uid;
+      allow create: if isAuth() && (
+        request.resource.data.reporterId == request.auth.uid ||
+        request.resource.data.userId == request.auth.uid
+      );
+      allow update: if isAuth() && (
+        resource.data.reporterId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+      allow delete: if isAuth() && (
+        resource.data.reporterId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
     }
     
     // ============================================
@@ -180,7 +203,7 @@ service cloud.firestore {
     // ============================================
     match /challenges/{challengeId} {
       allow read: if isAuth();
-      allow write: if false;
+      allow write: if isAdmin();
     }
     
     // ============================================
@@ -190,7 +213,7 @@ service cloud.firestore {
       allow read: if isAuth();
       allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
       allow update: if isAuth() && resource.data.userId == request.auth.uid;
-      allow delete: if false;
+      allow delete: if isAuth() && resource.data.userId == request.auth.uid;
     }
     
     // ============================================
@@ -200,7 +223,7 @@ service cloud.firestore {
       allow read: if isAuth();
       allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
       allow update: if isAuth() && resource.data.userId == request.auth.uid;
-      allow delete: if false;
+      allow delete: if isAuth() && resource.data.userId == request.auth.uid;
     }
     
     // ============================================
@@ -210,7 +233,7 @@ service cloud.firestore {
       allow read: if isAuth();
       allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
       allow update: if isAuth();
-      allow delete: if false;
+      allow delete: if isAuth() && resource.data.userId == request.auth.uid;
     }
     
     // ============================================
@@ -218,7 +241,7 @@ service cloud.firestore {
     // ============================================
     match /products/{productId} {
       allow read: if isAuth();
-      allow write: if false;
+      allow write: if isAdmin();
     }
     
     // ============================================
@@ -237,12 +260,17 @@ service cloud.firestore {
     match /orders/{orderId} {
       allow read: if isAuth() && (
         resource.data.customerId == request.auth.uid || 
-        resource.data.sellerId == request.auth.uid
+        resource.data.sellerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
       );
-      allow create: if isAuth() && request.resource.data.customerId == request.auth.uid;
+      allow create: if isAuth() && (
+        request.resource.data.customerId == request.auth.uid ||
+        request.resource.data.userId == request.auth.uid
+      );
       allow update: if isAuth() && (
         resource.data.sellerId == request.auth.uid ||
-        resource.data.customerId == request.auth.uid
+        resource.data.customerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
       );
       allow delete: if false;
     }
@@ -251,20 +279,52 @@ service cloud.firestore {
     // HEALTH RECORDS
     // ============================================
     match /healthRecords/{recordId} {
-      allow read: if isAuth() && resource.data.petOwnerId == request.auth.uid;
-      allow create: if isAuth() && request.resource.data.petOwnerId == request.auth.uid;
-      allow update: if isAuth() && resource.data.petOwnerId == request.auth.uid;
-      allow delete: if isAuth() && resource.data.petOwnerId == request.auth.uid;
+      allow read: if isAuth() && (
+        resource.data.petOwnerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+      allow create: if isAuth() && (
+        request.resource.data.petOwnerId == request.auth.uid ||
+        request.resource.data.ownerId == request.auth.uid ||
+        request.resource.data.userId == request.auth.uid
+      );
+      allow update: if isAuth() && (
+        resource.data.petOwnerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+      allow delete: if isAuth() && (
+        resource.data.petOwnerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
     }
     
     // ============================================
     // VACCINATIONS
     // ============================================
     match /vaccinations/{vaccinationId} {
-      allow read: if isAuth() && resource.data.petOwnerId == request.auth.uid;
-      allow create: if isAuth() && request.resource.data.petOwnerId == request.auth.uid;
-      allow update: if isAuth() && resource.data.petOwnerId == request.auth.uid;
-      allow delete: if isAuth() && resource.data.petOwnerId == request.auth.uid;
+      allow read: if isAuth() && (
+        resource.data.petOwnerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+      allow create: if isAuth() && (
+        request.resource.data.petOwnerId == request.auth.uid ||
+        request.resource.data.ownerId == request.auth.uid ||
+        request.resource.data.userId == request.auth.uid
+      );
+      allow update: if isAuth() && (
+        resource.data.petOwnerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+      allow delete: if isAuth() && (
+        resource.data.petOwnerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
     }
     
     // ============================================
@@ -284,7 +344,7 @@ service cloud.firestore {
       allow read: if isAuth();
       allow create: if isAuth() && request.resource.data.authorId == request.auth.uid;
       allow update: if isAuth() && resource.data.authorId == request.auth.uid;
-      allow delete: if false;
+      allow delete: if isAuth() && resource.data.authorId == request.auth.uid;
     }
     
     // ============================================
@@ -292,9 +352,9 @@ service cloud.firestore {
     // ============================================
     match /professionals/{professionalId} {
       allow read: if isAuth();
-      allow create: if isOwner(professionalId);
-      allow update: if isOwner(professionalId);
-      allow delete: if false;
+      allow create: if isOwner(professionalId) || (isAuth() && request.resource.data.userId == request.auth.uid);
+      allow update: if isOwner(professionalId) || (isAuth() && resource.data.userId == request.auth.uid);
+      allow delete: if isOwner(professionalId) || (isAuth() && resource.data.userId == request.auth.uid);
     }
     
     // ============================================
@@ -302,7 +362,7 @@ service cloud.firestore {
     // ============================================
     match /badges/{badgeId} {
       allow read: if isAuth();
-      allow write: if false;
+      allow write: if isAdmin();
     }
     
     // ============================================
@@ -312,7 +372,7 @@ service cloud.firestore {
       allow read: if isAuth();
       allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
       allow update: if isAuth() && resource.data.userId == request.auth.uid;
-      allow delete: if false;
+      allow delete: if isAuth() && resource.data.userId == request.auth.uid;
     }
     
     // ============================================
@@ -369,18 +429,18 @@ service cloud.firestore {
     }
     
     match /moderationActions/{actionId} {
-      allow read: if isAuth();
-      allow write: if false;
+      allow read: if isAdmin();
+      allow write: if isAdmin();
     }
     
     match /userFlags/{userId} {
-      allow read: if isOwner(userId);
-      allow write: if false;
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isAdmin();
     }
     
     match /moderationQueue/{itemId} {
-      allow read: if isAuth();
-      allow write: if false;
+      allow read: if isAdmin();
+      allow write: if isAdmin();
     }
     
     // ============================================
@@ -389,8 +449,8 @@ service cloud.firestore {
     match /professionalVerifications/{verificationId} {
       allow read: if isAuth() && resource.data.userId == request.auth.uid;
       allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
-      allow update: if false;
-      allow delete: if false;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
     
     // ============================================
@@ -418,19 +478,19 @@ service cloud.firestore {
     // ============================================
     match /animalSpecies/{speciesId} {
       allow read: if isAuth();
-      allow write: if false;
+      allow write: if isAdmin();
     }
     
     match /animalBreeds/{breedId} {
       allow read: if isAuth();
-      allow write: if false;
+      allow write: if isAdmin();
     }
     
     // ============================================
     // AI LOGS & CONFIG
     // ============================================
     match /ai_logs/{logId} {
-      allow read: if false;
+      allow read: if isAdmin();
       allow create: if isAuth();
       allow update: if false;
       allow delete: if false;
@@ -438,7 +498,7 @@ service cloud.firestore {
     
     match /config/{configId} {
       allow read: if isAuth();
-      allow write: if false;
+      allow write: if isAdmin();
     }
     
     // ============================================
@@ -471,7 +531,27 @@ service cloud.firestore {
       allow delete: if isAuth() && resource.data.userId == request.auth.uid;
     }
     
-    // Deny all other paths
+    // ============================================
+    // CART (Shopping)
+    // ============================================
+    match /carts/{cartId} {
+      allow read: if isAuth() && resource.data.userId == request.auth.uid;
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuth() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuth() && resource.data.userId == request.auth.uid;
+    }
+    
+    // ============================================
+    // SUBSCRIPTIONS
+    // ============================================
+    match /subscriptions/{subscriptionId} {
+      allow read: if isAuth() && resource.data.userId == request.auth.uid;
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuth() && resource.data.userId == request.auth.uid;
+      allow delete: if false;
+    }
+    
+    // Catch-all: deny everything else
     match /{document=**} {
       allow read, write: if false;
     }
