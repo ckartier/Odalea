@@ -10,10 +10,11 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
-import { Send, RefreshCw, AlertTriangle, Stethoscope, Crown, ChevronRight } from 'lucide-react-native';
+import { Send, RefreshCw, AlertTriangle, Stethoscope, Crown, ChevronRight, ChevronDown, Check } from 'lucide-react-native';
 import { useRorkAgent } from '@rork-ai/toolkit-sdk';
 import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '@/theme/tokens';
 import { useActivePetWithData } from '@/hooks/active-pet-store';
@@ -30,8 +31,35 @@ const MEDICAL_ADVICE_BLOCKED = "Je ne peux pas fournir de diagnostic, prescripti
 function formatPetContext(pet: Pet): string {
   const age = pet.dateOfBirth ? calculateAge(pet.dateOfBirth) : 'âge inconnu';
   const gender = pet.gender === 'male' ? 'mâle' : 'femelle';
+  const species = pet.type || 'animal';
+  const breed = pet.breed || '';
+  const color = pet.color || '';
   
-  return `Animal: ${pet.name}, ${pet.type} ${pet.breed ? `(${pet.breed})` : ''}, ${gender}, ${age}`;
+  let context = `${pet.name}, ${species}`;
+  if (breed) context += ` (${breed})`;
+  context += `, ${gender}, ${age}`;
+  if (color) context += `, ${color}`;
+  
+  return context;
+}
+
+function formatPetContextDetailed(pet: Pet): string {
+  const age = pet.dateOfBirth ? calculateAge(pet.dateOfBirth) : 'âge inconnu';
+  const gender = pet.gender === 'male' ? 'mâle' : 'femelle';
+  const species = pet.type || 'animal';
+  
+  const details: string[] = [
+    `Nom: ${pet.name}`,
+    `Espèce: ${species}`,
+    pet.breed ? `Race: ${pet.breed}` : null,
+    `Sexe: ${gender}`,
+    `Âge: ${age}`,
+    pet.color ? `Couleur: ${pet.color}` : null,
+    pet.character?.length ? `Caractère: ${pet.character.join(', ')}` : null,
+    pet.distinctiveSign ? `Signe distinctif: ${pet.distinctiveSign}` : null,
+  ].filter(Boolean) as string[];
+  
+  return details.join('\n');
 }
 
 function calculateAge(dateOfBirth: string): string {
@@ -50,7 +78,7 @@ function calculateAge(dateOfBirth: string): string {
 }
 
 function buildSystemPrompt(pet: Pet, isPremium: boolean): string {
-  const petContext = formatPetContext(pet);
+  const petContext = formatPetContextDetailed(pet);
   
   const basePrompt = `Tu es un conseiller bien-être animal pour l'application Odalea. Tu fournis UNIQUEMENT des conseils généraux et informatifs sur le bien-être animal.
 
@@ -148,7 +176,7 @@ export default function VetAssistantScreen() {
   const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
   
-  const { activePet } = useActivePetWithData();
+  const { activePet, userPets, setActivePet, isLoading: isPetsLoading } = useActivePetWithData();
   const { getMessagesForPet, addMessage, startNewConversation } = useVetAssistant();
   const { 
     isPremium, 
@@ -161,6 +189,7 @@ export default function VetAssistantScreen() {
   const [input, setInput] = useState('');
   const [localMessages, setLocalMessages] = useState<VetMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPetSelector, setShowPetSelector] = useState(false);
   
   const remainingQuestions = getRemainingVetAssistantQuestions();
   const hasReachedLimit = !isPremium && remainingQuestions === 0;
@@ -313,17 +342,82 @@ export default function VetAssistantScreen() {
     router.push('/pet/add');
   }, [router]);
 
-  if (!activePet) {
+  const handleChangePet = useCallback((petId: string) => {
+    console.log('[VetAssistant] Changing active pet to:', petId);
+    setActivePet(petId);
+    setShowPetSelector(false);
+    setLocalMessages([]);
+  }, [setActivePet]);
+
+  const togglePetSelector = useCallback(() => {
+    setShowPetSelector(prev => !prev);
+  }, []);
+
+  if (isPetsLoading) {
     return (
       <View style={styles.container}>
-        <Stack.Screen options={{ title: 'Conseils bien-être animal' }} />
+        <Stack.Screen options={{ title: 'Conseils vétérinaires' }} />
+        <View style={styles.loadingFullContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingFullText}>Chargement de vos animaux...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (!activePet && userPets.length > 0) {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen options={{ title: 'Conseils vétérinaires' }} />
         <View style={styles.noPetContainer}>
           <View style={styles.noPetIconContainer}>
             <Stethoscope size={48} color={COLORS.textSecondary} />
           </View>
-          <Text style={styles.noPetTitle}>Aucun animal sélectionné</Text>
+          <Text style={styles.noPetTitle}>Choisis un animal</Text>
           <Text style={styles.noPetSubtitle}>
-            Pour utiliser l&apos;assistant vétérinaire, vous devez d&apos;abord ajouter un animal à votre profil.
+            Sélectionne un animal pour obtenir des conseils adaptés.
+          </Text>
+          <View style={styles.petSelectorList}>
+            {userPets.map((pet) => (
+              <TouchableOpacity
+                key={pet.id}
+                style={styles.petSelectorItem}
+                onPress={() => handleChangePet(pet.id)}
+                activeOpacity={0.7}
+              >
+                {pet.mainPhoto ? (
+                  <Image source={{ uri: pet.mainPhoto }} style={styles.petSelectorPhoto} />
+                ) : (
+                  <View style={styles.petSelectorPhotoPlaceholder}>
+                    <Text style={styles.petSelectorPhotoInitial}>{pet.name[0]}</Text>
+                  </View>
+                )}
+                <View style={styles.petSelectorInfo}>
+                  <Text style={styles.petSelectorName}>{pet.name}</Text>
+                  <Text style={styles.petSelectorBreed}>
+                    {pet.breed || pet.type}
+                  </Text>
+                </View>
+                <ChevronRight size={20} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  if (!activePet) {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen options={{ title: 'Conseils vétérinaires' }} />
+        <View style={styles.noPetContainer}>
+          <View style={styles.noPetIconContainer}>
+            <Stethoscope size={48} color={COLORS.textSecondary} />
+          </View>
+          <Text style={styles.noPetTitle}>Aucun animal</Text>
+          <Text style={styles.noPetSubtitle}>
+            Ajoute un animal pour obtenir des conseils adaptés.
           </Text>
           <TouchableOpacity
             style={styles.addPetButton}
@@ -368,19 +462,63 @@ export default function VetAssistantScreen() {
           <Text style={styles.disclaimerText}>{DISCLAIMER_TEXT}</Text>
         </View>
 
-        <View style={styles.petContextBanner}>
+        <TouchableOpacity 
+          style={styles.petContextBanner}
+          onPress={userPets.length > 1 ? togglePetSelector : undefined}
+          activeOpacity={userPets.length > 1 ? 0.7 : 1}
+        >
           <View style={styles.petContextRow}>
-            <Text style={styles.petContextText}>
-              {formatPetContext(activePet)}
-            </Text>
+            {activePet.mainPhoto ? (
+              <Image source={{ uri: activePet.mainPhoto }} style={styles.petContextPhoto} />
+            ) : (
+              <View style={styles.petContextPhotoPlaceholder}>
+                <Text style={styles.petContextPhotoInitial}>{activePet.name[0]}</Text>
+              </View>
+            )}
+            <View style={styles.petContextInfo}>
+              <Text style={styles.petContextName}>{activePet.name}</Text>
+              <Text style={styles.petContextDetails}>
+                {formatPetContext(activePet)}
+              </Text>
+            </View>
+            {userPets.length > 1 && (
+              <ChevronDown size={18} color={COLORS.textInverse} style={{ opacity: 0.8 }} />
+            )}
             {isPremium && (
               <View style={styles.premiumBadge}>
                 <Crown size={12} color="#F59E0B" />
-                <Text style={styles.premiumBadgeText}>Premium</Text>
               </View>
             )}
           </View>
-        </View>
+        </TouchableOpacity>
+
+        {showPetSelector && userPets.length > 1 && (
+          <View style={styles.petSelectorDropdown}>
+            {userPets.map((pet) => (
+              <TouchableOpacity
+                key={pet.id}
+                style={[
+                  styles.petSelectorDropdownItem,
+                  pet.id === activePet.id && styles.petSelectorDropdownItemActive,
+                ]}
+                onPress={() => handleChangePet(pet.id)}
+                activeOpacity={0.7}
+              >
+                {pet.mainPhoto ? (
+                  <Image source={{ uri: pet.mainPhoto }} style={styles.petSelectorDropdownPhoto} />
+                ) : (
+                  <View style={styles.petSelectorDropdownPhotoPlaceholder}>
+                    <Text style={styles.petSelectorDropdownPhotoInitial}>{pet.name[0]}</Text>
+                  </View>
+                )}
+                <Text style={styles.petSelectorDropdownName}>{pet.name}</Text>
+                {pet.id === activePet.id && (
+                  <Check size={16} color={COLORS.primary} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         {!isPremium && (
           <TouchableOpacity 
@@ -574,24 +712,88 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: SPACING.s,
   },
-  petContextText: {
-    ...TYPOGRAPHY.small,
+  petContextPhoto: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  petContextPhotoPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  petContextPhotoInitial: {
+    ...TYPOGRAPHY.body,
     color: COLORS.textInverse,
-    textAlign: 'center' as const,
+    fontWeight: '600' as const,
+  },
+  petContextInfo: {
+    flex: 1,
+    marginLeft: SPACING.m,
+  },
+  petContextName: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textInverse,
+    fontWeight: '600' as const,
+  },
+  petContextDetails: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textInverse,
+    opacity: 0.8,
   },
   premiumBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: SPACING.s,
+  },
+  petSelectorDropdown: {
+    backgroundColor: COLORS.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
+  },
+  petSelectorDropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: SPACING.s,
-    paddingVertical: 2,
-    borderRadius: RADIUS.small,
+    paddingHorizontal: SPACING.l,
+    paddingVertical: SPACING.m,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.divider,
   },
-  premiumBadgeText: {
-    ...TYPOGRAPHY.caption,
-    color: '#FEF3C7',
+  petSelectorDropdownItemActive: {
+    backgroundColor: COLORS.surfaceSecondary,
+  },
+  petSelectorDropdownPhoto: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  petSelectorDropdownPhotoPlaceholder: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.surfaceSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  petSelectorDropdownPhotoInitial: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
     fontWeight: '600' as const,
+  },
+  petSelectorDropdownName: {
+    flex: 1,
+    marginLeft: SPACING.m,
+    ...TYPOGRAPHY.body,
+    color: COLORS.textPrimary,
   },
   quotaBanner: {
     flexDirection: 'row',
@@ -778,6 +980,60 @@ const styles = StyleSheet.create({
   addPetButtonText: {
     ...TYPOGRAPHY.button,
     color: COLORS.textInverse,
+  },
+  loadingFullContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: SPACING.l,
+  },
+  loadingFullText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+  },
+  petSelectorList: {
+    width: '100%',
+    marginTop: SPACING.l,
+  },
+  petSelectorItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.card,
+    padding: SPACING.l,
+    marginBottom: SPACING.m,
+    borderWidth: 1,
+    borderColor: COLORS.divider,
+  },
+  petSelectorPhoto: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  petSelectorPhotoPlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.surfaceSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  petSelectorPhotoInitial: {
+    ...TYPOGRAPHY.titleM,
+    color: COLORS.textSecondary,
+  },
+  petSelectorInfo: {
+    flex: 1,
+    marginLeft: SPACING.m,
+  },
+  petSelectorName: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textPrimary,
+    fontWeight: '600' as const,
+  },
+  petSelectorBreed: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
   },
   welcomeContainer: {
     alignItems: 'center',
