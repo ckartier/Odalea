@@ -21,7 +21,7 @@ import { useVetAssistant, analyzeRiskLevel, VetMessage } from '@/hooks/vet-assis
 import { usePremium } from '@/hooks/premium-store';
 import { Pet } from '@/types';
 
-const DISCLAIMER_TEXT = "Cet assistant fournit des conseils généraux.\nIl ne remplace pas l'avis d'un vétérinaire.";
+const DISCLAIMER_TEXT = "Ces conseils sont fournis à titre informatif uniquement.\nIls ne remplacent pas l'avis d'un vétérinaire professionnel.";
 
 const EMERGENCY_ALERT = "Cela peut être sérieux.\nNous te recommandons de consulter un vétérinaire rapidement.";
 
@@ -52,7 +52,7 @@ function calculateAge(dateOfBirth: string): string {
 function buildSystemPrompt(pet: Pet, isPremium: boolean): string {
   const petContext = formatPetContext(pet);
   
-  const basePrompt = `Tu es un assistant vétérinaire bienveillant pour l'application Odalea. Tu fournis UNIQUEMENT des conseils généraux sur le bien-être animal.
+  const basePrompt = `Tu es un conseiller bien-être animal pour l'application Odalea. Tu fournis UNIQUEMENT des conseils généraux et informatifs sur le bien-être animal.
 
 CONTEXTE ANIMAL ACTUEL:
 ${petContext}
@@ -128,7 +128,7 @@ const MessageBubble = React.memo(({ message, isEmergency }: MessageBubbleProps) 
               <Stethoscope size={14} color="#FFFFFF" />
             )}
           </View>
-          <Text style={styles.assistantLabel}>Assistant vétérinaire</Text>
+          <Text style={styles.assistantLabel}>Conseils Odalea</Text>
         </View>
       )}
       <Text style={[
@@ -316,7 +316,7 @@ export default function VetAssistantScreen() {
   if (!activePet) {
     return (
       <View style={styles.container}>
-        <Stack.Screen options={{ title: 'Conseils vétérinaires' }} />
+        <Stack.Screen options={{ title: 'Conseils bien-être animal' }} />
         <View style={styles.noPetContainer}>
           <View style={styles.noPetIconContainer}>
             <Stethoscope size={48} color={COLORS.textSecondary} />
@@ -341,7 +341,7 @@ export default function VetAssistantScreen() {
     <View style={styles.container}>
       <Stack.Screen 
         options={{ 
-          title: 'Assistant vétérinaire',
+          title: 'Conseils vétérinaires',
           headerRight: () => (
             <TouchableOpacity
               onPress={handleNewConversation}

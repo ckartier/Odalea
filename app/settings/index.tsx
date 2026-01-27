@@ -30,12 +30,15 @@ import {
   UserX,
   Info,
   Lock,
+  Stethoscope,
 } from 'lucide-react-native';
+import { useVetAssistant } from '@/hooks/vet-assistant-store';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { t, currentLocale, changeLanguage } = useI18n();
   const { signOut } = useFirebaseUser();
+  const { chatHistories, startNewConversation } = useVetAssistant();
   const [showLanguageModal, setShowLanguageModal] = useState(false);
 
   const handleLanguageChange = async (lang: 'en' | 'fr' | 'es' | 'de' | 'it') => {
@@ -81,6 +84,33 @@ export default function SettingsScreen() {
     );
   };
 
+  const handleClearVetHistory = () => {
+    const petIds = Object.keys(chatHistories);
+    if (petIds.length === 0) {
+      Alert.alert(
+        'Historique vide',
+        'Aucun historique de conseils vétérinaires à supprimer.'
+      );
+      return;
+    }
+
+    Alert.alert(
+      'Supprimer l\'historique',
+      'Voulez-vous supprimer tout l\'historique de l\'assistant conseils vétérinaires ? Cette action est irréversible.',
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: () => {
+            petIds.forEach(petId => startNewConversation(petId));
+            Alert.alert('Historique supprimé', 'L\'historique des conseils vétérinaires a été supprimé.');
+          },
+        },
+      ]
+    );
+  };
+
   const getLanguageName = () => {
     switch (currentLocale) {
       case 'fr': return 'Français';
@@ -120,6 +150,13 @@ export default function SettingsScreen() {
       title: t('settings.blocked_users'),
       icon: <UserX size={22} color={COLORS.black} />,
       onPress: () => router.push('/settings/blocked-users'),
+    },
+    {
+      id: 'vet-history',
+      title: 'Historique conseils vétérinaires',
+      subtitle: 'Supprimer l\'historique de l\'assistant',
+      icon: <Stethoscope size={22} color={COLORS.black} />,
+      onPress: handleClearVetHistory,
     },
     {
       id: 'rgpd',

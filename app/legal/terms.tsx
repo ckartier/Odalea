@@ -107,8 +107,31 @@ export default function TermsScreen() {
           opacity: fadeAnim,
           transform: [{ translateY: slideAnim }],
         }}>
+        <GlassView style={styles.section} liquidGlass tint="neutral" intensity={isDark ? 10 : 20}>
+          <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>2bis. Assistant Conseils Vétérinaires</Text>
+          <Text style={[styles.paragraph, { color: currentTheme.text }]}>
+            L&apos;application propose un assistant de conseils vétérinaires. Cet assistant fournit uniquement des conseils généraux de bien-être animal à titre informatif.
+          </Text>
+          <Text style={[styles.importantText, { color: '#DC2626' }]}>
+            AVERTISSEMENT IMPORTANT :
+          </Text>
+          <Text style={[styles.bulletText, { color: currentTheme.text }]}>• Cet assistant NE remplace PAS l&apos;avis d&apos;un vétérinaire professionnel</Text>
+          <Text style={[styles.bulletText, { color: currentTheme.text }]}>• Aucun diagnostic médical n&apos;est fourni</Text>
+          <Text style={[styles.bulletText, { color: currentTheme.text }]}>• Aucune prescription ou dosage de médicament n&apos;est donné</Text>
+          <Text style={[styles.bulletText, { color: currentTheme.text }]}>• En cas d&apos;urgence, consultez immédiatement un vétérinaire</Text>
+          <Text style={[styles.bulletText, { color: currentTheme.text }]}>• Les conseils sont généraux et ne constituent pas un avis médical</Text>
+          <Text style={[styles.paragraph, { color: currentTheme.text }]}>
+            Odalea décline toute responsabilité quant aux décisions prises sur la base des conseils fournis par l&apos;assistant. En cas de doute sur la santé de votre animal, consultez toujours un vétérinaire qualifié.
+          </Text>
+        </GlassView>
+        </Animated.View>
+
+        <Animated.View style={{
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        }}>
         <GlassView style={styles.section} liquidGlass tint="neutral" intensity={20}>
-          <Text style={styles.sectionTitle}>3. Inscription et compte utilisateur</Text>
+          <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>3. Inscription et compte utilisateur</Text>
           <Text style={styles.paragraph}>
             Pour utiliser Odalea, vous devez créer un compte en fournissant des informations exactes et à jour. Vous êtes responsable de la confidentialité de vos identifiants et de toutes les activités effectuées sous votre compte.
           </Text>
@@ -287,6 +310,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     marginLeft: 16,
+    marginBottom: 8,
+  },
+  importantText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    marginTop: 12,
     marginBottom: 8,
   },
 });
