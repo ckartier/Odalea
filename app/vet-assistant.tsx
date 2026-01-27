@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
-import { Send, RefreshCw, AlertTriangle, Stethoscope, Crown, ChevronRight, ChevronDown, Check, Calendar } from 'lucide-react-native';
+import { Send, RefreshCw, AlertTriangle, Stethoscope, Crown, ChevronRight, ChevronDown, Check, Calendar, WifiOff } from 'lucide-react-native';
 import { useRorkAgent } from '@rork-ai/toolkit-sdk';
 import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '@/theme/tokens';
 import { useActivePetWithData } from '@/hooks/active-pet-store';
@@ -22,6 +22,7 @@ import { useVetAssistant, analyzeRiskLevel, VetMessage } from '@/hooks/vet-assis
 import { usePremium } from '@/hooks/premium-store';
 import { useAuth } from '@/hooks/user-store';
 import { logAIInteraction } from '@/services/ai-logging';
+import { useAIConfig } from '@/hooks/useAIConfig';
 import { Pet } from '@/types';
 
 const DISCLAIMER_TEXT = "Ces conseils sont fournis à titre informatif uniquement.\nIls ne remplacent pas l'avis d'un vétérinaire professionnel.";
@@ -206,6 +207,7 @@ export default function VetAssistantScreen() {
     VET_ASSISTANT_DAILY_LIMIT,
     isLoadingQuota,
   } = usePremium();
+  const { isAvailable: isAIAvailable, disabledMessage, globalBanner } = useAIConfig();
   
   const [input, setInput] = useState('');
   const [localMessages, setLocalMessages] = useState<VetMessage[]>([]);
@@ -554,11 +556,46 @@ export default function VetAssistantScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        <View style={styles.disclaimerBanner}>
-          <AlertTriangle size={16} color={COLORS.warning} />
-          <Text style={styles.disclaimerText}>{DISCLAIMER_TEXT}</Text>
-        </View>
+        {globalBanner.enabled && (
+          <View style={[
+            styles.globalBannerContainer,
+            globalBanner.type === 'warning' && styles.globalBannerWarning,
+            globalBanner.type === 'error' && styles.globalBannerError,
+          ]}>
+            <AlertTriangle 
+              size={16} 
+              color={globalBanner.type === 'error' ? '#DC2626' : globalBanner.type === 'warning' ? '#D97706' : '#2563EB'} 
+            />
+            <Text style={[
+              styles.globalBannerText,
+              globalBanner.type === 'warning' && styles.globalBannerTextWarning,
+              globalBanner.type === 'error' && styles.globalBannerTextError,
+            ]}>
+              {globalBanner.message}
+            </Text>
+          </View>
+        )}
 
+        {!isAIAvailable && (
+          <View style={styles.serviceDisabledContainer}>
+            <View style={styles.serviceDisabledIconContainer}>
+              <WifiOff size={32} color={COLORS.textSecondary} />
+            </View>
+            <Text style={styles.serviceDisabledTitle}>Service indisponible</Text>
+            <Text style={styles.serviceDisabledText}>
+              {disabledMessage || 'Le service de conseils est temporairement indisponible.'}
+            </Text>
+          </View>
+        )}
+
+        {isAIAvailable && (
+          <View style={styles.disclaimerBanner}>
+            <AlertTriangle size={16} color={COLORS.warning} />
+            <Text style={styles.disclaimerText}>{DISCLAIMER_TEXT}</Text>
+          </View>
+        )}
+
+        {isAIAvailable && (
         <TouchableOpacity 
           style={styles.petContextBanner}
           onPress={userPets.length > 1 ? togglePetSelector : undefined}
@@ -588,8 +625,9 @@ export default function VetAssistantScreen() {
             )}
           </View>
         </TouchableOpacity>
+        )}
 
-        {showPetSelector && userPets.length > 1 && (
+        {isAIAvailable && showPetSelector && userPets.length > 1 && (
           <View style={styles.petSelectorDropdown}>
             {userPets.map((pet) => (
               <TouchableOpacity
@@ -617,7 +655,7 @@ export default function VetAssistantScreen() {
           </View>
         )}
 
-        {!isPremium && (
+        {isAIAvailable && !isPremium && (
           <TouchableOpacity 
             style={styles.quotaBanner}
             onPress={handleNavigateToPremium}
@@ -737,7 +775,12 @@ export default function VetAssistantScreen() {
         </ScrollView>
 
         <View style={[styles.inputContainer, { paddingBottom: insets.bottom + SPACING.m }]}>
-          {hasReachedLimit ? (
+          {!isAIAvailable ? (
+            <View style={styles.inputDisabledOverlay}>
+              <WifiOff size={18} color={COLORS.textTertiary} />
+              <Text style={styles.inputDisabledText}>Service temporairement indisponible</Text>
+            </View>
+          ) : hasReachedLimit ? (
             <TouchableOpacity 
               style={styles.limitReachedInputOverlay}
               onPress={handleNavigateToPremium}
@@ -1286,5 +1329,77 @@ const styles = StyleSheet.create({
   },
   bookingCTATextEmergency: {
     color: '#FFFFFF',
+  },
+  globalBannerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: SPACING.l,
+    paddingVertical: SPACING.m,
+    gap: SPACING.s,
+    borderBottomWidth: 1,
+    borderBottomColor: '#BFDBFE',
+  },
+  globalBannerWarning: {
+    backgroundColor: '#FEF3C7',
+    borderBottomColor: '#FCD34D',
+  },
+  globalBannerError: {
+    backgroundColor: '#FEE2E2',
+    borderBottomColor: '#FCA5A5',
+  },
+  globalBannerText: {
+    flex: 1,
+    ...TYPOGRAPHY.small,
+    color: '#1E40AF',
+    fontWeight: '500' as const,
+  },
+  globalBannerTextWarning: {
+    color: '#92400E',
+  },
+  globalBannerTextError: {
+    color: '#991B1B',
+  },
+  serviceDisabledContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING['3xl'],
+  },
+  serviceDisabledIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.surfaceSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.xl,
+  },
+  serviceDisabledTitle: {
+    ...TYPOGRAPHY.titleM,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.s,
+    textAlign: 'center' as const,
+  },
+  serviceDisabledText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    textAlign: 'center' as const,
+    lineHeight: 22,
+  },
+  inputDisabledOverlay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.s,
+    backgroundColor: COLORS.surfaceSecondary,
+    paddingVertical: SPACING.l,
+    borderRadius: RADIUS.card,
+    borderWidth: 1,
+    borderColor: COLORS.divider,
+  },
+  inputDisabledText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textTertiary,
   },
 });
