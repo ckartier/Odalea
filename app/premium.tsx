@@ -29,6 +29,7 @@ import {
   Trophy,
   ArrowLeft,
   CreditCard,
+  Stethoscope,
 } from 'lucide-react-native';
 
 
@@ -43,6 +44,14 @@ interface PremiumFeature {
 }
 
 const getPremiumFeatures = (t: (key: string) => string): PremiumFeature[] => [
+  {
+    id: 'vet-assistant',
+    icon: <Stethoscope size={24} color={COLORS.premium} />,
+    title: 'Assistant vétérinaire IA',
+    description: 'Conseils personnalisés pour le bien-être de vos animaux',
+    freeLimit: '5 questions/jour',
+    premiumLimit: 'Illimité + conseils détaillés',
+  },
   {
     id: 'messages',
     icon: <MessageCircle size={24} color={COLORS.premium} />,
@@ -315,6 +324,13 @@ export default function PremiumScreen() {
 
         <View style={[styles.section, SHADOWS.small]}>
           <Text style={styles.sectionTitle}>Pourquoi passer Premium ?</Text>
+          
+          <View style={styles.benefitItem}>
+            <Stethoscope size={20} color={COLORS.premium} />
+            <Text style={styles.benefitText}>
+              Conseils vétérinaires IA illimités et personnalisés
+            </Text>
+          </View>
           
           <View style={styles.benefitItem}>
             <Heart size={20} color={COLORS.catSitter} />

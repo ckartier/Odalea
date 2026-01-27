@@ -13,11 +13,12 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
-import { Send, RefreshCw, AlertTriangle, Stethoscope } from 'lucide-react-native';
+import { Send, RefreshCw, AlertTriangle, Stethoscope, Crown, ChevronRight } from 'lucide-react-native';
 import { useRorkAgent } from '@rork-ai/toolkit-sdk';
 import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '@/theme/tokens';
 import { useActivePetWithData } from '@/hooks/active-pet-store';
 import { useVetAssistant, analyzeRiskLevel, VetMessage } from '@/hooks/vet-assistant-store';
+import { usePremium } from '@/hooks/premium-store';
 import { Pet } from '@/types';
 
 const DISCLAIMER_TEXT = "Cet assistant fournit des conseils généraux. Il ne remplace pas un vétérinaire.";
@@ -48,10 +49,10 @@ function calculateAge(dateOfBirth: string): string {
   return 'moins d\'un mois';
 }
 
-function buildSystemPrompt(pet: Pet): string {
+function buildSystemPrompt(pet: Pet, isPremium: boolean): string {
   const petContext = formatPetContext(pet);
   
-  return `Tu es un assistant vétérinaire bienveillant pour l'application Odalea. Tu fournis UNIQUEMENT des conseils généraux sur le bien-être animal.
+  const basePrompt = `Tu es un assistant vétérinaire bienveillant pour l'application Odalea. Tu fournis UNIQUEMENT des conseils généraux sur le bien-être animal.
 
 CONTEXTE ANIMAL ACTUEL:
 ${petContext}
@@ -80,7 +81,26 @@ Réponds: "Je ne peux pas fournir ce type de conseil médical. Consulte un vét�
 - Ton calme, pédagogique et rassurant
 - Langage simple et accessible
 - Phrases courtes et claires
-- TOUJOURS terminer par: "Si les symptômes persistent ou s'aggravent, consulte un vétérinaire."
+- TOUJOURS terminer par: "Si les symptômes persistent ou s'aggravent, consulte un vétérinaire."`;
+
+  if (isPremium) {
+    return `${basePrompt}
+
+=== MODE PREMIUM ===
+L'utilisateur est membre Premium. Tu peux fournir:
+- Des réponses plus détaillées et approfondies
+- Des conseils personnalisés selon l'âge, la race et le profil de l'animal
+- Des rappels de prévention (vaccins, vermifuges, antiparasitaires)
+- Des recommandations nutritionnelles adaptées
+- Des conseils comportementaux plus complets
+
+Réponds en français.`;
+  }
+  
+  return `${basePrompt}
+
+=== MODE GRATUIT ===
+L'utilisateur est en version gratuite. Fournis des conseils généraux et concis.
 
 Réponds en français.`;
 }
@@ -130,16 +150,25 @@ export default function VetAssistantScreen() {
   
   const { activePet } = useActivePetWithData();
   const { getMessagesForPet, addMessage, startNewConversation } = useVetAssistant();
+  const { 
+    isPremium, 
+    checkVetAssistantLimit, 
+    incrementVetAssistantCount, 
+    getRemainingVetAssistantQuestions,
+    VET_ASSISTANT_DAILY_LIMIT,
+  } = usePremium();
   
   const [input, setInput] = useState('');
   const [localMessages, setLocalMessages] = useState<VetMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-
+  
+  const remainingQuestions = getRemainingVetAssistantQuestions();
+  const hasReachedLimit = !isPremium && remainingQuestions === 0;
 
   const systemPrompt = useMemo(() => {
     if (!activePet) return '';
-    return buildSystemPrompt(activePet);
-  }, [activePet]);
+    return buildSystemPrompt(activePet, isPremium);
+  }, [activePet, isPremium]);
 
   const { messages: agentMessages, sendMessage, setMessages } = useRorkAgent({
     tools: {},
@@ -158,12 +187,22 @@ export default function VetAssistantScreen() {
     }, 100);
   }, [localMessages, agentMessages]);
 
+  const handleNavigateToPremium = useCallback(() => {
+    router.push('/premium');
+  }, [router]);
+
   const handleSend = useCallback(async () => {
     if (!input.trim() || !activePet || isLoading) return;
+    
+    if (!checkVetAssistantLimit()) {
+      return;
+    }
 
     const userMessage = input.trim();
     setInput('');
     setIsLoading(true);
+    
+    incrementVetAssistantCount();
 
     const riskAnalysis = analyzeRiskLevel(userMessage);
     const isEmergency = riskAnalysis.isEmergency;
@@ -248,7 +287,7 @@ export default function VetAssistantScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [input, activePet, isLoading, systemPrompt, sendMessage, agentMessages, addMessage]);
+  }, [input, activePet, isLoading, systemPrompt, sendMessage, agentMessages, addMessage, checkVetAssistantLimit, incrementVetAssistantCount]);
 
   const handleNewConversation = useCallback(() => {
     if (!activePet) return;
@@ -326,10 +365,42 @@ export default function VetAssistantScreen() {
         </View>
 
         <View style={styles.petContextBanner}>
-          <Text style={styles.petContextText}>
-            {formatPetContext(activePet)}
-          </Text>
+          <View style={styles.petContextRow}>
+            <Text style={styles.petContextText}>
+              {formatPetContext(activePet)}
+            </Text>
+            {isPremium && (
+              <View style={styles.premiumBadge}>
+                <Crown size={12} color="#F59E0B" />
+                <Text style={styles.premiumBadgeText}>Premium</Text>
+              </View>
+            )}
+          </View>
         </View>
+
+        {!isPremium && (
+          <TouchableOpacity 
+            style={styles.quotaBanner}
+            onPress={handleNavigateToPremium}
+            activeOpacity={0.8}
+          >
+            <View style={styles.quotaInfo}>
+              <Text style={styles.quotaText}>
+                {remainingQuestions > 0 
+                  ? `${remainingQuestions}/${VET_ASSISTANT_DAILY_LIMIT} questions restantes aujourd'hui`
+                  : 'Limite journalière atteinte'
+                }
+              </Text>
+              {remainingQuestions <= 2 && remainingQuestions > 0 && (
+                <Text style={styles.quotaHint}>Passez Premium pour des questions illimitées</Text>
+              )}
+            </View>
+            <View style={styles.quotaCta}>
+              <Crown size={16} color="#F59E0B" />
+              <ChevronRight size={16} color={COLORS.textSecondary} />
+            </View>
+          </TouchableOpacity>
+        )}
 
         <ScrollView
           ref={scrollViewRef}
@@ -340,7 +411,31 @@ export default function VetAssistantScreen() {
           ]}
           showsVerticalScrollIndicator={false}
         >
-          {localMessages.length === 0 && (
+          {hasReachedLimit && (
+            <View style={styles.limitReachedContainer}>
+              <View style={styles.limitReachedIconContainer}>
+                <Crown size={40} color="#F59E0B" />
+              </View>
+              <Text style={styles.limitReachedTitle}>Limite journalière atteinte</Text>
+              <Text style={styles.limitReachedSubtitle}>
+                Vous avez utilisé vos {VET_ASSISTANT_DAILY_LIMIT} questions gratuites aujourd&apos;hui. 
+                Passez Premium pour des questions illimitées et des conseils plus personnalisés.
+              </Text>
+              <TouchableOpacity
+                style={styles.upgradePremiumButton}
+                onPress={handleNavigateToPremium}
+                activeOpacity={0.8}
+              >
+                <Crown size={18} color="#FFFFFF" />
+                <Text style={styles.upgradePremiumButtonText}>Passer Premium</Text>
+              </TouchableOpacity>
+              <Text style={styles.limitResetHint}>
+                Vos questions se réinitialisent chaque jour à minuit.
+              </Text>
+            </View>
+          )}
+
+          {localMessages.length === 0 && !hasReachedLimit && (
             <View style={styles.welcomeContainer}>
               <View style={styles.welcomeIconContainer}>
                 <Stethoscope size={32} color={COLORS.primary} />
@@ -366,6 +461,15 @@ export default function VetAssistantScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
+              
+              {isPremium && (
+                <View style={styles.premiumTips}>
+                  <Crown size={14} color="#F59E0B" />
+                  <Text style={styles.premiumTipsText}>
+                    En tant que membre Premium, vous bénéficiez de conseils plus détaillés et personnalisés.
+                  </Text>
+                </View>
+              )}
             </View>
           )}
 
@@ -386,29 +490,43 @@ export default function VetAssistantScreen() {
         </ScrollView>
 
         <View style={[styles.inputContainer, { paddingBottom: insets.bottom + SPACING.m }]}>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.input}
-              value={input}
-              onChangeText={setInput}
-              placeholder="Posez votre question..."
-              placeholderTextColor={COLORS.textTertiary}
-              multiline
-              maxLength={1000}
-              editable={!isLoading}
-            />
-            <TouchableOpacity
-              style={[
-                styles.sendButton,
-                (!input.trim() || isLoading) && styles.sendButtonDisabled,
-              ]}
-              onPress={handleSend}
-              disabled={!input.trim() || isLoading}
-              activeOpacity={0.8}
+          {hasReachedLimit ? (
+            <TouchableOpacity 
+              style={styles.limitReachedInputOverlay}
+              onPress={handleNavigateToPremium}
+              activeOpacity={0.9}
             >
-              <Send size={20} color={input.trim() && !isLoading ? COLORS.textInverse : COLORS.textTertiary} />
+              <Crown size={20} color="#F59E0B" />
+              <Text style={styles.limitReachedInputText}>
+                Passez Premium pour continuer
+              </Text>
+              <ChevronRight size={18} color="#F59E0B" />
             </TouchableOpacity>
-          </View>
+          ) : (
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                value={input}
+                onChangeText={setInput}
+                placeholder="Posez votre question..."
+                placeholderTextColor={COLORS.textTertiary}
+                multiline
+                maxLength={1000}
+                editable={!isLoading}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.sendButton,
+                  (!input.trim() || isLoading) && styles.sendButtonDisabled,
+                ]}
+                onPress={handleSend}
+                disabled={!input.trim() || isLoading}
+                activeOpacity={0.8}
+              >
+                <Send size={20} color={input.trim() && !isLoading ? COLORS.textInverse : COLORS.textTertiary} />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -447,10 +565,58 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.l,
     paddingVertical: SPACING.m,
   },
+  petContextRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.s,
+  },
   petContextText: {
     ...TYPOGRAPHY.small,
     color: COLORS.textInverse,
     textAlign: 'center' as const,
+  },
+  premiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: SPACING.s,
+    paddingVertical: 2,
+    borderRadius: RADIUS.small,
+  },
+  premiumBadgeText: {
+    ...TYPOGRAPHY.caption,
+    color: '#FEF3C7',
+    fontWeight: '600' as const,
+  },
+  quotaBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: SPACING.l,
+    paddingVertical: SPACING.m,
+    borderBottomWidth: 1,
+    borderBottomColor: '#FCD34D',
+  },
+  quotaInfo: {
+    flex: 1,
+  },
+  quotaText: {
+    ...TYPOGRAPHY.small,
+    color: '#92400E',
+    fontWeight: '500' as const,
+  },
+  quotaHint: {
+    ...TYPOGRAPHY.caption,
+    color: '#B45309',
+    marginTop: 2,
+  },
+  quotaCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   messagesContainer: {
     flex: 1,
@@ -640,5 +806,82 @@ const styles = StyleSheet.create({
   suggestionText: {
     ...TYPOGRAPHY.small,
     color: COLORS.textPrimary,
+  },
+  premiumTips: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.s,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: SPACING.l,
+    paddingVertical: SPACING.m,
+    borderRadius: RADIUS.small,
+    marginTop: SPACING.l,
+  },
+  premiumTipsText: {
+    ...TYPOGRAPHY.caption,
+    color: '#92400E',
+    flex: 1,
+  },
+  limitReachedContainer: {
+    alignItems: 'center',
+    paddingVertical: SPACING['2xl'],
+    paddingHorizontal: SPACING.l,
+  },
+  limitReachedIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#FEF3C7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.l,
+  },
+  limitReachedTitle: {
+    ...TYPOGRAPHY.titleM,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.s,
+    textAlign: 'center' as const,
+  },
+  limitReachedSubtitle: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    textAlign: 'center' as const,
+    marginBottom: SPACING.xl,
+    lineHeight: 22,
+  },
+  upgradePremiumButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.s,
+    backgroundColor: '#F59E0B',
+    paddingHorizontal: SPACING['2xl'],
+    paddingVertical: SPACING.l,
+    borderRadius: RADIUS.button,
+    marginBottom: SPACING.l,
+  },
+  upgradePremiumButtonText: {
+    ...TYPOGRAPHY.button,
+    color: '#FFFFFF',
+  },
+  limitResetHint: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textTertiary,
+    textAlign: 'center' as const,
+  },
+  limitReachedInputOverlay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.s,
+    backgroundColor: '#FEF3C7',
+    paddingVertical: SPACING.l,
+    borderRadius: RADIUS.card,
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+  },
+  limitReachedInputText: {
+    ...TYPOGRAPHY.body,
+    color: '#92400E',
+    fontWeight: '500' as const,
   },
 });

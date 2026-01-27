@@ -14,6 +14,10 @@ export interface PremiumFeatures {
   vipBadge: boolean;
   unlimitedGallery: boolean;
   prioritySupport: boolean;
+  vetAssistantUnlimited: boolean;
+  vetAssistantHistory: boolean;
+  vetAssistantPriority: boolean;
+  vetAssistantReminders: boolean;
 }
 
 export interface AdConfig {
@@ -36,6 +40,10 @@ export const [PremiumContext, usePremium] = createContextHook(() => {
     vipBadge: false,
     unlimitedGallery: false,
     prioritySupport: false,
+    vetAssistantUnlimited: false,
+    vetAssistantHistory: false,
+    vetAssistantPriority: false,
+    vetAssistantReminders: false,
   });
   
   const [adConfig, setAdConfig] = useState<AdConfig>({
@@ -57,6 +65,8 @@ export const [PremiumContext, usePremium] = createContextHook(() => {
   const [actionCount, setActionCount] = useState(0);
   const [messageCount, setMessageCount] = useState(0);
   const [animalCount, setAnimalCount] = useState(0);
+  const [vetAssistantDailyCount, setVetAssistantDailyCount] = useState(0);
+  const [vetAssistantLastResetDate, setVetAssistantLastResetDate] = useState<string>('');
 
   // Update premium status based on user
   useEffect(() => {
@@ -74,6 +84,10 @@ export const [PremiumContext, usePremium] = createContextHook(() => {
           vipBadge: true,
           unlimitedGallery: true,
           prioritySupport: true,
+          vetAssistantUnlimited: true,
+          vetAssistantHistory: true,
+          vetAssistantPriority: true,
+          vetAssistantReminders: true,
         });
         
         setAdConfig(prev => ({
@@ -91,6 +105,10 @@ export const [PremiumContext, usePremium] = createContextHook(() => {
           vipBadge: false,
           unlimitedGallery: false,
           prioritySupport: false,
+          vetAssistantUnlimited: false,
+          vetAssistantHistory: false,
+          vetAssistantPriority: false,
+          vetAssistantReminders: false,
         });
         
         setAdConfig(prev => ({
@@ -107,10 +125,25 @@ export const [PremiumContext, usePremium] = createContextHook(() => {
     const loadUsageCounts = async () => {
       try {
         const counts = await AsyncStorage.getItem('usage_counts');
-        const parsed = safeJsonParse(counts, { messageCount: 0, animalCount: 0, actionCount: 0 });
+        const parsed = safeJsonParse(counts, { 
+          messageCount: 0, 
+          animalCount: 0, 
+          actionCount: 0,
+          vetAssistantDailyCount: 0,
+          vetAssistantLastResetDate: '',
+        });
         setMessageCount(parsed.messageCount || 0);
         setAnimalCount(parsed.animalCount || 0);
         setActionCount(parsed.actionCount || 0);
+        
+        const today = new Date().toDateString();
+        if (parsed.vetAssistantLastResetDate !== today) {
+          setVetAssistantDailyCount(0);
+          setVetAssistantLastResetDate(today);
+        } else {
+          setVetAssistantDailyCount(parsed.vetAssistantDailyCount || 0);
+          setVetAssistantLastResetDate(parsed.vetAssistantLastResetDate || today);
+        }
       } catch (error) {
         console.error('Error loading usage counts:', error);
       }
@@ -126,6 +159,8 @@ export const [PremiumContext, usePremium] = createContextHook(() => {
         messageCount,
         animalCount,
         actionCount,
+        vetAssistantDailyCount,
+        vetAssistantLastResetDate,
       }));
     } catch (error) {
       console.error('Error saving usage counts:', error);
@@ -134,7 +169,7 @@ export const [PremiumContext, usePremium] = createContextHook(() => {
 
   useEffect(() => {
     saveUsageCounts();
-  }, [messageCount, animalCount, actionCount]);
+  }, [messageCount, animalCount, actionCount, vetAssistantDailyCount, vetAssistantLastResetDate]);
 
   const checkMessageLimit = (): boolean => {
     if (isPremium) return true;
@@ -233,6 +268,45 @@ export const [PremiumContext, usePremium] = createContextHook(() => {
     return Math.max(0, 1 - animalCount);
   };
 
+  const VET_ASSISTANT_DAILY_LIMIT = 5;
+
+  const checkVetAssistantLimit = (): boolean => {
+    if (isPremium) return true;
+    
+    const today = new Date().toDateString();
+    if (vetAssistantLastResetDate !== today) {
+      setVetAssistantDailyCount(0);
+      setVetAssistantLastResetDate(today);
+      return true;
+    }
+    
+    if (vetAssistantDailyCount >= VET_ASSISTANT_DAILY_LIMIT) {
+      return false;
+    }
+    return true;
+  };
+
+  const incrementVetAssistantCount = () => {
+    if (!isPremium) {
+      const today = new Date().toDateString();
+      if (vetAssistantLastResetDate !== today) {
+        setVetAssistantDailyCount(1);
+        setVetAssistantLastResetDate(today);
+      } else {
+        setVetAssistantDailyCount(prev => prev + 1);
+      }
+    }
+  };
+
+  const getRemainingVetAssistantQuestions = (): number => {
+    if (isPremium) return -1; // Unlimited
+    const today = new Date().toDateString();
+    if (vetAssistantLastResetDate !== today) {
+      return VET_ASSISTANT_DAILY_LIMIT;
+    }
+    return Math.max(0, VET_ASSISTANT_DAILY_LIMIT - vetAssistantDailyCount);
+  };
+
   const upgradeToPremium = async (planId: string): Promise<{ success: boolean; error?: string }> => {
     try {
       // Simulate payment processing
@@ -248,7 +322,7 @@ export const [PremiumContext, usePremium] = createContextHook(() => {
       } else {
         return { success: false, error: 'Payment processing failed. Please try again.' };
       }
-    } catch (error) {
+    } catch {
       return { success: false, error: 'An unexpected error occurred during payment processing.' };
     }
   };
@@ -260,12 +334,15 @@ export const [PremiumContext, usePremium] = createContextHook(() => {
     messageCount,
     animalCount,
     actionCount,
+    vetAssistantDailyCount,
     checkMessageLimit,
     checkAnimalLimit,
     checkGalleryLimit,
+    checkVetAssistantLimit,
     incrementMessageCount,
     incrementAnimalCount,
     incrementActionCount,
+    incrementVetAssistantCount,
     shouldShowInterstitialAd,
     showPremiumPrompt,
     navigateToPremium,
@@ -273,6 +350,8 @@ export const [PremiumContext, usePremium] = createContextHook(() => {
     getFeatureStatus,
     getRemainingMessages,
     getRemainingAnimals,
+    getRemainingVetAssistantQuestions,
     upgradeToPremium,
+    VET_ASSISTANT_DAILY_LIMIT,
   };
 });
