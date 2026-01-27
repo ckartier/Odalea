@@ -84,7 +84,7 @@ export function CenterModal({
                 style={[
                   styles.modal,
                   {
-                    maxHeight,
+                    maxHeight: maxHeight as `${number}%` | number,
                     transform: [{ scale: scaleAnim }],
                     opacity: opacityAnim,
                   },
