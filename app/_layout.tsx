@@ -26,6 +26,7 @@ import { FriendsContext } from "@/hooks/friends-store";
 import { MatchingContext } from "@/hooks/matching-store";
 import { FavoritesContext } from "@/hooks/favorites-store";
 import { ActivePetContext } from "@/hooks/active-pet-store";
+import { VetAssistantContext } from "@/hooks/vet-assistant-store";
 
 import { OnboardingContext } from "@/hooks/onboarding-store";
 import { trpc, trpcClient } from "@/lib/trpc";
@@ -114,6 +115,7 @@ const RootLayoutNav = React.memo(() => {
       <Stack.Screen name="firestore-collections" options={{ headerShown: true }} />
       <Stack.Screen name="firebase-seed-challenges" options={{ headerShown: true }} />
       <Stack.Screen name="matching" options={{ headerShown: false }} />
+      <Stack.Screen name="vet-assistant" options={{ headerShown: true }} />
     </Stack>
   );
 });
@@ -141,6 +143,7 @@ const AppProviders = React.memo(({ children }: { children: React.ReactNode }) =>
           <EmergencyContext>
             <PetsContext>
               <ActivePetContext>
+                <VetAssistantContext>
                 <MatchingContext>
                   <ThemeContext>
                     <LostFoundContext>
@@ -170,6 +173,7 @@ const AppProviders = React.memo(({ children }: { children: React.ReactNode }) =>
                     </LostFoundContext>
                   </ThemeContext>
                 </MatchingContext>
+                </VetAssistantContext>
               </ActivePetContext>
             </PetsContext>
           </EmergencyContext>

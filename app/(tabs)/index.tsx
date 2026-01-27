@@ -37,6 +37,7 @@ import {
   ChevronRight,
   UserPlus,
   Sparkles,
+  Stethoscope,
 } from 'lucide-react-native';
 
 const toHref = (path: string): Href => path as Href;
@@ -148,10 +149,10 @@ export default function HomeScreen() {
   }, [signOut, router]);
 
   const quickActions = useMemo(() => [
+    { id: 'vet-assistant', label: 'Conseils véto', icon: Stethoscope, route: '/vet-assistant' },
     { id: 'challenges', label: 'Défis', icon: Trophy, route: '/defis' },
     { id: 'catsitter', label: 'Cat sitter', icon: Heart, route: '/(tabs)/cat-sitter' },
     { id: 'messages', label: 'Messages', icon: MessageCircle, route: '/(tabs)/messages' },
-    { id: 'matchs', label: 'Matchs', icon: Sparkles, route: '/matching/discover' },
   ], []);
 
   const discoverActions = useMemo(() => [
