@@ -13,16 +13,18 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
-import { Send, RefreshCw, AlertTriangle, Stethoscope, Info } from 'lucide-react-native';
+import { Send, RefreshCw, AlertTriangle, Stethoscope } from 'lucide-react-native';
 import { useRorkAgent } from '@rork-ai/toolkit-sdk';
-import { COLORS, SPACING, TYPOGRAPHY, RADIUS, SHADOWS } from '@/theme/tokens';
+import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '@/theme/tokens';
 import { useActivePetWithData } from '@/hooks/active-pet-store';
-import { useVetAssistant, detectEmergency, VetMessage } from '@/hooks/vet-assistant-store';
+import { useVetAssistant, analyzeRiskLevel, VetMessage } from '@/hooks/vet-assistant-store';
 import { Pet } from '@/types';
 
-const DISCLAIMER_TEXT = "Cet assistant fournit des conseils généraux sur le bien-être animal. Il ne remplace pas l'avis d'un vétérinaire professionnel.";
+const DISCLAIMER_TEXT = "Cet assistant fournit des conseils généraux. Il ne remplace pas un vétérinaire.";
 
-const EMERGENCY_ALERT = "Cette situation semble urgente. Veuillez contacter immédiatement un vétérinaire ou les urgences vétérinaires de votre région.";
+const EMERGENCY_ALERT = "⚠️ Cela peut être sérieux.\n\nConsulte un vétérinaire en urgence.\n\nEn attendant, garde ton animal au calme et surveille-le attentivement.";
+
+const MEDICAL_ADVICE_BLOCKED = "Je ne peux pas fournir de diagnostic, prescription ou dosage de médicaments.\n\nPour toute question médicale, consulte un vétérinaire professionnel.";
 
 function formatPetContext(pet: Pet): string {
   const age = pet.dateOfBirth ? calculateAge(pet.dateOfBirth) : 'âge inconnu';
@@ -49,34 +51,36 @@ function calculateAge(dateOfBirth: string): string {
 function buildSystemPrompt(pet: Pet): string {
   const petContext = formatPetContext(pet);
   
-  return `Tu es un assistant vétérinaire bienveillant pour l'application Odalea. Tu fournis des conseils généraux sur le bien-être animal.
+  return `Tu es un assistant vétérinaire bienveillant pour l'application Odalea. Tu fournis UNIQUEMENT des conseils généraux sur le bien-être animal.
 
 CONTEXTE ANIMAL ACTUEL:
 ${petContext}
 
-RÈGLES STRICTES:
-- Tu ne fais JAMAIS de diagnostic médical
-- Tu ne prescris JAMAIS de médicaments
-- Tu ne traites JAMAIS les urgences vitales toi-même
-- Tu fournis uniquement des conseils de prévention et bien-être
+=== RÈGLES NON NÉGOCIABLES ===
+Tu ne dois JAMAIS:
+- Faire de diagnostic médical
+- Prescrire de médicaments
+- Donner de dosage ou posologie
+- Interpréter des analyses, radios ou examens
+- Gérer des urgences médicales
+- Recommander des traitements médicaux spécifiques
 
-DOMAINES AUTORISÉS:
-- Alimentation et nutrition
+Si on te demande un diagnostic, médicament, dosage ou interprétation d'analyse:
+Réponds: "Je ne peux pas fournir ce type de conseil médical. Consulte un vétérinaire professionnel."
+
+=== DOMAINES AUTORISÉS ===
+- Alimentation et nutrition générale
 - Comportement animal
 - Activité physique et exercice
 - Hygiène et toilettage
-- Prévention santé (vaccins, vermifuges rappels)
-- Petits symptômes NON urgents
+- Prévention santé (rappels vaccins, vermifuges)
 - Conseils du quotidien
 
-TON ET STYLE:
+=== TON ET STYLE ===
 - Ton calme, pédagogique et rassurant
 - Langage simple et accessible
 - Phrases courtes et claires
-- Toujours terminer par: "Si les symptômes persistent ou s'aggravent, consulte un vétérinaire."
-
-SI URGENCE DÉTECTÉE:
-Réponds immédiatement: "Cette situation semble urgente. Je te recommande fortement de contacter un vétérinaire ou les urgences vétérinaires immédiatement. En attendant, garde ton animal au calme et surveille-le attentivement."
+- TOUJOURS terminer par: "Si les symptômes persistent ou s'aggravent, consulte un vétérinaire."
 
 Réponds en français.`;
 }
@@ -124,13 +128,13 @@ export default function VetAssistantScreen() {
   const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
   
-  const { activePet, userPets } = useActivePetWithData();
+  const { activePet } = useActivePetWithData();
   const { getMessagesForPet, addMessage, startNewConversation } = useVetAssistant();
   
   const [input, setInput] = useState('');
   const [localMessages, setLocalMessages] = useState<VetMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [showDisclaimer, setShowDisclaimer] = useState(true);
+
 
   const systemPrompt = useMemo(() => {
     if (!activePet) return '';
@@ -161,7 +165,9 @@ export default function VetAssistantScreen() {
     setInput('');
     setIsLoading(true);
 
-    const isEmergency = detectEmergency(userMessage);
+    const riskAnalysis = analyzeRiskLevel(userMessage);
+    const isEmergency = riskAnalysis.isEmergency;
+    const requiresMedicalAdvice = riskAnalysis.requiresMedicalAdvice;
 
     addMessage(activePet.id, {
       role: 'user',
@@ -176,31 +182,43 @@ export default function VetAssistantScreen() {
     }]);
 
     try {
-      const contextMessage = `${systemPrompt}\n\nQuestion de l'utilisateur: ${userMessage}`;
-      
-      await sendMessage(contextMessage);
-
-      const lastResponse = agentMessages.filter(m => m.role === 'assistant').pop();
       let responseText = '';
-      
-      if (lastResponse) {
-        for (const part of lastResponse.parts) {
-          if (part.type === 'text') {
-            responseText += part.text;
-          }
-        }
+      let shouldBlockAI = false;
+
+      if (isEmergency) {
+        responseText = EMERGENCY_ALERT;
+        shouldBlockAI = true;
+        console.log('[VetAssistant][BLOCKED] Emergency detected - AI response blocked');
+      } else if (requiresMedicalAdvice) {
+        responseText = MEDICAL_ADVICE_BLOCKED;
+        shouldBlockAI = true;
+        console.log('[VetAssistant][BLOCKED] Medical advice request - AI response blocked');
       }
 
-      if (!responseText) {
-        responseText = isEmergency 
-          ? EMERGENCY_ALERT
-          : "Je suis désolé, je n'ai pas pu traiter votre question. Veuillez réessayer ou consulter un vétérinaire si votre question est urgente.";
+      if (!shouldBlockAI) {
+        const contextMessage = `${systemPrompt}\n\nQuestion de l'utilisateur: ${userMessage}`;
+        
+        await sendMessage(contextMessage);
+
+        const lastResponse = agentMessages.filter(m => m.role === 'assistant').pop();
+        
+        if (lastResponse) {
+          for (const part of lastResponse.parts) {
+            if (part.type === 'text') {
+              responseText += part.text;
+            }
+          }
+        }
+
+        if (!responseText) {
+          responseText = "Je suis désolé, je n'ai pas pu traiter votre question. Veuillez réessayer ou consulter un vétérinaire si votre question est urgente.";
+        }
       }
 
       addMessage(activePet.id, {
         role: 'assistant',
         content: responseText,
-        isEmergencyAlert: isEmergency,
+        isEmergencyAlert: isEmergency || requiresMedicalAdvice,
       });
 
       setLocalMessages(prev => [...prev, {
@@ -208,7 +226,7 @@ export default function VetAssistantScreen() {
         role: 'assistant',
         content: responseText,
         timestamp: Date.now(),
-        isEmergencyAlert: isEmergency,
+        isEmergencyAlert: isEmergency || requiresMedicalAdvice,
       }]);
 
     } catch (error) {
@@ -266,7 +284,7 @@ export default function VetAssistantScreen() {
           </View>
           <Text style={styles.noPetTitle}>Aucun animal sélectionné</Text>
           <Text style={styles.noPetSubtitle}>
-            Pour utiliser l'assistant vétérinaire, vous devez d'abord ajouter un animal à votre profil.
+            Pour utiliser l&apos;assistant vétérinaire, vous devez d&apos;abord ajouter un animal à votre profil.
           </Text>
           <TouchableOpacity
             style={styles.addPetButton}
@@ -302,15 +320,10 @@ export default function VetAssistantScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        {showDisclaimer && (
-          <View style={styles.disclaimerBanner}>
-            <Info size={16} color={COLORS.textSecondary} />
-            <Text style={styles.disclaimerText}>{DISCLAIMER_TEXT}</Text>
-            <TouchableOpacity onPress={() => setShowDisclaimer(false)}>
-              <Text style={styles.dismissText}>OK</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <View style={styles.disclaimerBanner}>
+          <AlertTriangle size={16} color={COLORS.warning} />
+          <Text style={styles.disclaimerText}>{DISCLAIMER_TEXT}</Text>
+        </View>
 
         <View style={styles.petContextBanner}>
           <Text style={styles.petContextText}>
@@ -334,7 +347,7 @@ export default function VetAssistantScreen() {
               </View>
               <Text style={styles.welcomeTitle}>Bonjour !</Text>
               <Text style={styles.welcomeSubtitle}>
-                Je suis votre assistant vétérinaire. Posez-moi vos questions sur l'alimentation, le comportement, l'hygiène ou la prévention santé de {activePet.name}.
+                Je suis votre assistant vétérinaire. Posez-moi vos questions sur l&apos;alimentation, le comportement, l&apos;hygiène ou la prévention santé de {activePet.name}.
               </Text>
               <View style={styles.suggestionsContainer}>
                 <Text style={styles.suggestionsTitle}>Exemples de questions :</Text>
@@ -367,7 +380,7 @@ export default function VetAssistantScreen() {
           {isLoading && (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" color={COLORS.primary} />
-              <Text style={styles.loadingText}>L'assistant réfléchit...</Text>
+              <Text style={styles.loadingText}>L&apos;assistant réfléchit...</Text>
             </View>
           )}
         </ScrollView>
@@ -416,21 +429,18 @@ const styles = StyleSheet.create({
   disclaimerBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surfaceSecondary,
+    backgroundColor: '#FEF3C7',
     paddingHorizontal: SPACING.l,
     paddingVertical: SPACING.m,
     gap: SPACING.s,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.divider,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F59E0B',
   },
   disclaimerText: {
     flex: 1,
     ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-  },
-  dismissText: {
-    ...TYPOGRAPHY.captionSemibold,
-    color: COLORS.primary,
+    color: '#92400E',
+    fontWeight: '500' as const,
   },
   petContextBanner: {
     backgroundColor: COLORS.primary,

@@ -19,25 +19,136 @@ export interface PetChatHistory {
 }
 
 const EMERGENCY_KEYWORDS = [
-  'urgence', 'urgent', 'emergency',
-  'saignement', 'saigne', 'bleeding', 'blood', 'sang',
-  'convulsion', 'convulsions', 'seizure', 'seizures',
-  'vomissement', 'vomissements', 'vomit', 'vomiting',
-  'diarrhée', 'diarrhea',
+  // Urgence générale
+  'urgence', 'urgent', 'emergency', 'sos', 'au secours', 'vite',
+  
+  // Saignement
+  'saignement', 'saigne', 'bleeding', 'blood', 'sang', 'hémorragie', 'hémorragique',
+  
+  // Convulsions
+  'convulsion', 'convulsions', 'seizure', 'seizures', 'crise', 'épilepsie', 'tremble violemment',
+  
+  // Vomissements répétés
+  'vomissement', 'vomissements', 'vomit', 'vomiting', 'vomit sans arrêt', 'vomissements répétés',
+  'vomit du sang', 'vomissements de sang',
+  
+  // Détresse respiratoire
   'ne respire pas', 'respire mal', 'difficultés respiratoires', 'breathing', 'suffoque',
-  'inconscient', 'unconscious', 'évanouie', 'évanouissement',
-  'empoisonnement', 'poison', 'toxique', 'intoxication',
-  'accident', 'voiture', 'chute grave',
-  'ne bouge plus', 'paralysé', 'paralysie',
+  'suffocation', 'étouffe', 'respiration difficile', 'halète', 'dyspnée', 'apnée',
+  'ne peut plus respirer', 'respiration sifflante',
+  
+  // Perte de conscience
+  'inconscient', 'unconscious', 'évanouie', 'évanouissement', 'perte de conscience',
+  'ne réagit plus', 'inanimé', 'coma', 'syncope',
+  
+  // Empoisonnement / Intoxication
+  'empoisonnement', 'poison', 'toxique', 'intoxication', 'avalé', 'mangé du',
+  'chocolat', 'antigel', 'mort aux rats', 'médicament humain', 'produit ménager',
+  
+  // Traumatisme / Accident
+  'accident', 'voiture', 'chute grave', 'écrasé', 'percuté', 'renversé',
+  'fracture', 'cassé', 'brisé', 'traumatisme',
+  
+  // Paralysie / Mobilité
+  'ne bouge plus', 'paralysé', 'paralysie', 'ne peut plus marcher', 'pattes arrières',
+  'ne se lève plus', 'effondré',
+  
+  // Douleur intense
   'douleur intense', 'très mal', 'souffre beaucoup', 'hurle de douleur',
-  'gonflé', 'gonflement', 'enflure',
-  'ne mange plus', 'ne boit plus',
-  'fièvre', 'température élevée',
+  'crie de douleur', 'gémit sans arrêt', 'douleur aiguë', 'agonie',
+  
+  // Gonflement / Torsion
+  'gonflé', 'gonflement', 'enflure', 'ventre gonflé', 'abdomen distendu',
+  'torsion estomac', 'dilatation', 'ballonné',
+  
+  // État général critique
+  'ne mange plus', 'ne boit plus', 'déshydraté', 'déshydratation',
+  'fièvre', 'température élevée', 'hypothermie', 'froid',
+  'faiblesse extrême', 'léthargie', 'ne répond plus',
+  
+  // Yeux
+  'œil sorti', 'œil qui sort', 'proptose', 'globe oculaire',
+  
+  // Morsure / Piqûre
+  'morsure serpent', 'piqûre', 'envenimation', 'réaction allergique grave', 'anaphylaxie',
+  
+  // Accouchement
+  'accouchement difficile', 'dystocie', 'mise bas bloquée',
 ];
 
+const FORBIDDEN_MEDICAL_TERMS = [
+  // Médicaments
+  'médicament', 'prescription', 'ordonnance', 'posologie', 'dosage',
+  'antibiotique', 'anti-inflammatoire', 'cortisone', 'corticoïde',
+  
+  // Diagnostic
+  'diagnostic', 'diagnostiquer', 'maladie', 'pathologie',
+  'analyse', 'radio', 'radiographie', 'échographie', 'scanner', 'irm',
+  
+  // Traitements médicaux
+  'opération', 'chirurgie', 'anesthésie', 'injection', 'perfusion',
+];
+
+export interface RiskDetectionResult {
+  isEmergency: boolean;
+  detectedKeywords: string[];
+  requiresMedicalAdvice: boolean;
+}
+
 export function detectEmergency(text: string): boolean {
+  const result = analyzeRiskLevel(text);
+  return result.isEmergency;
+}
+
+export function analyzeRiskLevel(text: string): RiskDetectionResult {
   const lowerText = text.toLowerCase();
-  return EMERGENCY_KEYWORDS.some(keyword => lowerText.includes(keyword));
+  const detectedEmergencyKeywords: string[] = [];
+  const detectedMedicalKeywords: string[] = [];
+  
+  for (const keyword of EMERGENCY_KEYWORDS) {
+    if (lowerText.includes(keyword.toLowerCase())) {
+      detectedEmergencyKeywords.push(keyword);
+    }
+  }
+  
+  for (const term of FORBIDDEN_MEDICAL_TERMS) {
+    if (lowerText.includes(term.toLowerCase())) {
+      detectedMedicalKeywords.push(term);
+    }
+  }
+  
+  const isEmergency = detectedEmergencyKeywords.length > 0;
+  const requiresMedicalAdvice = detectedMedicalKeywords.length > 0;
+  
+  if (isEmergency || requiresMedicalAdvice) {
+    logRiskDetection({
+      isEmergency,
+      emergencyKeywords: detectedEmergencyKeywords,
+      medicalKeywords: detectedMedicalKeywords,
+      timestamp: Date.now(),
+    });
+  }
+  
+  return {
+    isEmergency,
+    detectedKeywords: [...detectedEmergencyKeywords, ...detectedMedicalKeywords],
+    requiresMedicalAdvice,
+  };
+}
+
+function logRiskDetection(data: {
+  isEmergency: boolean;
+  emergencyKeywords: string[];
+  medicalKeywords: string[];
+  timestamp: number;
+}) {
+  console.log('[VetAssistant][RISK] Risk detection triggered:', {
+    isEmergency: data.isEmergency,
+    emergencyKeywordsCount: data.emergencyKeywords.length,
+    medicalKeywordsCount: data.medicalKeywords.length,
+    keywords: [...data.emergencyKeywords, ...data.medicalKeywords],
+    timestamp: new Date(data.timestamp).toISOString(),
+  });
 }
 
 export const [VetAssistantContext, useVetAssistant] = createContextHook(() => {
