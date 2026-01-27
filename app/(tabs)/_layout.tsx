@@ -3,7 +3,7 @@ import { Tabs } from "expo-router";
 import { View, StyleSheet, DimensionValue, FlexAlignType } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IS_TABLET, RESPONSIVE_LAYOUT, COLORS, SHADOWS } from "@/constants/colors";
-import { Home, Sparkles, Heart, MessageCircle, User } from "lucide-react-native";
+import { Home, Compass, Trophy, MessageCircle, User } from "lucide-react-native";
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
@@ -62,14 +62,14 @@ export default function TabLayout() {
           name="home" 
           options={{ 
             title: "Découvrir",
-            tabBarIcon: ({ color }) => <Sparkles size={22} color={color} strokeWidth={2} />,
+            tabBarIcon: ({ color }) => <Compass size={22} color={color} strokeWidth={2} />,
           }} 
         />
         <Tabs.Screen 
           name="challenges" 
           options={{ 
-            title: "Matchs",
-            tabBarIcon: ({ color }) => <Heart size={22} color={color} strokeWidth={2} />,
+            title: "Défis",
+            tabBarIcon: ({ color }) => <Trophy size={22} color={color} strokeWidth={2} />,
           }} 
         />
         <Tabs.Screen 
@@ -79,9 +79,15 @@ export default function TabLayout() {
             tabBarIcon: ({ color }) => <MessageCircle size={22} color={color} strokeWidth={2} />,
           }} 
         />
+        <Tabs.Screen 
+          name="profile" 
+          options={{ 
+            title: "Profil",
+            tabBarIcon: ({ color }) => <User size={22} color={color} strokeWidth={2} />,
+          }} 
+        />
         
         {/* Hidden tabs - accessible via navigation but not shown in tab bar */}
-        <Tabs.Screen name="profile" options={{ href: null }} />
         <Tabs.Screen name="shop" options={{ href: null }} />
         <Tabs.Screen name="map" options={{ href: null }} />
         <Tabs.Screen name="community" options={{ href: null }} />
