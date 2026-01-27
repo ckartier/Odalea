@@ -1,18 +1,26 @@
 rules_version = '2';
 
-// Firebase Storage Rules - Copattes
+// Firebase Storage Rules - Odalea
+// Chemins officiels et sécurisés pour tous les modules
 // Deployment: firebase deploy --only storage
 
 service firebase.storage {
   match /b/{bucket}/o {
     
-    // Helper functions
+    // ========================================================================
+    // HELPER FUNCTIONS
+    // ========================================================================
+    
     function isAuthenticated() {
       return request.auth != null;
     }
     
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.admin == true;
     }
     
     function isImage() {
@@ -27,17 +35,10 @@ service firebase.storage {
           && request.resource.contentType.matches('video/.*');
     }
     
-    function isValidImageUpload() {
-      return isImage() && request.resource.size < 10 * 1024 * 1024; // 10MB max
-    }
-    
-    function isValidVideoUpload() {
-      return isVideo() && request.resource.size < 50 * 1024 * 1024; // 50MB max
-    }
-    
-    function isValidMediaUpload() {
-      return (isImage() && request.resource.size < 10 * 1024 * 1024) ||
-             (isVideo() && request.resource.size < 50 * 1024 * 1024);
+    function isAudio() {
+      return request.resource != null
+          && request.resource.contentType != null
+          && request.resource.contentType.matches('audio/.*');
     }
     
     function isPdf() {
@@ -46,75 +47,237 @@ service firebase.storage {
           && request.resource.contentType == 'application/pdf';
     }
     
+    // Size limits
+    function isValidImageSize() {
+      return request.resource.size < 10 * 1024 * 1024; // 10MB max
+    }
+    
+    function isValidVideoSize() {
+      return request.resource.size < 50 * 1024 * 1024; // 50MB max
+    }
+    
+    function isValidAudioSize() {
+      return request.resource.size < 20 * 1024 * 1024; // 20MB max
+    }
+    
+    function isValidDocumentSize() {
+      return request.resource.size < 20 * 1024 * 1024; // 20MB max
+    }
+    
+    // Combined validators
+    function isValidImageUpload() {
+      return isImage() && isValidImageSize();
+    }
+    
+    function isValidVideoUpload() {
+      return isVideo() && isValidVideoSize();
+    }
+    
+    function isValidAudioUpload() {
+      return isAudio() && isValidAudioSize();
+    }
+    
+    function isValidMediaUpload() {
+      return (isImage() && isValidImageSize()) ||
+             (isVideo() && isValidVideoSize()) ||
+             (isAudio() && isValidAudioSize());
+    }
+    
     function isValidDocumentUpload() {
-      return (isImage() && request.resource.size < 10 * 1024 * 1024) ||
-             (isPdf() && request.resource.size < 20 * 1024 * 1024);
+      return (isImage() && isValidImageSize()) ||
+             (isPdf() && isValidDocumentSize());
     }
     
-    // =============================================================================
-    // PRODUCTION RULES (Recommended)
-    // =============================================================================
+    // ========================================================================
+    // USER PROFILE PHOTOS
+    // Path: users/{userId}/avatar.jpg, users/{userId}/cover.jpg
+    // ========================================================================
     
-    // User profile photos: users/{userId}/profile/{filename}
+    match /users/{userId}/avatar.jpg {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && isValidImageUpload();
+      allow delete: if isOwner(userId);
+    }
+    
+    match /users/{userId}/cover.jpg {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && isValidImageUpload();
+      allow delete: if isOwner(userId);
+    }
+    
+    // Legacy profile path (for backwards compatibility)
     match /users/{userId}/profile/{filename} {
-      allow read: if isAuthenticated(); // Authenticated read for profile pictures
+      allow read: if isAuthenticated();
       allow write: if isOwner(userId) && isValidImageUpload();
       allow delete: if isOwner(userId);
     }
     
-    // Pet photos: users/{userId}/pets/{petId}/{filename}
-    // Supports both real petIds and temporary uploads (temp-{timestamp})
+    // ========================================================================
+    // PET PHOTOS
+    // Path: users/{userId}/pets/{petId}/cover.jpg
+    // Path: users/{userId}/pets/{petId}/gallery/{uuid}.jpg
+    // ========================================================================
+    
+    match /users/{userId}/pets/{petId}/cover.jpg {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && isValidImageUpload();
+      allow delete: if isOwner(userId);
+    }
+    
+    match /users/{userId}/pets/{petId}/gallery/{filename} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && isValidImageUpload();
+      allow delete: if isOwner(userId);
+    }
+    
+    // Legacy pet path (for backwards compatibility with temp-* petIds)
     match /users/{userId}/pets/{petId}/{filename} {
-      allow read: if isAuthenticated(); // Authenticated read for pet pictures
+      allow read: if isAuthenticated();
       allow write: if isOwner(userId) && isValidImageUpload();
       allow delete: if isOwner(userId);
     }
     
-    // Product photos: users/{userId}/products/{productId}/{filename}
-    match /users/{userId}/products/{productId}/{filename} {
-      allow read: if isAuthenticated(); // Authenticated read for products
-      allow write: if isOwner(userId) && isValidImageUpload();
+    // ========================================================================
+    // COMMUNITY POSTS
+    // Path: users/{userId}/community/{postId}/{uuid}.jpg
+    // ========================================================================
+    
+    match /users/{userId}/community/{postId}/{filename} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && isValidMediaUpload();
       allow delete: if isOwner(userId);
     }
     
-    // Post photos/videos: users/{userId}/posts/{postId}/{filename}
-    // Note: Moderation happens at Firestore level (visibility field)
-    // Support both final paths and temporary uploads (temp_*)
+    // Legacy posts path (for backwards compatibility)
     match /users/{userId}/posts/{postId}/{filename} {
-      allow read: if isAuthenticated(); // Authenticated read for community posts
+      allow read: if isAuthenticated();
       allow write: if isOwner(userId) && isValidMediaUpload();
       allow delete: if isOwner(userId);
     }
     
-    // Temporary post uploads before Firestore doc is created
-    match /users/{userId}/posts/{tempFolder}/{filename} {
-      allow read: if isOwner(userId);
-      allow write: if isOwner(userId) && isValidMediaUpload();
-      allow delete: if isOwner(userId);
-    }
+    // ========================================================================
+    // LOST & FOUND REPORTS
+    // Path: users/{userId}/lost/{lostId}/{uuid}.jpg
+    // Path: users/{userId}/found/{foundId}/{uuid}.jpg
+    // ========================================================================
     
-    // Lost & Found photos: users/{userId}/lost-found/{reportId}/{filename}
-    match /users/{userId}/lost-found/{reportId}/{filename} {
-      allow read: if isAuthenticated(); // Authenticated read for lost/found reports
+    match /users/{userId}/lost/{reportId}/{filename} {
+      allow read: if isAuthenticated();
       allow write: if isOwner(userId) && isValidImageUpload();
       allow delete: if isOwner(userId);
     }
     
-    // Challenge submission photos: users/{userId}/challenges/{challengeId}/{filename}
-    match /users/{userId}/challenges/{challengeId}/{filename} {
-      allow read: if isAuthenticated(); // Authenticated read for challenge submissions
+    match /users/{userId}/found/{reportId}/{filename} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && isValidImageUpload();
+      allow delete: if isOwner(userId);
+    }
+    
+    // Legacy lost-found path (for backwards compatibility)
+    match /users/{userId}/lost-found/{reportId}/{filename} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && isValidImageUpload();
+      allow delete: if isOwner(userId);
+    }
+    
+    // ========================================================================
+    // MESSAGES (Attachments)
+    // Path: users/{userId}/messages/{conversationId}/{messageId}/{uuid}.{ext}
+    // Supports: images, audio (voice messages), video
+    // ========================================================================
+    
+    match /users/{userId}/messages/{conversationId}/{messageId}/{filename} {
+      allow read: if isAuthenticated();
       allow write: if isOwner(userId) && isValidMediaUpload();
       allow delete: if isOwner(userId);
     }
     
-    // Professional verification documents: verifications/{userId}/{filename}
-    match /verifications/{userId}/{filename} {
-      allow read: if isOwner(userId);
-      allow write: if isOwner(userId) && isValidDocumentUpload();
+    // ========================================================================
+    // CHALLENGES (Proof submissions)
+    // Path: users/{userId}/challenges/{challengeId}/{uuid}.jpg
+    // ========================================================================
+    
+    match /users/{userId}/challenges/{challengeId}/{filename} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && isValidMediaUpload();
       allow delete: if isOwner(userId);
     }
     
-    // Fallback: deny all other paths
+    // ========================================================================
+    // VET IA (Optional attachments)
+    // Path: users/{userId}/vet/{sessionId}/{messageId}/{uuid}.jpg
+    // ========================================================================
+    
+    match /users/{userId}/vet/{sessionId}/{messageId}/{filename} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && isValidImageUpload();
+      allow delete: if isOwner(userId);
+    }
+    
+    // ========================================================================
+    // SHOP (Products & Banners - Admin/Seller managed)
+    // Path: shop/products/{productId}/{uuid}.jpg
+    // Path: shop/banners/{uuid}.jpg
+    // ========================================================================
+    
+    // Shop products - public read, admin/owner write
+    match /shop/products/{productId}/{filename} {
+      allow read: if true; // Public read for product images
+      allow write: if isAuthenticated(); // TODO: Add seller verification
+      allow delete: if isAuthenticated();
+    }
+    
+    // Shop banners - public read, admin only write
+    match /shop/banners/{filename} {
+      allow read: if true; // Public read for banners
+      allow write: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Legacy user products path
+    match /users/{userId}/products/{productId}/{filename} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && isValidImageUpload();
+      allow delete: if isOwner(userId);
+    }
+    
+    // ========================================================================
+    // PROFESSIONAL VERIFICATION DOCUMENTS
+    // Path: verifications/{userId}/{filename}
+    // ========================================================================
+    
+    match /verifications/{userId}/{filename} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) && isValidDocumentUpload();
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+    
+    // ========================================================================
+    // NOTIFICATIONS (Admin assets)
+    // Path: notifications/assets/{uuid}.jpg
+    // ========================================================================
+    
+    match /notifications/assets/{filename} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // ========================================================================
+    // MATCHES (Optional media)
+    // Path: users/{userId}/matches/{matchId}/{uuid}.jpg
+    // ========================================================================
+    
+    match /users/{userId}/matches/{matchId}/{filename} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && isValidImageUpload();
+      allow delete: if isOwner(userId);
+    }
+    
+    // ========================================================================
+    // FALLBACK: Deny all other paths
+    // ========================================================================
+    
     match /{allPaths=**} {
       allow read, write: if false;
     }

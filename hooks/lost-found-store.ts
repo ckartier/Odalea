@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { databaseService } from '@/services/database';
 import { useUser } from './user-store';
 import { safeJsonParse } from '@/lib/safe-json';
+import { StorageService, sanitizeForFirestore, generateUUID } from '@/services/storage';
 
 export interface LostPetReport {
   id: string;
@@ -171,7 +172,26 @@ export const [LostFoundContext, useLostFound] = createContextHook(() => {
       if (!user?.id) throw new Error('User not authenticated');
       
       try {
-        const reportData = {
+        // Upload photos to Storage first
+        let uploadedPhotos: string[] = [];
+        if (report.photos && report.photos.length > 0) {
+          console.log('📤 Uploading lost/found photos...', report.photos.length);
+          const reportId = `report_${generateUUID()}`;
+          try {
+            uploadedPhotos = await StorageService.uploadLostFoundImages(
+              user.id,
+              reportId,
+              report.photos,
+              report.status === 'found' ? 'found' : 'lost'
+            );
+            console.log('✅ Photos uploaded:', uploadedPhotos.length);
+          } catch (error) {
+            console.error('❌ Failed to upload photos:', error);
+            throw new Error('Échec de l\'upload des photos. Veuillez réessayer.');
+          }
+        }
+        
+        const reportData = sanitizeForFirestore({
           petName: report.petName,
           petType: report.species,
           breed: report.breed,
@@ -181,7 +201,7 @@ export const [LostFoundContext, useLostFound] = createContextHook(() => {
           contactName: report.contactInfo.userName,
           contactPhone: user.phoneNumber || '',
           contactEmail: user.email || '',
-          photos: report.photos,
+          photos: uploadedPhotos.length > 0 ? uploadedPhotos : report.photos,
           reward: report.reward,
           type: report.status,
           userId: user.id,
@@ -189,7 +209,7 @@ export const [LostFoundContext, useLostFound] = createContextHook(() => {
             latitude: report.lastSeenLocation.latitude,
             longitude: report.lastSeenLocation.longitude
           }
-        };
+        });
         
         const reportId = await databaseService.lostFound.createReport(reportData);
         
@@ -239,15 +259,32 @@ export const [LostFoundContext, useLostFound] = createContextHook(() => {
       if (!user?.id) throw new Error('User not authenticated');
       
       try {
-        const responseData = {
+        // Upload response photos if any
+        let uploadedResponsePhotos: string[] = [];
+        if (response.photos && response.photos.length > 0) {
+          console.log('📤 Uploading response photos...', response.photos.length);
+          try {
+            uploadedResponsePhotos = await StorageService.uploadLostFoundImages(
+              user.id,
+              reportId,
+              response.photos,
+              'found'
+            );
+            console.log('✅ Response photos uploaded:', uploadedResponsePhotos.length);
+          } catch (error) {
+            console.error('❌ Failed to upload response photos:', error);
+          }
+        }
+        
+        const responseData = sanitizeForFirestore({
           userId: user.id,
           userName: user.name || `${user.firstName} ${user.lastName}`.trim(),
           userPhoto: user.photo,
           message: response.message,
           location: response.location,
-          photos: response.photos || [],
+          photos: uploadedResponsePhotos.length > 0 ? uploadedResponsePhotos : (response.photos || []),
           type: response.type
-        };
+        });
         
         const newResponse = await databaseService.lostFound.respondToReport(reportId, responseData);
         

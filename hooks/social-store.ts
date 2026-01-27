@@ -6,7 +6,7 @@ import { Post, Comment } from '@/types';
 import { useFirebaseUser } from './firebase-user-store';
 import { useUser } from './user-store';
 import { usePremium } from './premium-store';
-import { StorageService } from '@/services/storage';
+import { StorageService, sanitizeForFirestore, generateUUID } from '@/services/storage';
 import { Alert } from 'react-native';
 import { ModerationService } from '@/services/moderation';
 
@@ -192,33 +192,25 @@ export const [SocialContext, useSocial] = createContextHook(() => {
       let uploadedImageUrls: string[] | undefined;
       
       if (postData.images && postData.images.length > 0) {
-        console.log('📤 Uploading post images...', postData.images);
+        console.log('📤 Uploading post images...', postData.images.length);
         
-        const tempPostId = `temp_${Date.now()}`;
+        const tempPostId = `post_${generateUUID()}`;
         
         try {
-          uploadedImageUrls = await Promise.all(
-            postData.images.map(async (imageUri, index) => {
-              if (imageUri.startsWith('http://') || imageUri.startsWith('https://')) {
-                return imageUri;
-              }
-              
-              return await StorageService.uploadPostImage(
-                user.id,
-                tempPostId,
-                imageUri
-              );
-            })
+          uploadedImageUrls = await StorageService.uploadPostImages(
+            user.id,
+            tempPostId,
+            postData.images
           );
           
-          console.log('✅ Images uploaded:', uploadedImageUrls);
+          console.log('✅ Images uploaded:', uploadedImageUrls.length);
         } catch (error) {
           console.error('❌ Failed to upload images:', error);
-          throw new Error('Failed to upload images');
+          throw new Error('Échec de l\'upload des images. Veuillez réessayer.');
         }
       }
       
-      const post = {
+      const post = sanitizeForFirestore({
         ...postData,
         images: uploadedImageUrls,
         authorId: user.id,
@@ -226,7 +218,7 @@ export const [SocialContext, useSocial] = createContextHook(() => {
         authorPhoto: user.photo,
         likesCount: 0,
         commentsCount: 0
-      };
+      });
       
       return await databaseService.post.createPost(post);
     },

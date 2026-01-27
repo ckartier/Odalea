@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { databaseService, postService } from '@/services/database';
 import { useAuth } from '@/hooks/user-store';
 import { safeJsonParse } from '@/lib/safe-json';
+import { StorageService, sanitizeForFirestore, isFirebaseStorageURL } from '@/services/storage';
 
 export interface Challenge {
   id: string;
@@ -241,30 +242,52 @@ export const [ChallengesContext, useChallenges] = createContextHook(() => {
       
       const challenge = challengesQuery.data?.find(c => c.id === uc.challengeId);
       
+      // Upload proof media if it's a local file
+      let uploadedProofUrl = proof.data;
+      if ((proof.type === 'photo' || proof.type === 'video') && proof.data && !isFirebaseStorageURL(proof.data) && !proof.data.startsWith('http')) {
+        console.log('📤 Uploading challenge proof...', proof.type);
+        try {
+          uploadedProofUrl = await StorageService.uploadChallengeProof(
+            uc.userId,
+            uc.challengeId,
+            proof.data
+          );
+          console.log('✅ Challenge proof uploaded');
+        } catch (error) {
+          console.error('❌ Failed to upload challenge proof:', error);
+          throw new Error('Échec de l\'upload de la preuve. Veuillez réessayer.');
+        }
+      }
+      
+      const sanitizedProof = sanitizeForFirestore({
+        ...proof,
+        data: uploadedProofUrl,
+      });
+      
       await databaseService.challenge.submitProof({
         userChallengeId,
         challengeId: uc.challengeId,
         userId: uc.userId,
         userName: undefined,
         userPhoto: undefined,
-        proof,
+        proof: sanitizedProof,
       });
       
       // Create community post if shareToCommunity is true
       if (proof.shareToCommunity && challenge) {
         try {
-          const postData = {
+          const postData = sanitizeForFirestore({
             type: 'challenge' as const,
             authorId: uc.userId,
             authorName: undefined,
             authorPhoto: undefined,
             content: `J'ai relevé le défi "${challenge.title.fr}" ! ${challenge.icon}`,
-            images: [proof.data],
+            images: [uploadedProofUrl],
             challengeId: challenge.id,
             petId: proof.petId,
             likesCount: 0,
             commentsCount: 0,
-          };
+          });
           await postService.createPost(postData as any);
           console.log('✅ Challenge post created in community');
         } catch (err) {

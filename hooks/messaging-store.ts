@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Message, FriendRequest, Conversation, User } from '@/types';
 import { useUser } from './user-store';
 import { databaseService } from '@/services/database';
+import { StorageService, generateUUID, sanitizeForFirestore } from '@/services/storage';
 
 const MESSAGES_PAGE_SIZE = 30;
 
@@ -144,7 +145,15 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
   }, [conversationIds, conversationIdsKey]);
 
   const sendMessage = useMutation({
-    mutationFn: async ({ conversationId, content }: { conversationId: string; content: string }) => {
+    mutationFn: async ({ 
+      conversationId, 
+      content,
+      attachment
+    }: { 
+      conversationId: string; 
+      content: string;
+      attachment?: { uri: string; type: 'image' | 'audio' | 'video' };
+    }) => {
       if (!user?.id) throw new Error('User not signed in');
       
       let conv = conversations.find(c => c.id === conversationId);
@@ -180,12 +189,37 @@ export const [MessagingContext, useMessaging] = createContextHook(() => {
         [conversationId]: [...(prev[conversationId] ?? []), tempMessage],
       }));
       
-      const messagePayload: any = {
+      // Upload attachment if provided
+      let attachmentUrl: string | undefined;
+      let attachmentType: string | undefined;
+      
+      if (attachment?.uri) {
+        console.log('📤 [Messaging] Uploading attachment...', attachment.type);
+        try {
+          const messageId = `msg_${generateUUID()}`;
+          attachmentUrl = await StorageService.uploadMessageAttachment(
+            user.id,
+            conversationId,
+            messageId,
+            attachment.uri,
+            attachment.type
+          );
+          attachmentType = attachment.type;
+          console.log('✅ [Messaging] Attachment uploaded');
+        } catch (error) {
+          console.error('❌ [Messaging] Failed to upload attachment:', error);
+          throw new Error('Échec de l\'envoi du fichier. Veuillez réessayer.');
+        }
+      }
+      
+      const messagePayload = sanitizeForFirestore({
         senderId: user.id,
         receiverId: recipientId,
         content,
         conversationId,
-      };
+        attachmentUrl,
+        attachmentType,
+      });
       const id = await databaseService.messaging.sendMessage(messagePayload);
       await qc.invalidateQueries({ queryKey: ['conversations', user.id] });
       return id;

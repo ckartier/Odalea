@@ -1,15 +1,31 @@
+/**
+ * Firebase Storage Service - Odalea
+ * 
+ * Service unifié pour tous les uploads Storage de l'application.
+ * Utilise les utilitaires de storage-utils.ts comme source de vérité.
+ */
+
 import { storage, auth } from './firebase';
 import { 
   ref, 
-  uploadBytes, 
-  uploadBytesResumable, 
   getDownloadURL, 
-  deleteObject,
   listAll,
   StorageReference
 } from 'firebase/storage';
 import { Platform } from 'react-native';
 import { storageLogger } from '@/lib/logger';
+import {
+  uploadMediaAndGetURL,
+  deleteStorageFile,
+  deleteStorageFolder,
+  deleteMediaFromDocument,
+  StoragePaths,
+  generateUUID,
+  sanitizeForFirestore,
+  isFirebaseStorageURL,
+  MediaItem,
+  UploadResult,
+} from './storage-utils';
 
 export interface UploadProgress {
   bytesTransferred: number;
@@ -64,103 +80,16 @@ export class StorageService {
     path: string,
     options?: UploadOptions
   ): Promise<string> {
-    try {
-      storageLogger.log('📤 [UPLOAD START] Path:', path);
-      storageLogger.log('📤 [UPLOAD START] URI:', uri.substring(0, 100));
-      storageLogger.log('📤 [UPLOAD START] Platform:', Platform.OS);
-      
-      const currentUser = auth.currentUser;
-      storageLogger.log('👤 [UPLOAD] Current user:', currentUser?.uid ? 'authenticated' : 'NOT AUTHENTICATED');
-      
-      if (!currentUser) {
-        throw new Error('Vous devez être connecté pour uploader des images');
-      }
-      
-      if (!uri || uri.trim() === '') {
-        throw new Error('URI is empty or invalid');
-      }
-      
-      const blob = await this.uriToBlob(uri);
-      storageLogger.log('📤 [UPLOAD] Blob ready, size:', blob.size, 'type:', blob.type);
-      
-      if (!blob || blob.size === 0) {
-        throw new Error('Blob is empty or invalid');
-      }
-      
-      const storageRef = ref(storage, path);
-      storageLogger.log('📤 [UPLOAD] Storage ref created:', path);
-      storageLogger.log('📤 [UPLOAD] Storage bucket:', storage.app.options.storageBucket);
-
-      if (options?.onProgress) {
-        const uploadTask = uploadBytesResumable(storageRef, blob, {
-          contentType: options.contentType || 'image/jpeg',
-        });
-
-        return new Promise((resolve, reject) => {
-          uploadTask.on(
-            'state_changed',
-            (snapshot) => {
-              const progress = {
-                bytesTransferred: snapshot.bytesTransferred,
-                totalBytes: snapshot.totalBytes,
-                progress: (snapshot.bytesTransferred / snapshot.totalBytes) * 100,
-              };
-              options.onProgress?.(progress);
-              storageLogger.log(`📊 Upload progress: ${progress.progress.toFixed(2)}%`);
-            },
-            (error) => {
-              storageLogger.error('❌ Upload error:', error);
-              reject(error);
-            },
-            async () => {
-              const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-              storageLogger.log('✅ [UPLOAD SUCCESS]');
-              if (!downloadURL.startsWith('https://')) {
-                storageLogger.warn('⚠️ [UPLOAD] URL is not https');
-              }
-              resolve(downloadURL);
-            }
-          );
-        });
-      } else {
-        storageLogger.log('📤 [UPLOAD] Starting uploadBytes...');
-        const snapshot = await uploadBytes(storageRef, blob, {
-          contentType: options?.contentType || 'image/jpeg',
-        });
-        storageLogger.log('📤 [UPLOAD] uploadBytes complete, getting URL...');
-        const downloadURL = await getDownloadURL(snapshot.ref);
-        storageLogger.log('✅ [UPLOAD SUCCESS]');
-        if (!downloadURL.startsWith('https://')) {
-          storageLogger.warn('⚠️ [UPLOAD] URL is not https');
-        }
-        return downloadURL;
-      }
-    } catch (error: any) {
-      storageLogger.error('❌ [UPLOAD FAILED] Error:', error?.message || 'Unknown error', error?.code || 'N/A');
-      
-      if (error?.code === 'storage/unauthorized') {
-        throw new Error('Accès refusé. Vérifiez votre connexion et réessayez.');
-      } else if (error?.code === 'storage/canceled') {
-        throw new Error('Upload annulé.');
-      } else if (error?.code === 'storage/unknown') {
-        throw new Error('Erreur inconnue lors de l\'upload. Vérifiez votre connexion.');
-      } else if (error?.code === 'storage/object-not-found') {
-        throw new Error('Objet non trouvé.');
-      } else if (error?.code === 'storage/bucket-not-found') {
-        throw new Error('Bucket Storage introuvable.');
-      } else if (error?.code === 'storage/project-not-found') {
-        throw new Error('Projet Firebase introuvable.');
-      } else if (error?.code === 'storage/quota-exceeded') {
-        throw new Error('Quota de stockage dépassé.');
-      } else if (error?.code === 'storage/unauthenticated') {
-        throw new Error('Vous devez être connecté.');
-      } else if (error?.code === 'storage/retry-limit-exceeded') {
-        throw new Error('Trop de tentatives. Réessayez plus tard.');
-      }
-      
-      throw error;
-    }
+    const result = await uploadMediaAndGetURL(uri, path, {
+      onProgress: options?.onProgress,
+      contentType: options?.contentType,
+    });
+    return result.downloadURL;
   }
+
+  // ============================================================================
+  // USER PROFILE
+  // ============================================================================
 
   static async uploadProfilePicture(
     userId: string,
@@ -176,10 +105,29 @@ export class StorageService {
       storageLogger.warn(`⚠️ userId mismatch, using auth UID.`);
     }
     
-    const timestamp = Date.now();
-    const path = `users/${currentUser.uid}/profile/${timestamp}.jpg`;
+    const path = StoragePaths.userAvatar(currentUser.uid);
+    storageLogger.log('📤 [PROFILE] Upload path:', path);
     return this.uploadImage(uri, path, options);
   }
+
+  static async uploadUserCover(
+    userId: string,
+    uri: string,
+    options?: UploadOptions
+  ): Promise<string> {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('Non authentifié. Connectez-vous pour uploader des images.');
+    }
+    
+    const path = StoragePaths.userCover(currentUser.uid);
+    storageLogger.log('📤 [USER COVER] Upload path:', path);
+    return this.uploadImage(uri, path, options);
+  }
+
+  // ============================================================================
+  // PETS
+  // ============================================================================
 
   static async uploadPetPhoto(
     userId: string,
@@ -196,15 +144,14 @@ export class StorageService {
       storageLogger.warn(`⚠️ userId mismatch, using auth UID.`);
     }
     
-    const timestamp = Date.now();
-    const path = `users/${currentUser.uid}/pets/${petId}/${timestamp}.jpg`;
+    const path = StoragePaths.petCover(currentUser.uid, petId);
     storageLogger.log('📤 [PET PHOTO] Upload path:', path);
     return this.uploadImage(uri, path, options);
   }
 
-  static async uploadProductImage(
+  static async uploadPetGalleryPhoto(
     userId: string,
-    productId: string,
+    petId: string,
     uri: string,
     options?: UploadOptions
   ): Promise<string> {
@@ -213,14 +160,15 @@ export class StorageService {
       throw new Error('Non authentifié. Connectez-vous pour uploader des images.');
     }
     
-    if (currentUser.uid !== userId) {
-      storageLogger.warn(`⚠️ userId mismatch, using auth UID.`);
-    }
-    
-    const timestamp = Date.now();
-    const path = `users/${currentUser.uid}/products/${productId}/${timestamp}.jpg`;
+    const uuid = generateUUID();
+    const path = StoragePaths.petGallery(currentUser.uid, petId, uuid);
+    storageLogger.log('📤 [PET GALLERY] Upload path:', path);
     return this.uploadImage(uri, path, options);
   }
+
+  // ============================================================================
+  // COMMUNITY POSTS
+  // ============================================================================
 
   static async uploadPostImage(
     userId: string,
@@ -237,14 +185,175 @@ export class StorageService {
       storageLogger.warn(`⚠️ userId mismatch, using auth UID.`);
     }
     
-    const timestamp = Date.now();
-    const path = `users/${currentUser.uid}/posts/${postId}/${timestamp}.jpg`;
+    const uuid = generateUUID();
+    const path = StoragePaths.communityPost(currentUser.uid, postId, uuid);
+    storageLogger.log('📤 [POST IMAGE] Upload path:', path);
     return this.uploadImage(uri, path, options);
   }
+
+  static async uploadPostImages(
+    userId: string,
+    postId: string,
+    uris: string[],
+    options?: UploadOptions
+  ): Promise<string[]> {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('Non authentifié. Connectez-vous pour uploader des images.');
+    }
+    
+    storageLogger.log(`📤 [POST IMAGES] Uploading ${uris.length} images`);
+    
+    const results = await Promise.all(
+      uris.map(async (uri) => {
+        if (isFirebaseStorageURL(uri)) {
+          return uri;
+        }
+        const uuid = generateUUID();
+        const path = StoragePaths.communityPost(currentUser.uid, postId, uuid);
+        return this.uploadImage(uri, path, options);
+      })
+    );
+    
+    storageLogger.log(`✅ [POST IMAGES] All ${results.length} images uploaded`);
+    return results;
+  }
+
+  // ============================================================================
+  // LOST & FOUND
+  // ============================================================================
 
   static async uploadLostFoundImage(
     userId: string,
     reportId: string,
+    uri: string,
+    type: 'lost' | 'found' = 'lost',
+    options?: UploadOptions
+  ): Promise<string> {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('Non authentifié. Connectez-vous pour uploader des images.');
+    }
+    
+    if (currentUser.uid !== userId) {
+      storageLogger.warn(`⚠️ userId mismatch, using auth UID.`);
+    }
+    
+    const uuid = generateUUID();
+    const path = type === 'lost' 
+      ? StoragePaths.lostReport(currentUser.uid, reportId, uuid)
+      : StoragePaths.foundReport(currentUser.uid, reportId, uuid);
+    
+    storageLogger.log(`📤 [LOST/FOUND] Upload path:`, path);
+    return this.uploadImage(uri, path, options);
+  }
+
+  static async uploadLostFoundImages(
+    userId: string,
+    reportId: string,
+    uris: string[],
+    type: 'lost' | 'found' = 'lost',
+    options?: UploadOptions
+  ): Promise<string[]> {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('Non authentifié. Connectez-vous pour uploader des images.');
+    }
+    
+    storageLogger.log(`📤 [LOST/FOUND IMAGES] Uploading ${uris.length} images`);
+    
+    const results = await Promise.all(
+      uris.map(async (uri) => {
+        if (isFirebaseStorageURL(uri)) {
+          return uri;
+        }
+        return this.uploadLostFoundImage(userId, reportId, uri, type, options);
+      })
+    );
+    
+    return results;
+  }
+
+  // ============================================================================
+  // MESSAGES
+  // ============================================================================
+
+  static async uploadMessageAttachment(
+    userId: string,
+    conversationId: string,
+    messageId: string,
+    uri: string,
+    type: 'image' | 'audio' | 'video' = 'image',
+    options?: UploadOptions
+  ): Promise<string> {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('Non authentifié. Connectez-vous pour uploader des fichiers.');
+    }
+    
+    const uuid = generateUUID();
+    const ext = type === 'audio' ? 'm4a' : type === 'video' ? 'mp4' : 'jpg';
+    const path = StoragePaths.messageAttachment(currentUser.uid, conversationId, messageId, uuid, ext);
+    
+    storageLogger.log(`📤 [MESSAGE ATTACHMENT] Upload path:`, path);
+    return this.uploadImage(uri, path, {
+      ...options,
+      contentType: type === 'audio' ? 'audio/mp4' : type === 'video' ? 'video/mp4' : 'image/jpeg',
+    });
+  }
+
+  // ============================================================================
+  // CHALLENGES
+  // ============================================================================
+
+  static async uploadChallengeProof(
+    userId: string,
+    challengeId: string,
+    uri: string,
+    options?: UploadOptions
+  ): Promise<string> {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('Non authentifié. Connectez-vous pour uploader des images.');
+    }
+    
+    const uuid = generateUUID();
+    const path = StoragePaths.challengeProof(currentUser.uid, challengeId, uuid);
+    
+    storageLogger.log(`📤 [CHALLENGE PROOF] Upload path:`, path);
+    return this.uploadImage(uri, path, options);
+  }
+
+  // ============================================================================
+  // VET IA
+  // ============================================================================
+
+  static async uploadVetAttachment(
+    userId: string,
+    sessionId: string,
+    messageId: string,
+    uri: string,
+    options?: UploadOptions
+  ): Promise<string> {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('Non authentifié. Connectez-vous pour uploader des images.');
+    }
+    
+    const uuid = generateUUID();
+    const path = StoragePaths.vetAttachment(currentUser.uid, sessionId, messageId, uuid);
+    
+    storageLogger.log(`📤 [VET ATTACHMENT] Upload path:`, path);
+    return this.uploadImage(uri, path, options);
+  }
+
+  // ============================================================================
+  // SHOP / PRODUCTS
+  // ============================================================================
+
+  static async uploadProductImage(
+    userId: string,
+    productId: string,
     uri: string,
     options?: UploadOptions
   ): Promise<string> {
@@ -257,40 +366,59 @@ export class StorageService {
       storageLogger.warn(`⚠️ userId mismatch, using auth UID.`);
     }
     
-    const timestamp = Date.now();
-    const path = `users/${currentUser.uid}/lost-found/${reportId}/${timestamp}.jpg`;
+    const uuid = generateUUID();
+    const path = StoragePaths.shopProduct(productId, uuid);
+    
+    storageLogger.log(`📤 [PRODUCT IMAGE] Upload path:`, path);
     return this.uploadImage(uri, path, options);
   }
 
+  // ============================================================================
+  // VERIFICATION DOCUMENTS
+  // ============================================================================
+
+  static async uploadVerificationDocument(
+    userId: string,
+    filename: string,
+    uri: string,
+    options?: UploadOptions
+  ): Promise<string> {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('Non authentifié. Connectez-vous pour uploader des documents.');
+    }
+    
+    const path = StoragePaths.verification(currentUser.uid, filename);
+    
+    storageLogger.log(`📤 [VERIFICATION] Upload path:`, path);
+    return this.uploadImage(uri, path, options);
+  }
+
+  // ============================================================================
+  // DELETE OPERATIONS
+  // ============================================================================
+
   static async deleteImage(url: string): Promise<void> {
-    try {
-      storageLogger.log('🗑️ Deleting image');
-      const imageRef = ref(storage, url);
-      await deleteObject(imageRef);
-      storageLogger.log('✅ Image deleted successfully');
-    } catch (error) {
-      storageLogger.error('❌ Failed to delete image:', error);
-      throw error;
+    const success = await deleteStorageFile(url);
+    if (!success) {
+      storageLogger.warn('⚠️ Image deletion may have failed:', url);
     }
   }
 
   static async deleteFolder(path: string): Promise<void> {
-    try {
-      storageLogger.log('🗑️ Deleting folder:', path);
-      const folderRef = ref(storage, path);
-      const listResult = await listAll(folderRef);
-
-      const deletePromises = listResult.items.map((itemRef) =>
-        deleteObject(itemRef)
-      );
-
-      await Promise.all(deletePromises);
-      storageLogger.log('✅ Folder deleted successfully');
-    } catch (error) {
-      storageLogger.error('❌ Failed to delete folder:', error);
-      throw error;
-    }
+    const result = await deleteStorageFolder(path);
+    storageLogger.log(`🗑️ Folder deletion complete: ${result.deleted} deleted, ${result.failed} failed`);
   }
+
+  static async deleteMediaItems(media: MediaItem[] | string[] | undefined): Promise<void> {
+    await deleteMediaFromDocument(media, {
+      logPrefix: '[StorageService]',
+    });
+  }
+
+  // ============================================================================
+  // LEGACY METHODS (for backwards compatibility)
+  // ============================================================================
 
   static async uploadMultipleImages(
     uris: string[],
@@ -300,9 +428,12 @@ export class StorageService {
     try {
       storageLogger.log(`📤 Uploading ${uris.length} images to:`, basePath);
       
-      const uploadPromises = uris.map((uri, index) => {
-        const timestamp = Date.now();
-        const path = `${basePath}/${timestamp}_${index}.jpg`;
+      const uploadPromises = uris.map(async (uri, index) => {
+        if (isFirebaseStorageURL(uri)) {
+          return uri;
+        }
+        const uuid = generateUUID();
+        const path = `${basePath}/${uuid}.jpg`;
         return this.uploadImage(uri, path, options);
       });
 
@@ -336,5 +467,18 @@ export class StorageService {
     }
   }
 }
+
+// Re-export utilities for convenience
+export {
+  sanitizeForFirestore,
+  StoragePaths,
+  generateUUID,
+  isFirebaseStorageURL,
+  deleteStorageFile,
+  deleteStorageFolder,
+  deleteMediaFromDocument,
+};
+
+export type { MediaItem, UploadResult };
 
 export default StorageService;
