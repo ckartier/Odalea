@@ -419,6 +419,34 @@ export default function VetAssistantScreen() {
     }
   }, [agentMessages, activePet, isLoading, addMessage]);
 
+  // Timeout for AI response - prevent infinite loading
+  useEffect(() => {
+    if (!isLoading) return;
+    
+    const timeout = setTimeout(() => {
+      if (isLoading && activePet) {
+        console.log('[VetAssistant] Response timeout - showing fallback');
+        const fallbackResponse = "Je n'ai pas pu obtenir de réponse pour le moment. Veuillez réessayer ou consulter un vétérinaire si votre question est urgente.";
+        
+        addMessage(activePet.id, {
+          role: 'assistant',
+          content: fallbackResponse,
+        });
+
+        setLocalMessages(prev => [...prev, {
+          id: `timeout_${Date.now()}`,
+          role: 'assistant',
+          content: fallbackResponse,
+          timestamp: Date.now(),
+        }]);
+        
+        setIsLoading(false);
+      }
+    }, 30000); // 30 second timeout
+    
+    return () => clearTimeout(timeout);
+  }, [isLoading, activePet, addMessage]);
+
   const handleNewConversation = useCallback(() => {
     if (!activePet) return;
     

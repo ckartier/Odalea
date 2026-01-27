@@ -33,6 +33,7 @@ import { trpc, trpcClient } from "@/lib/trpc";
 import AppBackground from "@/components/AppBackground";
 import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
 import AdaptiveHeader from "@/components/AdaptiveHeader";
+import ConnectionStatusBanner from "@/components/ConnectionStatusBanner";
 import { useNotifications } from "@/hooks/use-notifications";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -201,6 +202,7 @@ function RootLayoutInner() {
       <GestureHandlerRootView style={gestureHandlerStyle}>
         <AppProviders>
           <AppBackground>
+            <ConnectionStatusBanner />
             <RootLayoutNav />
           </AppBackground>
         </AppProviders>
