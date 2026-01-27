@@ -126,7 +126,7 @@ export default function Chip({
           styles.label,
           sizeStyles.text,
           variantStyles.text,
-          icon && styles.labelWithIcon,
+          icon ? styles.labelWithIcon : undefined,
         ]}
         numberOfLines={1}
       >

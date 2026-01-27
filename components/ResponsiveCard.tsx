@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
+import { StyleSheet, View, ViewStyle, DimensionValue, FlexAlignType } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SHADOWS, DIMENSIONS, IS_TABLET, RESPONSIVE_LAYOUT, moderateScale, GRADIENTS } from '@/constants/colors';
 
@@ -158,8 +158,8 @@ const ResponsiveCard: React.FC<ResponsiveCardProps> = ({
       padding: getPadding(),
       marginHorizontal: getMargin(),
       marginVertical: DIMENSIONS.SPACING.sm,
-      maxWidth: getMaxWidth(),
-      alignSelf: IS_TABLET && centerOnTablet ? 'center' : 'stretch',
+      maxWidth: getMaxWidth() as DimensionValue,
+      alignSelf: (IS_TABLET && centerOnTablet ? 'center' : 'stretch') as FlexAlignType,
       borderRadius: getBorderRadius(),
       transform: interactive ? [{ scale: 1 }] : undefined,
     },

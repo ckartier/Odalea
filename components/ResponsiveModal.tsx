@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ViewStyle,
   Platform,
+  DimensionValue,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS, DIMENSIONS, IS_TABLET, RESPONSIVE_LAYOUT, moderateScale } from '@/constants/colors';
@@ -41,7 +42,7 @@ const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
 
-  const getModalSize = () => {
+  const getModalSize = (): { width: DimensionValue; height?: DimensionValue; maxHeight: DimensionValue } => {
     const screenWidth = DIMENSIONS.SCREEN_WIDTH;
     const screenHeight = DIMENSIONS.SCREEN_HEIGHT;
 
@@ -58,9 +59,9 @@ const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
         };
       case 'fullscreen':
         return {
-          width: '100%',
-          height: '100%',
-          maxHeight: '100%',
+          width: '100%' as DimensionValue,
+          height: '100%' as DimensionValue,
+          maxHeight: '100%' as DimensionValue,
         };
       default:
         return {

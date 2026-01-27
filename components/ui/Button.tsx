@@ -160,8 +160,8 @@ export default function Button({
               styles.text,
               sizeStyles.text,
               variantStyles.text,
-              icon && iconPosition === 'left' && styles.textWithIconLeft,
-              icon && iconPosition === 'right' && styles.textWithIconRight,
+              icon && iconPosition === 'left' ? styles.textWithIconLeft : undefined,
+              icon && iconPosition === 'right' ? styles.textWithIconRight : undefined,
               textStyle,
             ]}
           >

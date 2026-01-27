@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, ViewStyle, ScrollView, ScrollViewProps } from 'react-native';
+import { StyleSheet, View, ViewStyle, ScrollView, ScrollViewProps, DimensionValue, FlexAlignType } from 'react-native';
 import { COLORS, DIMENSIONS, IS_TABLET, RESPONSIVE_LAYOUT } from '@/constants/colors';
 
 interface ResponsiveContainerProps {
@@ -50,8 +50,8 @@ const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
     {
       backgroundColor,
       paddingHorizontal: getPadding(),
-      maxWidth: getMaxWidth(),
-      alignSelf: IS_TABLET && centerContent ? 'center' : 'stretch',
+      maxWidth: getMaxWidth() as DimensionValue,
+      alignSelf: (IS_TABLET && centerContent ? 'center' : 'stretch') as FlexAlignType,
     },
     style,
   ];

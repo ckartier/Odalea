@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import { View, StyleSheet, Text, ViewStyle } from 'react-native';
 
 interface MapRegion {
   latitude: number;
@@ -10,7 +10,7 @@ interface MapRegion {
 
 interface MapViewProps {
   children?: React.ReactNode;
-  style?: unknown;
+  style?: ViewStyle;
   region?: MapRegion;
   showsUserLocation?: boolean;
   onRegionChange?: (region: MapRegion) => void;
@@ -184,14 +184,14 @@ const MapView: React.FC<MapViewProps> = ({
 
   if (loadError) {
     return (
-      <View style={[styles.container, style]} testID="map-error">
+      <View style={[styles.container, style as ViewStyle]} testID="map-error">
         <Text style={styles.errorText}>{loadError}</Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, style]} testID="map-container">
+    <View style={[styles.container, style as ViewStyle]} testID="map-container">
       <div ref={mapRef} style={styles.mapContainer as unknown as React.CSSProperties} />
       {children}
     </View>
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: '#e0e0e0',
-  } as unknown as React.CSSProperties,
+  },
   errorText: {
     textAlign: 'center' as const,
     color: '#ff3b30',

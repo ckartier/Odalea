@@ -769,7 +769,7 @@ export default function ProRegisterScreen() {
             onPress={handleNextStep}
             loading={loading}
             disabled={!acceptedTerms}
-            style={[styles.professionalButton, !acceptedTerms && styles.disabledButton]}
+            style={!acceptedTerms ? { ...styles.professionalButton, ...styles.disabledButton } : styles.professionalButton}
           />
         </GlassView>
       </Animated.View>

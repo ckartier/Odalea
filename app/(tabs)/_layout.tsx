@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { Tabs } from "expo-router";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, DimensionValue, FlexAlignType } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IS_TABLET, RESPONSIVE_LAYOUT, COLORS, SHADOWS } from "@/constants/colors";
 import { Home, Sparkles, Heart, MessageCircle, User } from "lucide-react-native";
@@ -11,8 +11,8 @@ export default function TabLayout() {
   const containerStyle = useMemo(() => ([
     styles.container,
     {
-      maxWidth: IS_TABLET ? RESPONSIVE_LAYOUT.contentMaxWidth : '100%',
-      alignSelf: IS_TABLET ? 'center' : 'stretch',
+      maxWidth: (IS_TABLET ? RESPONSIVE_LAYOUT.contentMaxWidth : '100%') as DimensionValue,
+      alignSelf: (IS_TABLET ? 'center' : 'stretch') as FlexAlignType,
     },
   ]), []);
 

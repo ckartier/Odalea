@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
+import { StyleSheet, View, ViewStyle, DimensionValue } from 'react-native';
 import { DIMENSIONS, RESPONSIVE_LAYOUT, IS_TABLET, moderateScale } from '@/constants/colors';
 
 interface ResponsiveGridProps {
@@ -44,9 +44,9 @@ const ResponsiveGrid: React.FC<ResponsiveGridProps> = ({
     rows.push(childrenArray.slice(i, i + numColumns));
   }
 
-  const itemWidth = IS_TABLET 
+  const itemWidth = (IS_TABLET 
     ? `${(100 - (numColumns - 1) * 2) / numColumns}%`
-    : `${(100 - (numColumns - 1) * 3) / numColumns}%`;
+    : `${(100 - (numColumns - 1) * 3) / numColumns}%`) as DimensionValue;
 
   return (
     <View style={[styles.container, style]}>
