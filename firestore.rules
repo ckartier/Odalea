@@ -26,11 +26,25 @@ service cloud.firestore {
       allow read: if isAuth();
       allow create: if isOwner(userId);
       allow update: if isOwner(userId) || (
+        // Allow another user to add/remove themselves from this user's friends array
         isAuth() && 
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friends']) &&
-        request.resource.data.friends.hasAll(resource.data.friends) &&
-        request.resource.data.friends.size() == resource.data.friends.size() + 1 &&
-        request.resource.data.friends.toSet().difference(resource.data.friends.toSet()).hasOnly([request.auth.uid])
+        (
+          // Adding self to friends (friend request accepted)
+          (
+            request.resource.data.friends.size() == resource.data.friends.size() + 1 &&
+            request.resource.data.friends.hasAll(resource.data.friends) &&
+            request.auth.uid in request.resource.data.friends &&
+            !(request.auth.uid in resource.data.friends)
+          ) ||
+          // Removing self from friends (unfriend)
+          (
+            request.resource.data.friends.size() == resource.data.friends.size() - 1 &&
+            resource.data.friends.hasAll(request.resource.data.friends) &&
+            request.auth.uid in resource.data.friends &&
+            !(request.auth.uid in request.resource.data.friends)
+          )
+        )
       );
       allow delete: if isOwner(userId);
     }
