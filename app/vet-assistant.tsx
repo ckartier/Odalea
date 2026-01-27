@@ -21,9 +21,9 @@ import { useVetAssistant, analyzeRiskLevel, VetMessage } from '@/hooks/vet-assis
 import { usePremium } from '@/hooks/premium-store';
 import { Pet } from '@/types';
 
-const DISCLAIMER_TEXT = "Cet assistant fournit des conseils généraux. Il ne remplace pas un vétérinaire.";
+const DISCLAIMER_TEXT = "Cet assistant fournit des conseils généraux.\nIl ne remplace pas l'avis d'un vétérinaire.";
 
-const EMERGENCY_ALERT = "⚠️ Cela peut être sérieux.\n\nConsulte un vétérinaire en urgence.\n\nEn attendant, garde ton animal au calme et surveille-le attentivement.";
+const EMERGENCY_ALERT = "Cela peut être sérieux.\nNous te recommandons de consulter un vétérinaire rapidement.";
 
 const MEDICAL_ADVICE_BLOCKED = "Je ne peux pas fournir de diagnostic, prescription ou dosage de médicaments.\n\nPour toute question médicale, consulte un vétérinaire professionnel.";
 
@@ -355,7 +355,7 @@ export default function VetAssistantScreen() {
       />
 
       <View style={styles.headerSubtitleBanner}>
-        <Text style={styles.headerSubtitleText}>Conseils et prévention</Text>
+        <Text style={styles.headerSubtitleText}>Conseils et prévention pour ton animal</Text>
       </View>
 
       <KeyboardAvoidingView
@@ -396,7 +396,7 @@ export default function VetAssistantScreen() {
                 }
               </Text>
               {remainingQuestions <= 2 && remainingQuestions > 0 && (
-                <Text style={styles.quotaHint}>Passez Premium pour des questions illimitées</Text>
+                <Text style={styles.quotaHint}>Accéder aux conseils avancés</Text>
               )}
             </View>
             <View style={styles.quotaCta}>
@@ -423,7 +423,7 @@ export default function VetAssistantScreen() {
               <Text style={styles.limitReachedTitle}>Limite journalière atteinte</Text>
               <Text style={styles.limitReachedSubtitle}>
                 Vous avez utilisé vos {VET_ASSISTANT_DAILY_LIMIT} questions gratuites aujourd&apos;hui. 
-                Passez Premium pour des questions illimitées et des conseils plus personnalisés.
+                Accéder aux conseils avancés pour des questions illimitées et des conseils plus personnalisés.
               </Text>
               <TouchableOpacity
                 style={styles.upgradePremiumButton}
@@ -444,9 +444,8 @@ export default function VetAssistantScreen() {
               <View style={styles.welcomeIconContainer}>
                 <Stethoscope size={32} color={COLORS.primary} />
               </View>
-              <Text style={styles.welcomeTitle}>Bonjour !</Text>
               <Text style={styles.welcomeSubtitle}>
-                Je suis votre assistant vétérinaire. Posez-moi vos questions sur l&apos;alimentation, le comportement, l&apos;hygiène ou la prévention santé de {activePet.name}.
+                Pose une question pour obtenir des conseils adaptés à ton animal.
               </Text>
               <View style={styles.suggestionsContainer}>
                 <Text style={styles.suggestionsTitle}>Exemples de questions :</Text>
@@ -512,7 +511,7 @@ export default function VetAssistantScreen() {
                 style={styles.input}
                 value={input}
                 onChangeText={setInput}
-                placeholder="Pose ta question"
+                placeholder="Que se passe-t-il avec ton compagnon ?"
                 placeholderTextColor={COLORS.textTertiary}
                 multiline
                 maxLength={1000}
