@@ -203,6 +203,8 @@ export default function VetAssistantScreen() {
   const { messages: agentMessages, sendMessage, setMessages } = useRorkAgent({
     tools: {},
   });
+  
+  const lastAgentMessageCountRef = useRef(0);
 
   useEffect(() => {
     if (activePet) {
@@ -268,35 +270,26 @@ export default function VetAssistantScreen() {
         const contextMessage = `${systemPrompt}\n\nQuestion de l'utilisateur: ${userMessage}`;
         
         await sendMessage(contextMessage);
-
-        const lastResponse = agentMessages.filter(m => m.role === 'assistant').pop();
         
-        if (lastResponse) {
-          for (const part of lastResponse.parts) {
-            if (part.type === 'text') {
-              responseText += part.text;
-            }
-          }
-        }
-
-        if (!responseText) {
-          responseText = "Je suis désolé, je n'ai pas pu traiter votre question. Veuillez réessayer ou consulter un vétérinaire si votre question est urgente.";
-        }
+        // Response will be handled by useEffect watching agentMessages
+        return;
       }
 
-      addMessage(activePet.id, {
-        role: 'assistant',
-        content: responseText,
-        isEmergencyAlert: isEmergency || requiresMedicalAdvice,
-      });
+      if (responseText) {
+        addMessage(activePet.id, {
+          role: 'assistant',
+          content: responseText,
+          isEmergencyAlert: isEmergency || requiresMedicalAdvice,
+        });
 
-      setLocalMessages(prev => [...prev, {
-        id: `resp_${Date.now()}`,
-        role: 'assistant',
-        content: responseText,
-        timestamp: Date.now(),
-        isEmergencyAlert: isEmergency || requiresMedicalAdvice,
-      }]);
+        setLocalMessages(prev => [...prev, {
+          id: `resp_${Date.now()}`,
+          role: 'assistant',
+          content: responseText,
+          timestamp: Date.now(),
+          isEmergencyAlert: isEmergency || requiresMedicalAdvice,
+        }]);
+      }
 
     } catch (error) {
       console.error('[VetAssistant] Error sending message:', error);
@@ -315,9 +308,58 @@ export default function VetAssistantScreen() {
         timestamp: Date.now(),
       }]);
     } finally {
+      if (riskAnalysis.isEmergency || riskAnalysis.requiresMedicalAdvice) {
+        setIsLoading(false);
+      }
+    }
+  }, [input, activePet, isLoading, isLoadingQuota, systemPrompt, sendMessage, addMessage, checkVetAssistantLimit, incrementVetAssistantCount]);
+
+  // Handle AI response from agentMessages
+  useEffect(() => {
+    if (!activePet || !isLoading) return;
+    
+    const assistantMessages = agentMessages.filter(m => m.role === 'assistant');
+    const currentCount = assistantMessages.length;
+    
+    // Only process if we have a new assistant message
+    if (currentCount <= lastAgentMessageCountRef.current) return;
+    
+    const lastResponse = assistantMessages[assistantMessages.length - 1];
+    if (!lastResponse) return;
+    
+    let responseText = '';
+    for (const part of lastResponse.parts) {
+      if (part.type === 'text') {
+        responseText += part.text;
+      }
+    }
+    
+    if (responseText) {
+      const finalText = responseText;
+      
+      addMessage(activePet.id, {
+        role: 'assistant',
+        content: finalText,
+      });
+
+      setLocalMessages(prev => {
+        // Avoid duplicate responses
+        const lastLocal = prev[prev.length - 1];
+        if (lastLocal?.role === 'assistant' && lastLocal?.content === finalText) {
+          return prev;
+        }
+        return [...prev, {
+          id: `resp_${Date.now()}`,
+          role: 'assistant',
+          content: finalText,
+          timestamp: Date.now(),
+        }];
+      });
+      
+      lastAgentMessageCountRef.current = currentCount;
       setIsLoading(false);
     }
-  }, [input, activePet, isLoading, isLoadingQuota, systemPrompt, sendMessage, agentMessages, addMessage, checkVetAssistantLimit, incrementVetAssistantCount]);
+  }, [agentMessages, activePet, isLoading, addMessage]);
 
   const handleNewConversation = useCallback(() => {
     if (!activePet) return;
