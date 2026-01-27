@@ -17,7 +17,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { Image } from 'expo-image';
+import { Image, ImageContentFit } from 'expo-image';
 import { ImageOff, User, Camera } from 'lucide-react-native';
 
 export type MediaType = 'image' | 'video' | 'avatar' | 'pet' | 'post' | 'thumbnail';
@@ -29,7 +29,7 @@ export interface OdaleaMediaProps {
   height?: number | string;
   style?: any;
   borderRadius?: number;
-  resizeMode?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
+  resizeMode?: ImageContentFit;
   placeholder?: 'skeleton' | 'blur' | 'none';
   fallbackIcon?: 'image' | 'user' | 'camera' | 'none';
   onPress?: () => void;
@@ -190,7 +190,7 @@ function OdaleaMediaComponent({
                   borderRadius,
                 },
               ]}
-              contentFit={resizeMode}
+              contentFit={resizeMode as ImageContentFit}
               transition={200}
               cachePolicy={cachePolicy}
               priority={priority}
