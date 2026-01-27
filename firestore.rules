@@ -15,12 +15,13 @@ service cloud.firestore {
       return isAuth() && request.auth.uid in participants;
     }
     
-    // Check if a field is being modified (for immutable fields)
     function fieldUnchanged(field) {
       return !request.resource.data.diff(resource.data).affectedKeys().hasAny([field]);
     }
     
-    // Users collection
+    // ============================================
+    // USERS
+    // ============================================
     match /users/{userId} {
       allow read: if isAuth();
       allow create: if isOwner(userId);
@@ -34,31 +35,39 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
     }
     
-    // Pets collection
+    // ============================================
+    // PETS
+    // ============================================
     match /pets/{petId} {
       allow read: if isAuth();
       allow create: if isAuth() && request.resource.data.ownerId == request.auth.uid;
-      allow update: if isAuth() && resource.data.ownerId == request.auth.uid && fieldUnchanged('ownerId');
+      allow update: if isAuth() && resource.data.ownerId == request.auth.uid;
       allow delete: if isAuth() && resource.data.ownerId == request.auth.uid;
     }
     
-    // Posts collection
+    // ============================================
+    // POSTS (Community)
+    // ============================================
     match /posts/{postId} {
       allow read: if isAuth();
       allow create: if isAuth() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isAuth() && resource.data.authorId == request.auth.uid && fieldUnchanged('authorId');
+      allow update: if isAuth() && resource.data.authorId == request.auth.uid;
       allow delete: if isAuth() && resource.data.authorId == request.auth.uid;
     }
     
-    // Comments collection
+    // ============================================
+    // COMMENTS
+    // ============================================
     match /comments/{commentId} {
       allow read: if isAuth();
       allow create: if isAuth() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isAuth() && resource.data.authorId == request.auth.uid && fieldUnchanged('authorId');
+      allow update: if isAuth() && resource.data.authorId == request.auth.uid;
       allow delete: if isAuth() && resource.data.authorId == request.auth.uid;
     }
     
-    // Likes collection (immutable after creation)
+    // ============================================
+    // LIKES
+    // ============================================
     match /likes/{likeId} {
       allow read: if isAuth();
       allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
@@ -66,7 +75,9 @@ service cloud.firestore {
       allow update: if false;
     }
     
-    // Conversations collection
+    // ============================================
+    // CONVERSATIONS
+    // ============================================
     match /conversations/{conversationId} {
       allow read: if isAuth() && isParticipant(resource.data.participants);
       allow create: if isAuth() && isParticipant(request.resource.data.participants);
@@ -74,140 +85,43 @@ service cloud.firestore {
       allow delete: if false;
     }
     
-    // Messages collection - restricted to participants only
+    // ============================================
+    // MESSAGES
+    // ============================================
     match /messages/{messageId} {
       allow read: if isAuth() && (
         resource.data.senderId == request.auth.uid || 
-        resource.data.receiverId == request.auth.uid
+        resource.data.receiverId == request.auth.uid ||
+        exists(/databases/$(database)/documents/conversations/$(resource.data.conversationId)) &&
+        request.auth.uid in get(/databases/$(database)/documents/conversations/$(resource.data.conversationId)).data.participants
       );
       allow create: if isAuth() && request.resource.data.senderId == request.auth.uid;
       allow update: if isAuth() && resource.data.senderId == request.auth.uid;
       allow delete: if false;
     }
     
-    // Friend Requests collection (idempotent docId: minUid_maxUid)
+    // ============================================
+    // FRIEND REQUESTS
+    // ============================================
     match /friendRequests/{requestId} {
-      allow read: if isAuth() && (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
+      allow read: if isAuth() && (
+        resource.data.senderId == request.auth.uid || 
+        resource.data.receiverId == request.auth.uid
+      );
       allow create: if isAuth() && request.resource.data.senderId == request.auth.uid;
-      allow update: if isAuth() && (resource.data.receiverId == request.auth.uid || resource.data.senderId == request.auth.uid);
-      allow delete: if isAuth() && (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
+      allow update: if isAuth() && (
+        resource.data.receiverId == request.auth.uid || 
+        resource.data.senderId == request.auth.uid
+      );
+      allow delete: if isAuth() && (
+        resource.data.senderId == request.auth.uid || 
+        resource.data.receiverId == request.auth.uid
+      );
     }
     
-    // Pet Sitter Profiles collection
-    match /petSitterProfiles/{sitterId} {
-      allow read: if isAuth();
-      allow create: if isOwner(sitterId);
-      allow update: if isOwner(sitterId);
-      allow delete: if isOwner(sitterId);
-    }
-    
-    // Bookings collection
-    match /bookings/{bookingId} {
-      allow read: if isAuth() && (resource.data.clientId == request.auth.uid || resource.data.catSitterId == request.auth.uid || resource.data.userId == request.auth.uid);
-      allow create: if isAuth() && (request.resource.data.clientId == request.auth.uid || request.resource.data.userId == request.auth.uid);
-      allow update: if isAuth() && (resource.data.clientId == request.auth.uid || resource.data.catSitterId == request.auth.uid || resource.data.userId == request.auth.uid);
-      allow delete: if isAuth() && (resource.data.clientId == request.auth.uid || resource.data.userId == request.auth.uid);
-    }
-    
-    // Reviews collection
-    match /reviews/{reviewId} {
-      allow read: if isAuth();
-      allow create: if isAuth() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isAuth() && resource.data.authorId == request.auth.uid && fieldUnchanged('authorId');
-      allow delete: if false;
-    }
-    
-    // Lost & Found Reports collection
-    match /lostFoundReports/{reportId} {
-      allow read: if isAuth();
-      allow create: if isAuth() && request.resource.data.reporterId == request.auth.uid;
-      allow update: if isAuth() && resource.data.reporterId == request.auth.uid;
-      allow delete: if isAuth() && resource.data.reporterId == request.auth.uid;
-    }
-    
-    // Professionals collection
-    match /professionals/{professionalId} {
-      allow read: if isAuth();
-      allow create: if isOwner(professionalId);
-      allow update: if isOwner(professionalId);
-      allow delete: if false;
-    }
-    
-    // Products collection (admin only write)
-    match /products/{productId} {
-      allow read: if isAuth();
-      allow write: if false;
-    }
-    
-    // Professional Products collection
-    match /professionalProducts/{productId} {
-      allow read: if isAuth();
-      allow create: if isAuth() && request.resource.data.sellerId == request.auth.uid;
-      allow update: if isAuth() && resource.data.sellerId == request.auth.uid;
-      allow delete: if isAuth() && resource.data.sellerId == request.auth.uid;
-    }
-    
-    // Orders collection
-    match /orders/{orderId} {
-      allow read: if isAuth() && (resource.data.customerId == request.auth.uid || resource.data.sellerId == request.auth.uid);
-      allow create: if isAuth() && request.resource.data.customerId == request.auth.uid;
-      allow update: if isAuth() && resource.data.sellerId == request.auth.uid;
-      allow delete: if false;
-    }
-    
-    // Challenges collection (admin only write)
-    match /challenges/{challengeId} {
-      allow read: if isAuth();
-      allow write: if false;
-    }
-    
-    // User Challenges collection
-    match /userChallenges/{userChallengeId} {
-      allow read: if isAuth();
-      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuth();
-      allow delete: if false;
-    }
-    
-    // Challenge Participations collection
-    match /challengeParticipations/{participationId} {
-      allow read: if isAuth();
-      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuth();
-      allow delete: if false;
-    }
-    
-    // Challenge Submissions collection - verified via userId
-    match /challengeSubmissions/{submissionId} {
-      allow read: if isAuth();
-      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuth() && resource.data.userId == request.auth.uid;
-      allow delete: if false;
-    }
-    
-    // Badges collection (admin only write)
-    match /badges/{badgeId} {
-      allow read: if isAuth();
-      allow write: if false;
-    }
-    
-    // User Badges collection
-    match /userBadges/{userBadgeId} {
-      allow read: if isAuth();
-      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuth() && resource.data.userId == request.auth.uid;
-      allow delete: if false;
-    }
-    
-    // Notifications collection
-    match /notifications/{notificationId} {
-      allow read: if isAuth() && resource.data.userId == request.auth.uid;
-      allow update: if isAuth() && resource.data.userId == request.auth.uid;
-      allow create: if isAuth() && request.resource.data.userId != null;
-      allow delete: if isAuth() && resource.data.userId == request.auth.uid;
-    }
-    
-    // Favorites collection
+    // ============================================
+    // FAVORITES
+    // ============================================
     match /favorites/{favoriteId} {
       allow read: if isAuth();
       allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
@@ -215,49 +129,195 @@ service cloud.firestore {
       allow update: if false;
     }
     
-    // Reports collection (moderation)
-    match /reports/{reportId} {
-      allow read: if isAuth() && resource.data.reporterId == request.auth.uid;
+    // ============================================
+    // PET SITTER PROFILES
+    // ============================================
+    match /petSitterProfiles/{sitterId} {
+      allow read: if isAuth();
+      allow create: if isOwner(sitterId);
+      allow update: if isOwner(sitterId);
+      allow delete: if isOwner(sitterId);
+    }
+    
+    // ============================================
+    // BOOKINGS
+    // ============================================
+    match /bookings/{bookingId} {
+      allow read: if isAuth() && (
+        resource.data.clientId == request.auth.uid || 
+        resource.data.catSitterId == request.auth.uid || 
+        resource.data.userId == request.auth.uid ||
+        resource.data.sitterId == request.auth.uid
+      );
+      allow create: if isAuth() && (
+        request.resource.data.clientId == request.auth.uid || 
+        request.resource.data.userId == request.auth.uid
+      );
+      allow update: if isAuth() && (
+        resource.data.clientId == request.auth.uid || 
+        resource.data.catSitterId == request.auth.uid || 
+        resource.data.userId == request.auth.uid ||
+        resource.data.sitterId == request.auth.uid
+      );
+      allow delete: if isAuth() && (
+        resource.data.clientId == request.auth.uid || 
+        resource.data.userId == request.auth.uid
+      );
+    }
+    
+    // ============================================
+    // LOST & FOUND REPORTS
+    // ============================================
+    match /lostFoundReports/{reportId} {
+      allow read: if isAuth();
       allow create: if isAuth() && request.resource.data.reporterId == request.auth.uid;
-      allow update: if false;
-      allow delete: if false;
+      allow update: if isAuth() && resource.data.reporterId == request.auth.uid;
+      allow delete: if isAuth() && resource.data.reporterId == request.auth.uid;
     }
     
-    // Moderation Actions collection (admin audit log)
-    match /moderationActions/{actionId} {
+    // ============================================
+    // CHALLENGES
+    // ============================================
+    match /challenges/{challengeId} {
       allow read: if isAuth();
       allow write: if false;
     }
     
-    // User Flags collection (strikes, bans)
-    match /userFlags/{userId} {
-      allow read: if isOwner(userId);
-      allow write: if false;
-    }
-    
-    // Moderation Queue collection (pending review items)
-    match /moderationQueue/{itemId} {
+    // ============================================
+    // USER CHALLENGES
+    // ============================================
+    match /userChallenges/{userChallengeId} {
       allow read: if isAuth();
-      allow write: if false;
-    }
-    
-    // Professional Verifications collection
-    match /professionalVerifications/{verificationId} {
-      allow read: if isAuth() && resource.data.userId == request.auth.uid;
       allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
-      allow update: if false;
+      allow update: if isAuth() && resource.data.userId == request.auth.uid;
       allow delete: if false;
     }
     
-    // Blocked Users collection
-    match /blockedUsers/{blockId} {
-      allow read: if isAuth() && resource.data.blockerId == request.auth.uid;
-      allow create: if isAuth() && request.resource.data.blockerId == request.auth.uid;
-      allow delete: if isAuth() && resource.data.blockerId == request.auth.uid;
-      allow update: if false;
+    // ============================================
+    // CHALLENGE PARTICIPATIONS
+    // ============================================
+    match /challengeParticipations/{participationId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuth() && resource.data.userId == request.auth.uid;
+      allow delete: if false;
     }
     
-    // Pet Matching collections - with userId verification
+    // ============================================
+    // CHALLENGE SUBMISSIONS
+    // ============================================
+    match /challengeSubmissions/{submissionId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuth();
+      allow delete: if false;
+    }
+    
+    // ============================================
+    // PRODUCTS
+    // ============================================
+    match /products/{productId} {
+      allow read: if isAuth();
+      allow write: if false;
+    }
+    
+    // ============================================
+    // PROFESSIONAL PRODUCTS
+    // ============================================
+    match /professionalProducts/{productId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.resource.data.sellerId == request.auth.uid;
+      allow update: if isAuth() && resource.data.sellerId == request.auth.uid;
+      allow delete: if isAuth() && resource.data.sellerId == request.auth.uid;
+    }
+    
+    // ============================================
+    // ORDERS
+    // ============================================
+    match /orders/{orderId} {
+      allow read: if isAuth() && (
+        resource.data.customerId == request.auth.uid || 
+        resource.data.sellerId == request.auth.uid
+      );
+      allow create: if isAuth() && request.resource.data.customerId == request.auth.uid;
+      allow update: if isAuth() && (
+        resource.data.sellerId == request.auth.uid ||
+        resource.data.customerId == request.auth.uid
+      );
+      allow delete: if false;
+    }
+    
+    // ============================================
+    // HEALTH RECORDS
+    // ============================================
+    match /healthRecords/{recordId} {
+      allow read: if isAuth() && resource.data.petOwnerId == request.auth.uid;
+      allow create: if isAuth() && request.resource.data.petOwnerId == request.auth.uid;
+      allow update: if isAuth() && resource.data.petOwnerId == request.auth.uid;
+      allow delete: if isAuth() && resource.data.petOwnerId == request.auth.uid;
+    }
+    
+    // ============================================
+    // VACCINATIONS
+    // ============================================
+    match /vaccinations/{vaccinationId} {
+      allow read: if isAuth() && resource.data.petOwnerId == request.auth.uid;
+      allow create: if isAuth() && request.resource.data.petOwnerId == request.auth.uid;
+      allow update: if isAuth() && resource.data.petOwnerId == request.auth.uid;
+      allow delete: if isAuth() && resource.data.petOwnerId == request.auth.uid;
+    }
+    
+    // ============================================
+    // NOTIFICATIONS
+    // ============================================
+    match /notifications/{notificationId} {
+      allow read: if isAuth() && resource.data.userId == request.auth.uid;
+      allow update: if isAuth() && resource.data.userId == request.auth.uid;
+      allow create: if isAuth();
+      allow delete: if isAuth() && resource.data.userId == request.auth.uid;
+    }
+    
+    // ============================================
+    // REVIEWS
+    // ============================================
+    match /reviews/{reviewId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.resource.data.authorId == request.auth.uid;
+      allow update: if isAuth() && resource.data.authorId == request.auth.uid;
+      allow delete: if false;
+    }
+    
+    // ============================================
+    // PROFESSIONALS
+    // ============================================
+    match /professionals/{professionalId} {
+      allow read: if isAuth();
+      allow create: if isOwner(professionalId);
+      allow update: if isOwner(professionalId);
+      allow delete: if false;
+    }
+    
+    // ============================================
+    // BADGES
+    // ============================================
+    match /badges/{badgeId} {
+      allow read: if isAuth();
+      allow write: if false;
+    }
+    
+    // ============================================
+    // USER BADGES
+    // ============================================
+    match /userBadges/{userBadgeId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuth() && resource.data.userId == request.auth.uid;
+      allow delete: if false;
+    }
+    
+    // ============================================
+    // PET MATCHING
+    // ============================================
     match /petLikes/{likeId} {
       allow read: if isAuth() && (
         resource.data.userId == request.auth.uid ||
@@ -298,22 +358,54 @@ service cloud.firestore {
       allow delete: if false;
     }
     
-    // Health Records collections - verified via petOwnerId
-    match /healthRecords/{recordId} {
-      allow read: if isAuth() && resource.data.petOwnerId == request.auth.uid;
-      allow create: if isAuth() && request.resource.data.petOwnerId == request.auth.uid;
-      allow update: if isAuth() && resource.data.petOwnerId == request.auth.uid;
-      allow delete: if isAuth() && resource.data.petOwnerId == request.auth.uid;
+    // ============================================
+    // REPORTS & MODERATION
+    // ============================================
+    match /reports/{reportId} {
+      allow read: if isAuth() && resource.data.reporterId == request.auth.uid;
+      allow create: if isAuth() && request.resource.data.reporterId == request.auth.uid;
+      allow update: if false;
+      allow delete: if false;
     }
     
-    match /vaccinations/{vaccinationId} {
-      allow read: if isAuth() && resource.data.petOwnerId == request.auth.uid;
-      allow create: if isAuth() && request.resource.data.petOwnerId == request.auth.uid;
-      allow update: if isAuth() && resource.data.petOwnerId == request.auth.uid;
-      allow delete: if isAuth() && resource.data.petOwnerId == request.auth.uid;
+    match /moderationActions/{actionId} {
+      allow read: if isAuth();
+      allow write: if false;
     }
     
-    // Emergency Contacts collection
+    match /userFlags/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+    
+    match /moderationQueue/{itemId} {
+      allow read: if isAuth();
+      allow write: if false;
+    }
+    
+    // ============================================
+    // PROFESSIONAL VERIFICATIONS
+    // ============================================
+    match /professionalVerifications/{verificationId} {
+      allow read: if isAuth() && resource.data.userId == request.auth.uid;
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if false;
+      allow delete: if false;
+    }
+    
+    // ============================================
+    // BLOCKED USERS
+    // ============================================
+    match /blockedUsers/{blockId} {
+      allow read: if isAuth() && resource.data.blockerId == request.auth.uid;
+      allow create: if isAuth() && request.resource.data.blockerId == request.auth.uid;
+      allow delete: if isAuth() && resource.data.blockerId == request.auth.uid;
+      allow update: if false;
+    }
+    
+    // ============================================
+    // EMERGENCY CONTACTS
+    // ============================================
     match /emergencyContacts/{contactId} {
       allow read: if isAuth() && resource.data.userId == request.auth.uid;
       allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
@@ -321,7 +413,9 @@ service cloud.firestore {
       allow delete: if isAuth() && resource.data.userId == request.auth.uid;
     }
     
-    // Animal Species and Breeds (read-only for users)
+    // ============================================
+    // REFERENCE DATA (Read-only)
+    // ============================================
     match /animalSpecies/{speciesId} {
       allow read: if isAuth();
       allow write: if false;
@@ -332,7 +426,24 @@ service cloud.firestore {
       allow write: if false;
     }
     
-    // Promo Submissions
+    // ============================================
+    // AI LOGS & CONFIG
+    // ============================================
+    match /ai_logs/{logId} {
+      allow read: if false;
+      allow create: if isAuth();
+      allow update: if false;
+      allow delete: if false;
+    }
+    
+    match /config/{configId} {
+      allow read: if isAuth();
+      allow write: if false;
+    }
+    
+    // ============================================
+    // PROMO SUBMISSIONS
+    // ============================================
     match /promoSubmissions/{submissionId} {
       allow read: if isAuth();
       allow create: if isAuth();
@@ -340,12 +451,24 @@ service cloud.firestore {
       allow delete: if false;
     }
     
-    // AI Logs collection (anonymized analytics)
-    match /ai_logs/{logId} {
-      allow read: if false;
-      allow create: if isAuth();
-      allow update: if false;
-      allow delete: if false;
+    // ============================================
+    // VET BOOKINGS
+    // ============================================
+    match /vetBookings/{bookingId} {
+      allow read: if isAuth() && resource.data.userId == request.auth.uid;
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuth() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuth() && resource.data.userId == request.auth.uid;
+    }
+    
+    // ============================================
+    // VET SESSIONS (AI Assistant)
+    // ============================================
+    match /vetSessions/{sessionId} {
+      allow read: if isAuth() && resource.data.userId == request.auth.uid;
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuth() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuth() && resource.data.userId == request.auth.uid;
     }
     
     // Deny all other paths
