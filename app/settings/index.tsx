@@ -89,14 +89,14 @@ export default function SettingsScreen() {
     if (petIds.length === 0) {
       Alert.alert(
         'Historique vide',
-        'Aucun historique de conseils vétérinaires à supprimer.'
+        'Aucun historique de conseils bien-être à supprimer.'
       );
       return;
     }
 
     Alert.alert(
       'Supprimer l\'historique',
-      'Voulez-vous supprimer tout l\'historique de l\'assistant conseils vétérinaires ? Cette action est irréversible.',
+      'Voulez-vous supprimer tout l\'historique de l\'assistant bien-être animal ? Cette action est irréversible.',
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
@@ -104,7 +104,7 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: () => {
             petIds.forEach(petId => startNewConversation(petId));
-            Alert.alert('Historique supprimé', 'L\'historique des conseils vétérinaires a été supprimé.');
+            Alert.alert('Historique supprimé', 'L\'historique de l\'assistant bien-être a été supprimé.');
           },
         },
       ]
@@ -153,7 +153,7 @@ export default function SettingsScreen() {
     },
     {
       id: 'vet-history',
-      title: 'Historique conseils vétérinaires',
+      title: 'Historique bien-être animal',
       subtitle: 'Supprimer l\'historique de l\'assistant',
       icon: <Stethoscope size={22} color={COLORS.black} />,
       onPress: handleClearVetHistory,

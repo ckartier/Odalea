@@ -108,20 +108,21 @@ export default function TermsScreen() {
           transform: [{ translateY: slideAnim }],
         }}>
         <GlassView style={styles.section} liquidGlass tint="neutral" intensity={isDark ? 10 : 20}>
-          <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>2bis. Assistant Conseils Vétérinaires</Text>
+          <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>2bis. Assistant Bien-être Animal</Text>
           <Text style={[styles.paragraph, { color: currentTheme.text }]}>
-            L&apos;application propose un assistant de conseils vétérinaires. Cet assistant fournit uniquement des conseils généraux de bien-être animal à titre informatif.
+            L&apos;application propose un assistant de conseils généraux pour le bien-être de votre animal. Cet assistant fournit uniquement des informations générales à titre éducatif et préventif.
           </Text>
           <Text style={[styles.importantText, { color: '#DC2626' }]}>
             AVERTISSEMENT IMPORTANT :
           </Text>
-          <Text style={[styles.bulletText, { color: currentTheme.text }]}>• Cet assistant NE remplace PAS l&apos;avis d&apos;un vétérinaire professionnel</Text>
-          <Text style={[styles.bulletText, { color: currentTheme.text }]}>• Aucun diagnostic médical n&apos;est fourni</Text>
-          <Text style={[styles.bulletText, { color: currentTheme.text }]}>• Aucune prescription ou dosage de médicament n&apos;est donné</Text>
-          <Text style={[styles.bulletText, { color: currentTheme.text }]}>• En cas d&apos;urgence, consultez immédiatement un vétérinaire</Text>
-          <Text style={[styles.bulletText, { color: currentTheme.text }]}>• Les conseils sont généraux et ne constituent pas un avis médical</Text>
+          <Text style={[styles.bulletText, { color: currentTheme.text }]}>• Cet assistant n&apos;est PAS un vétérinaire et ne fournit PAS d&apos;avis médical</Text>
+          <Text style={[styles.bulletText, { color: currentTheme.text }]}>• Aucun diagnostic n&apos;est fourni</Text>
+          <Text style={[styles.bulletText, { color: currentTheme.text }]}>• Aucune prescription, dosage ou traitement n&apos;est recommandé</Text>
+          <Text style={[styles.bulletText, { color: currentTheme.text }]}>• En cas de problème de santé, consultez immédiatement un vétérinaire</Text>
+          <Text style={[styles.bulletText, { color: currentTheme.text }]}>• Les conseils sont généraux et concernent uniquement le bien-être et la prévention</Text>
+          <Text style={[styles.bulletText, { color: currentTheme.text }]}>• L&apos;assistant peut être désactivé à tout moment par Odalea</Text>
           <Text style={[styles.paragraph, { color: currentTheme.text }]}>
-            Odalea décline toute responsabilité quant aux décisions prises sur la base des conseils fournis par l&apos;assistant. En cas de doute sur la santé de votre animal, consultez toujours un vétérinaire qualifié.
+            Odalea décline toute responsabilité quant aux décisions prises sur la base des informations fournies par l&apos;assistant. Pour toute question concernant la santé de votre animal, consultez toujours un vétérinaire qualifié.
           </Text>
         </GlassView>
         </Animated.View>

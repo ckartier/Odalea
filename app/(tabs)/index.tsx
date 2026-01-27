@@ -149,7 +149,7 @@ export default function HomeScreen() {
   }, [signOut, router]);
 
   const quickActions = useMemo(() => [
-    { id: 'vet-assistant', label: 'Conseils véto', icon: Stethoscope, route: '/vet-assistant' },
+    { id: 'vet-assistant', label: 'Bien-être', icon: Stethoscope, route: '/vet-assistant' },
     { id: 'challenges', label: 'Défis', icon: Trophy, route: '/defis' },
     { id: 'catsitter', label: 'Cat sitter', icon: Heart, route: '/(tabs)/cat-sitter' },
     { id: 'messages', label: 'Messages', icon: MessageCircle, route: '/(tabs)/messages' },

@@ -25,11 +25,11 @@ import { logAIInteraction } from '@/services/ai-logging';
 import { useAIConfig } from '@/hooks/useAIConfig';
 import { Pet } from '@/types';
 
-const DISCLAIMER_TEXT = "Ces conseils sont fournis à titre informatif uniquement.\nIls ne remplacent pas l'avis d'un vétérinaire professionnel.";
+const DISCLAIMER_TEXT = "Cet assistant fournit des conseils généraux de bien-être animal.\nIl ne remplace pas l'avis d'un vétérinaire.";
 
 const EMERGENCY_ALERT = "Cela peut être sérieux.\nNous te recommandons de consulter un vétérinaire rapidement.";
 
-const MEDICAL_ADVICE_BLOCKED = "Je ne peux pas fournir de diagnostic, prescription ou dosage de médicaments.\n\nPour toute question médicale, consulte un vétérinaire professionnel.";
+const MEDICAL_ADVICE_BLOCKED = "Je ne peux pas fournir de diagnostic, prescription ou dosage.\n\nPour toute question médicale, consulte un vétérinaire professionnel.";
 
 
 
@@ -85,36 +85,38 @@ function calculateAge(dateOfBirth: string): string {
 function buildSystemPrompt(pet: Pet, isPremium: boolean): string {
   const petContext = formatPetContextDetailed(pet);
   
-  const basePrompt = `Tu es un conseiller bien-être animal pour l'application Odalea. Tu fournis UNIQUEMENT des conseils généraux et informatifs sur le bien-être animal.
+  const basePrompt = `Tu es un assistant bien-être animal pour l'application Odalea. Tu fournis UNIQUEMENT des conseils généraux de prévention et bien-être pour les animaux de compagnie.
 
-CONTEXTE ANIMAL ACTUEL:
+IMPORTANT: Tu n'es PAS un vétérinaire et tu ne fournis PAS d'avis médical.
+
+CONTEXTE ANIMAL:
 ${petContext}
 
-=== RÈGLES NON NÉGOCIABLES ===
+=== RÈGLES ABSOLUES ===
 Tu ne dois JAMAIS:
-- Faire de diagnostic médical
-- Prescrire de médicaments
+- Faire de diagnostic
+- Prescrire quoi que ce soit
 - Donner de dosage ou posologie
-- Interpréter des analyses, radios ou examens
-- Gérer des urgences médicales
-- Recommander des traitements médicaux spécifiques
+- Interpréter des analyses ou examens
+- Gérer des urgences
+- Recommander des traitements
 
-Si on te demande un diagnostic, médicament, dosage ou interprétation d'analyse:
-Réponds: "Je ne peux pas fournir ce type de conseil médical. Consulte un vétérinaire professionnel."
+Si on te pose une question médicale:
+Réponds: "Je ne peux pas répondre à ce type de question. Consulte un vétérinaire."
 
-=== DOMAINES AUTORISÉS ===
-- Alimentation et nutrition générale
-- Comportement animal
-- Activité physique et exercice
+=== CE QUE TU PEUX FAIRE ===
+- Alimentation générale et nutrition de base
+- Comportement et éducation
+- Activité physique et jeux
 - Hygiène et toilettage
-- Prévention santé (rappels vaccins, vermifuges)
+- Rappels de prévention (vaccins, vermifuges)
 - Conseils du quotidien
 
-=== TON ET STYLE ===
-- Ton calme, pédagogique et rassurant
-- Langage simple et accessible
-- Phrases courtes et claires
-- TOUJOURS terminer par: "Si les symptômes persistent ou s'aggravent, consulte un vétérinaire."`;
+=== TON ===
+- Calme et bienveillant
+- Simple et accessible
+- Jamais catégorique
+- TOUJOURS terminer par: "En cas de doute, consulte un vétérinaire."`;
 
   if (isPremium) {
     return `${basePrompt}
@@ -455,7 +457,7 @@ export default function VetAssistantScreen() {
   if (isPetsLoading) {
     return (
       <View style={styles.container}>
-        <Stack.Screen options={{ title: 'Conseils vétérinaires' }} />
+        <Stack.Screen options={{ title: 'Assistant bien-être' }} />
         <View style={styles.loadingFullContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingFullText}>Chargement de vos animaux...</Text>
@@ -467,7 +469,7 @@ export default function VetAssistantScreen() {
   if (!activePet && userPets.length > 0) {
     return (
       <View style={styles.container}>
-        <Stack.Screen options={{ title: 'Conseils vétérinaires' }} />
+        <Stack.Screen options={{ title: 'Assistant bien-être' }} />
         <View style={styles.noPetContainer}>
           <View style={styles.noPetIconContainer}>
             <Stethoscope size={48} color={COLORS.textSecondary} />
@@ -509,7 +511,7 @@ export default function VetAssistantScreen() {
   if (!activePet) {
     return (
       <View style={styles.container}>
-        <Stack.Screen options={{ title: 'Conseils vétérinaires' }} />
+        <Stack.Screen options={{ title: 'Assistant bien-être' }} />
         <View style={styles.noPetContainer}>
           <View style={styles.noPetIconContainer}>
             <Stethoscope size={48} color={COLORS.textSecondary} />
@@ -534,7 +536,7 @@ export default function VetAssistantScreen() {
     <View style={styles.container}>
       <Stack.Screen 
         options={{ 
-          title: 'Conseils vétérinaires',
+          title: 'Assistant bien-être',
           headerRight: () => (
             <TouchableOpacity
               onPress={handleNewConversation}
@@ -548,7 +550,7 @@ export default function VetAssistantScreen() {
       />
 
       <View style={styles.headerSubtitleBanner}>
-        <Text style={styles.headerSubtitleText}>Conseils et prévention pour ton animal</Text>
+        <Text style={styles.headerSubtitleText}>Conseils et prévention pour ton compagnon</Text>
       </View>
 
       <KeyboardAvoidingView

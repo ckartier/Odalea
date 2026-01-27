@@ -129,10 +129,11 @@ export default function PrivacyScreen() {
           <Text style={styles.bulletText}>• Historique d&apos;utilisation de l&apos;application</Text>
           <Text style={styles.bulletText}>• Messages et interactions</Text>
           
-          <Text style={styles.subTitle}>3.4 Données de l&apos;Assistant Conseils Vétérinaires</Text>
-          <Text style={styles.bulletText}>• Historique des conversations (lié à l&apos;animal, non à la santé humaine)</Text>
+          <Text style={styles.subTitle}>3.4 Données de l&apos;Assistant Bien-être Animal</Text>
+          <Text style={styles.bulletText}>• Historique des conversations (lié à l&apos;animal uniquement)</Text>
           <Text style={styles.bulletText}>• Questions posées à l&apos;assistant (anonymisées dans les logs)</Text>
           <Text style={styles.bulletText}>• Aucune donnée médicale sensible n&apos;est stockée</Text>
+          <Text style={styles.bulletText}>• Historique supprimable à tout moment</Text>
         </GlassView>
         </Animated.View>
 
@@ -215,7 +216,7 @@ export default function PrivacyScreen() {
           <Text style={styles.bulletText}>• Droit à la portabilité</Text>
           <Text style={styles.bulletText}>• Droit d&apos;opposition</Text>
           <Text style={styles.bulletText}>• Droit de retirer votre consentement</Text>
-          <Text style={styles.bulletText}>• Droit de supprimer l&apos;historique de l&apos;assistant conseils vétérinaires</Text>
+          <Text style={styles.bulletText}>• Droit de supprimer l&apos;historique de l&apos;assistant bien-être animal</Text>
         </GlassView>
         </Animated.View>
 
