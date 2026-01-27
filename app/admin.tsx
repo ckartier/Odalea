@@ -12,7 +12,8 @@ import { router, Stack } from 'expo-router';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { databaseService } from '@/services/database';
 import { User } from '@/types';
-import { Trash2, Users, MessageSquare, Shield, Database, RefreshCw } from 'lucide-react-native';
+import { Trash2, Users, MessageSquare, Shield, Database, RefreshCw, Bot, AlertTriangle } from 'lucide-react-native';
+import { getAIAnalytics, AILogAnalytics, AIQuestionCategory } from '@/services/ai-logging';
 import { COLORS } from '@/constants/colors';
 
 export default function AdminScreen() {
@@ -25,7 +26,9 @@ export default function AdminScreen() {
     testUsers: 0,
   });
   const [users, setUsers] = useState<User[]>([]);
-  const [selectedTab, setSelectedTab] = useState<'stats' | 'users' | 'content'>('stats');
+  const [selectedTab, setSelectedTab] = useState<'stats' | 'users' | 'content' | 'ai'>('stats');
+  const [aiAnalytics, setAiAnalytics] = useState<AILogAnalytics | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     if (!user || user.role !== 'admin') {
@@ -59,6 +62,32 @@ export default function AdminScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadAIAnalytics = async () => {
+    setAiLoading(true);
+    try {
+      const analytics = await getAIAnalytics({ limitCount: 1000 });
+      setAiAnalytics(analytics);
+      console.log('[Admin] AI Analytics loaded:', analytics);
+    } catch (error) {
+      console.error('Error loading AI analytics:', error);
+      Alert.alert('Erreur', 'Impossible de charger les analytics IA');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const getCategoryLabel = (category: AIQuestionCategory): string => {
+    const labels: Record<AIQuestionCategory, string> = {
+      alimentation: 'Alimentation',
+      comportement: 'Comportement',
+      prevention: 'Prévention',
+      hygiene: 'Hygiène',
+      activite: 'Activité',
+      autre: 'Autre',
+    };
+    return labels[category] || category;
   };
 
   const deleteTestUsers = async () => {
@@ -201,6 +230,19 @@ export default function AdminScreen() {
             Contenu
           </Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tab, selectedTab === 'ai' && styles.tabActive]}
+          onPress={() => {
+            setSelectedTab('ai');
+            if (!aiAnalytics) loadAIAnalytics();
+          }}
+        >
+          <Bot size={20} color={selectedTab === 'ai' ? COLORS.primary : '#666'} />
+          <Text style={[styles.tabText, selectedTab === 'ai' && styles.tabTextActive]}>
+            IA
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content}>
@@ -294,6 +336,82 @@ export default function AdminScreen() {
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Gestion du contenu</Text>
                 <Text style={styles.comingSoon}>Fonctionnalités à venir...</Text>
+              </View>
+            )}
+
+            {selectedTab === 'ai' && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Analytics Assistant IA</Text>
+                
+                {aiLoading ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={COLORS.primary} />
+                  </View>
+                ) : aiAnalytics ? (
+                  <>
+                    <View style={styles.statCard}>
+                      <Bot size={32} color={COLORS.primary} />
+                      <Text style={styles.statValue}>{aiAnalytics.totalQuestions}</Text>
+                      <Text style={styles.statLabel}>Questions totales</Text>
+                    </View>
+
+                    <View style={[styles.statCard, styles.warningCard]}>
+                      <AlertTriangle size={32} color="#EF4444" />
+                      <Text style={styles.statValue}>{aiAnalytics.riskAlertCount}</Text>
+                      <Text style={styles.statLabel}>Alertes risque</Text>
+                    </View>
+
+                    <View style={styles.analyticsCard}>
+                      <Text style={styles.analyticsTitle}>Répartition Gratuit / Premium</Text>
+                      <View style={styles.quotaRow}>
+                        <View style={styles.quotaItem}>
+                          <Text style={styles.quotaValue}>{aiAnalytics.quotaBreakdown.gratuit}</Text>
+                          <Text style={styles.quotaLabel}>Gratuit</Text>
+                        </View>
+                        <View style={styles.quotaItem}>
+                          <Text style={[styles.quotaValue, { color: '#F59E0B' }]}>{aiAnalytics.quotaBreakdown.premium}</Text>
+                          <Text style={styles.quotaLabel}>Premium</Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <View style={styles.analyticsCard}>
+                      <Text style={styles.analyticsTitle}>Catégories de questions</Text>
+                      {Object.entries(aiAnalytics.categoryBreakdown).map(([category, count]) => (
+                        <View key={category} style={styles.categoryRow}>
+                          <Text style={styles.categoryLabel}>{getCategoryLabel(category as AIQuestionCategory)}</Text>
+                          <Text style={styles.categoryValue}>{count}</Text>
+                        </View>
+                      ))}
+                    </View>
+
+                    <View style={styles.analyticsCard}>
+                      <Text style={styles.analyticsTitle}>Types de réponses</Text>
+                      {Object.entries(aiAnalytics.responseTypeBreakdown).map(([type, count]) => (
+                        <View key={type} style={styles.categoryRow}>
+                          <Text style={styles.categoryLabel}>
+                            {type === 'normal' ? 'Normal' : type === 'emergency' ? 'Urgence' : type === 'medical_blocked' ? 'Médical bloqué' : type}
+                          </Text>
+                          <Text style={[styles.categoryValue, type !== 'normal' && { color: '#EF4444' }]}>{count}</Text>
+                        </View>
+                      ))}
+                    </View>
+
+                    <TouchableOpacity style={styles.refreshButton} onPress={loadAIAnalytics}>
+                      <RefreshCw size={20} color={COLORS.primary} />
+                      <Text style={styles.refreshButtonText}>Actualiser</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <View style={styles.emptyState}>
+                    <Bot size={48} color="#9CA3AF" />
+                    <Text style={styles.emptyStateText}>Aucune donnée disponible</Text>
+                    <TouchableOpacity style={styles.refreshButton} onPress={loadAIAnalytics}>
+                      <RefreshCw size={20} color={COLORS.primary} />
+                      <Text style={styles.refreshButtonText}>Charger les données</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             )}
           </>
@@ -469,5 +587,66 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     textAlign: 'center',
     marginTop: 40,
+  },
+  analyticsCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  analyticsTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#6B7280',
+    marginBottom: 12,
+  },
+  quotaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  quotaItem: {
+    alignItems: 'center',
+  },
+  quotaValue: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+    color: COLORS.primary,
+  },
+  quotaLabel: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 4,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  categoryLabel: {
+    fontSize: 14,
+    color: '#4B5563',
+  },
+  categoryValue: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: COLORS.primary,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: '#9CA3AF',
+    marginTop: 16,
+    marginBottom: 24,
   },
 });

@@ -340,6 +340,14 @@ service cloud.firestore {
       allow delete: if false;
     }
     
+    // AI Logs collection (anonymized analytics)
+    match /ai_logs/{logId} {
+      allow read: if false;
+      allow create: if isAuth();
+      allow update: if false;
+      allow delete: if false;
+    }
+    
     // Deny all other paths
     match /{document=**} {
       allow read, write: if false;

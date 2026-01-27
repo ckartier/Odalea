@@ -20,6 +20,8 @@ import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '@/theme/tokens';
 import { useActivePetWithData } from '@/hooks/active-pet-store';
 import { useVetAssistant, analyzeRiskLevel, VetMessage } from '@/hooks/vet-assistant-store';
 import { usePremium } from '@/hooks/premium-store';
+import { useAuth } from '@/hooks/user-store';
+import { logAIInteraction } from '@/services/ai-logging';
 import { Pet } from '@/types';
 
 const DISCLAIMER_TEXT = "Ces conseils sont fournis à titre informatif uniquement.\nIls ne remplacent pas l'avis d'un vétérinaire professionnel.";
@@ -178,6 +180,7 @@ export default function VetAssistantScreen() {
   
   const { activePet, userPets, setActivePet, isLoading: isPetsLoading } = useActivePetWithData();
   const { getMessagesForPet, addMessage, startNewConversation } = useVetAssistant();
+  const { user } = useAuth();
   const { 
     isPremium, 
     checkVetAssistantLimit, 
@@ -239,6 +242,21 @@ export default function VetAssistantScreen() {
     const riskAnalysis = analyzeRiskLevel(userMessage);
     const isEmergency = riskAnalysis.isEmergency;
     const requiresMedicalAdvice = riskAnalysis.requiresMedicalAdvice;
+
+    const logResponseType = isEmergency ? 'emergency' : requiresMedicalAdvice ? 'medical_blocked' : 'normal';
+    
+    if (user?.id && activePet) {
+      logAIInteraction({
+        userId: user.id,
+        petId: activePet.id,
+        species: activePet.type || 'inconnu',
+        questionText: userMessage,
+        isPremium,
+        riskFlag: isEmergency || requiresMedicalAdvice,
+        responseType: logResponseType,
+        detectedKeywords: riskAnalysis.detectedKeywords,
+      }).catch(err => console.error('[VetAssistant] Log error:', err));
+    }
 
     addMessage(activePet.id, {
       role: 'user',
@@ -312,7 +330,7 @@ export default function VetAssistantScreen() {
         setIsLoading(false);
       }
     }
-  }, [input, activePet, isLoading, isLoadingQuota, systemPrompt, sendMessage, addMessage, checkVetAssistantLimit, incrementVetAssistantCount]);
+  }, [input, activePet, isLoading, isLoadingQuota, systemPrompt, sendMessage, addMessage, checkVetAssistantLimit, incrementVetAssistantCount, isPremium, user?.id]);
 
   // Handle AI response from agentMessages
   useEffect(() => {
