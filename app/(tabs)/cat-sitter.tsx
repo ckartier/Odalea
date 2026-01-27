@@ -5,6 +5,7 @@ import {
   View,
   FlatList,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -15,6 +16,8 @@ import FloatingMenu from '@/components/FloatingMenu';
 import GlassCard from '@/components/GlassCard';
 import AppBackground from '@/components/AppBackground';
 import Button from '@/components/Button';
+import { useQuery } from '@tanstack/react-query';
+import { petSitterService, userService } from '@/services/database';
 import {
   Heart,
   Star,
@@ -28,6 +31,7 @@ import {
 
 interface CatSitter {
   id: string;
+  userId: string;
   name: string;
   avatar: string;
   rating: number;
@@ -46,66 +50,6 @@ interface CatSitter {
   languages: string[];
 }
 
-const mockCatSitters: CatSitter[] = [
-  {
-    id: '1',
-    name: 'Marie Dubois',
-    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?q=80&w=400',
-    rating: 4.9,
-    reviewCount: 127,
-    hourlyRate: 15,
-    location: 'Montmartre, Paris',
-    distance: 0.8,
-    isAvailable: true,
-    isVerified: true,
-    isPremium: true,
-    services: ['Pet Sitting', 'Dog Walking', 'Overnight Care'],
-    responseTime: '< 1 hour',
-    totalBookings: 234,
-    description: 'Passionate about animals with 5 years of experience. I love taking care of cats and dogs.',
-    petTypes: ['Cats', 'Dogs', 'Small Animals'],
-    languages: ['French', 'English'],
-  },
-  {
-    id: '2',
-    name: 'Pierre Martin',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400',
-    rating: 4.7,
-    reviewCount: 89,
-    hourlyRate: 12,
-    location: 'Le Marais, Paris',
-    distance: 1.2,
-    isAvailable: false,
-    isVerified: true,
-    isPremium: false,
-    services: ['Pet Sitting', 'Dog Walking'],
-    responseTime: '< 2 hours',
-    totalBookings: 156,
-    description: 'Reliable pet sitter available weekends and evenings.',
-    petTypes: ['Cats', 'Dogs'],
-    languages: ['French'],
-  },
-  {
-    id: '3',
-    name: 'Sophie Laurent',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=400',
-    rating: 5.0,
-    reviewCount: 203,
-    hourlyRate: 18,
-    location: 'Saint-Germain, Paris',
-    distance: 2.1,
-    isAvailable: true,
-    isVerified: true,
-    isPremium: true,
-    services: ['Pet Sitting', 'Dog Walking', 'Grooming', 'Training'],
-    responseTime: '< 30 min',
-    totalBookings: 412,
-    description: 'Professional pet care specialist with veterinary background.',
-    petTypes: ['Cats', 'Dogs', 'Birds', 'Rabbits'],
-    languages: ['French', 'English', 'Spanish'],
-  },
-];
-
 export default function CatSitterScreen() {
   const router = useRouter();
   const { t } = useI18n();
@@ -117,15 +61,56 @@ export default function CatSitterScreen() {
       router.replace('/(pro)/cat-sitter-dashboard' as any);
     }
   }, [router, user?.isCatSitter]);
+  
   const [isMenuVisible, setIsMenuVisible] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<'distance' | 'popularity'>('popularity');
   const [showOnlyAvailable, setShowOnlyAvailable] = useState<boolean>(false);
 
+  const catSittersQuery = useQuery({
+    queryKey: ['catSitters'],
+    queryFn: async () => {
+      console.log('🔄 Fetching cat sitters from Firestore');
+      const profiles = await petSitterService.getAllProfiles(50);
+      
+      const sittersWithUsers: CatSitter[] = await Promise.all(
+        profiles.map(async (profile) => {
+          const userData = await userService.getUser(profile.userId || profile.id);
+          return {
+            id: profile.userId || profile.id,
+            userId: profile.userId || profile.id,
+            name: userData?.name || `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() || 'Cat Sitter',
+            avatar: userData?.photo || '',
+            rating: profile.rating || 4.5,
+            reviewCount: profile.reviewCount || 0,
+            hourlyRate: profile.hourlyRate || 15,
+            location: userData?.city || userData?.address || 'France',
+            distance: Math.random() * 5,
+            isAvailable: profile.isActive !== false,
+            isVerified: profile.backgroundCheckVerified || false,
+            isPremium: userData?.isPremium || false,
+            services: profile.services || ['Pet Sitting'],
+            responseTime: profile.responseTime || '< 2 hours',
+            totalBookings: profile.totalBookings || 0,
+            description: profile.description || '',
+            petTypes: profile.petTypes || ['Cats'],
+            languages: profile.languages || ['French'],
+          };
+        })
+      );
+      
+      console.log(`✅ Loaded ${sittersWithUsers.length} cat sitters`);
+      return sittersWithUsers;
+    },
+    enabled: !!user,
+  });
+
   const handleSitterPress = useCallback((sitterId: string) => {
+    console.log('📍 Navigating to sitter profile:', sitterId);
     router.push(`/cat-sitter/${sitterId}` as const);
   }, [router]);
 
   const handleBookSitter = useCallback((sitterId: string) => {
+    console.log('📍 Navigating to booking with sitter UID:', sitterId);
     router.push(`/booking/${sitterId}` as const);
   }, [router]);
 
@@ -134,12 +119,12 @@ export default function CatSitterScreen() {
   }, [router]);
 
   const data = useMemo<CatSitter[]>(() => {
-    let arr = [...mockCatSitters];
+    let arr = [...(catSittersQuery.data || [])];
     if (showOnlyAvailable) arr = arr.filter(s => s.isAvailable);
     if (sortBy === 'distance') arr.sort((a, b) => a.distance - b.distance);
     else arr.sort((a, b) => (b.rating - a.rating) || (b.reviewCount - a.reviewCount));
     return arr;
-  }, [sortBy, showOnlyAvailable]);
+  }, [sortBy, showOnlyAvailable, catSittersQuery.data]);
 
   const renderSitter = useCallback(({ item }: { item: CatSitter }) => (
     <GlassCard
@@ -255,6 +240,42 @@ export default function CatSitterScreen() {
     </GlassCard>
   ), [handleBookSitter, handleMessageSitter, handleSitterPress, t]);
 
+  if (catSittersQuery.isLoading) {
+    return (
+      <AppBackground>
+        <StatusBar style="dark" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Chargement des cat sitters...</Text>
+        </View>
+      </AppBackground>
+    );
+  }
+
+  if (catSittersQuery.error) {
+    return (
+      <AppBackground>
+        <StatusBar style="dark" />
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>Erreur lors du chargement</Text>
+          <Button title="Réessayer" onPress={() => catSittersQuery.refetch()} />
+        </View>
+      </AppBackground>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <AppBackground>
+        <StatusBar style="dark" />
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>Aucun cat sitter disponible</Text>
+          <Text style={styles.emptyText}>Revenez plus tard ou ajustez vos filtres</Text>
+        </View>
+      </AppBackground>
+    );
+  }
+
   return (
     <AppBackground>
       <StatusBar style="dark" />
@@ -318,6 +339,34 @@ const styles = StyleSheet.create({
   },
   flatList: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: DIMENSIONS.SPACING.md,
+  },
+  loadingText: {
+    fontSize: DIMENSIONS.FONT_SIZES.md,
+    color: COLORS.darkGray,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: DIMENSIONS.SPACING.xl,
+    gap: DIMENSIONS.SPACING.md,
+  },
+  emptyTitle: {
+    fontSize: DIMENSIONS.FONT_SIZES.lg,
+    fontWeight: '600' as const,
+    color: COLORS.black,
+    textAlign: 'center' as const,
+  },
+  emptyText: {
+    fontSize: DIMENSIONS.FONT_SIZES.md,
+    color: COLORS.darkGray,
+    textAlign: 'center' as const,
   },
   listContent: {
     paddingBottom: DIMENSIONS.SPACING.xxl,

@@ -8,12 +8,16 @@ import {
   Image,
   Dimensions,
   Alert,
+  ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { COLORS, SHADOWS, DIMENSIONS } from '@/constants/colors';
+import { COLORS, SHADOWS, DIMENSIONS as DIMS } from '@/constants/colors';
 import { useI18n } from '@/hooks/i18n-store';
 import { useAuth } from '@/hooks/auth-store';
+import { useQuery } from '@tanstack/react-query';
+import { petSitterService, userService } from '@/services/database';
 import {
   Heart,
   Star,
@@ -71,71 +75,14 @@ interface CatSitter {
   };
 }
 
-const mockCatSitter: CatSitter = {
-  id: '1',
-  name: 'Marie Dubois',
-  avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?q=80&w=400',
-  rating: 4.9,
-  reviewCount: 127,
-  hourlyRate: 15,
-  location: 'Montmartre, Paris',
-  distance: 0.8,
-  isAvailable: true,
-  isVerified: true,
-  isPremium: true,
-  services: ['Pet Sitting', 'Dog Walking', 'Overnight Care', 'Pet Grooming', 'Pet Training'],
-  responseTime: '< 1 hour',
-  totalBookings: 234,
-  description: 'Passionate about animals with 5 years of experience. I love taking care of cats and dogs of all sizes. I provide personalized care and lots of love to each pet. Available for short-term and long-term care.',
-  petTypes: ['Cats', 'Dogs', 'Small Animals', 'Birds'],
-  languages: ['French', 'English', 'Spanish'],
-  experience: '5+ years',
-  insurance: true,
-  emergencyContact: true,
-  photos: [
-    'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?q=80&w=400',
-    'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?q=80&w=400',
-    'https://images.unsplash.com/photo-1552053831-71594a27632d?q=80&w=400',
-    'https://images.unsplash.com/photo-1518717758536-85ae29035b6d?q=80&w=400',
-  ],
-  reviews: [
-    {
-      id: '1',
-      userName: 'Sophie Martin',
-      userAvatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=100',
-      rating: 5,
-      comment: 'Marie took excellent care of my cat Luna. She sent regular updates and photos. Highly recommended!',
-      date: '2024-01-15',
-      petName: 'Luna',
-    },
-    {
-      id: '2',
-      userName: 'Pierre Durand',
-      userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100',
-      rating: 5,
-      comment: 'Very professional and caring. My dog Max was happy and well-cared for.',
-      date: '2024-01-10',
-      petName: 'Max',
-    },
-    {
-      id: '3',
-      userName: 'Claire Rousseau',
-      userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100',
-      rating: 4,
-      comment: 'Great communication and reliable service. Will book again!',
-      date: '2024-01-05',
-      petName: 'Milo',
-    },
-  ],
-  availability: {
-    monday: { start: '08:00', end: '18:00', available: true },
-    tuesday: { start: '08:00', end: '18:00', available: true },
-    wednesday: { start: '08:00', end: '18:00', available: true },
-    thursday: { start: '08:00', end: '18:00', available: true },
-    friday: { start: '08:00', end: '18:00', available: true },
-    saturday: { start: '09:00', end: '17:00', available: true },
-    sunday: { start: '10:00', end: '16:00', available: false },
-  },
+const defaultAvailability = {
+  monday: { start: '08:00', end: '18:00', available: true },
+  tuesday: { start: '08:00', end: '18:00', available: true },
+  wednesday: { start: '08:00', end: '18:00', available: true },
+  thursday: { start: '08:00', end: '18:00', available: true },
+  friday: { start: '08:00', end: '18:00', available: true },
+  saturday: { start: '09:00', end: '17:00', available: true },
+  sunday: { start: '10:00', end: '16:00', available: false },
 };
 
 export default function CatSitterProfileScreen() {
@@ -145,28 +92,116 @@ export default function CatSitterProfileScreen() {
   const { user } = useAuth();
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
 
-  // In a real app, fetch sitter data based on ID
-  const sitter = mockCatSitter;
+  const sitterQuery = useQuery({
+    queryKey: ['catSitterProfile', id],
+    queryFn: async () => {
+      if (!id) return null;
+      console.log('🔄 Fetching cat sitter profile for UID:', id);
+      
+      const profile = await petSitterService.getProfile(id as string);
+      const userData = await userService.getUser(id as string);
+      
+      if (!userData) {
+        console.log('⚠️ User not found for sitter UID:', id);
+        return null;
+      }
+      
+      const sitterData: CatSitter = {
+        id: id as string,
+        name: userData.name || `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'Cat Sitter',
+        avatar: userData.photo || '',
+        rating: profile?.rating || 4.5,
+        reviewCount: profile?.reviewCount || 0,
+        hourlyRate: profile?.hourlyRate || 15,
+        location: userData.city || userData.address || 'France',
+        distance: 0,
+        isAvailable: profile?.isActive !== false,
+        isVerified: profile?.backgroundCheckVerified || false,
+        isPremium: userData.isPremium || false,
+        services: profile?.services || ['Pet Sitting'],
+        responseTime: profile?.responseTime || '< 2 hours',
+        totalBookings: profile?.totalBookings || 0,
+        description: profile?.description || 'Cat sitter expérimenté',
+        petTypes: profile?.petTypes || ['Cats'],
+        languages: profile?.languages || ['French'],
+        experience: profile?.experience || '1+ year',
+        insurance: profile?.insurance || false,
+        emergencyContact: profile?.emergencyContact || false,
+        photos: profile?.photos || [],
+        reviews: [],
+        availability: profile?.availability || defaultAvailability,
+      };
+      
+      console.log('✅ Sitter profile loaded for UID:', id);
+      return sitterData;
+    },
+    enabled: !!id,
+  });
+
+  const sitter = sitterQuery.data;
 
   const handleBookSitter = () => {
     if (!user) {
-      Alert.alert('Authentication Required', 'Please sign in to book a sitter.');
+      if (Platform.OS === 'web') {
+        alert('Veuillez vous connecter pour réserver.');
+      } else {
+        Alert.alert('Connexion requise', 'Veuillez vous connecter pour réserver.');
+      }
       return;
     }
+    if (!sitter) return;
+    console.log('📍 Booking sitter with UID:', sitter.id);
     router.push(`/booking/${sitter.id}`);
   };
 
   const handleMessageSitter = () => {
     if (!user) {
-      Alert.alert('Authentication Required', 'Please sign in to message a sitter.');
+      if (Platform.OS === 'web') {
+        alert('Veuillez vous connecter pour envoyer un message.');
+      } else {
+        Alert.alert('Connexion requise', 'Veuillez vous connecter pour envoyer un message.');
+      }
       return;
     }
+    if (!sitter) return;
     router.push(`/messages/new?userId=${sitter.id}`);
   };
 
   const handleCallSitter = () => {
-    Alert.alert('Call Sitter', 'This would open the phone app to call the sitter.');
+    if (Platform.OS === 'web') {
+      alert('Cette fonctionnalité n\'est pas disponible sur le web.');
+    } else {
+      Alert.alert('Appeler', 'Cette fonctionnalité sera bientôt disponible.');
+    }
   };
+
+  if (sitterQuery.isLoading) {
+    return (
+      <View style={styles.container}>
+        <StatusBar style="dark" />
+        <Stack.Screen options={{ headerShown: true, headerTitle: 'Chargement...' }} />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Chargement du profil...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (!sitter) {
+    return (
+      <View style={styles.container}>
+        <StatusBar style="dark" />
+        <Stack.Screen options={{ headerShown: true, headerTitle: 'Erreur' }} />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.errorText}>Cat sitter introuvable</Text>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Text style={styles.backButtonText}>Retour</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   const renderStars = (rating: number) => {
     const stars = [];
@@ -212,7 +247,7 @@ export default function CatSitterProfileScreen() {
       <ScrollView 
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: DIMENSIONS.COMPONENT_SIZES.HEADER_HEIGHT + DIMENSIONS.SPACING.md }
+          { paddingTop: DIMS.COMPONENT_SIZES.HEADER_HEIGHT + DIMS.SPACING.md }
         ]} 
         showsVerticalScrollIndicator={false}
       >
@@ -400,6 +435,31 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 100,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: COLORS.darkGray,
+  },
+  errorText: {
+    fontSize: 18,
+    color: COLORS.darkGray,
+    marginBottom: 16,
+  },
+  backButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+  },
+  backButtonText: {
+    color: COLORS.white,
+    fontWeight: '600' as const,
   },
   header: {
     backgroundColor: COLORS.white,
