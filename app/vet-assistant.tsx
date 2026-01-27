@@ -341,7 +341,7 @@ export default function VetAssistantScreen() {
     <View style={styles.container}>
       <Stack.Screen 
         options={{ 
-          title: 'Conseils vétérinaires',
+          title: 'Assistant vétérinaire',
           headerRight: () => (
             <TouchableOpacity
               onPress={handleNewConversation}
@@ -353,6 +353,10 @@ export default function VetAssistantScreen() {
           ),
         }} 
       />
+
+      <View style={styles.headerSubtitleBanner}>
+        <Text style={styles.headerSubtitleText}>Conseils et prévention</Text>
+      </View>
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
@@ -508,7 +512,7 @@ export default function VetAssistantScreen() {
                 style={styles.input}
                 value={input}
                 onChangeText={setInput}
-                placeholder="Posez votre question..."
+                placeholder="Pose ta question"
                 placeholderTextColor={COLORS.textTertiary}
                 multiline
                 maxLength={1000}
@@ -523,7 +527,7 @@ export default function VetAssistantScreen() {
                 disabled={!input.trim() || isLoading}
                 activeOpacity={0.8}
               >
-                <Send size={20} color={input.trim() && !isLoading ? COLORS.textInverse : COLORS.textTertiary} />
+                <Send size={20} color={input.trim() && !isLoading ? COLORS.textInverse : COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
           )}
@@ -632,7 +636,9 @@ const styles = StyleSheet.create({
   },
   userBubble: {
     alignSelf: 'flex-end',
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
   },
   assistantBubble: {
     alignSelf: 'flex-start',
@@ -669,7 +675,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
   },
   userMessageText: {
-    color: COLORS.textInverse,
+    color: COLORS.textPrimary,
   },
   assistantMessageText: {
     color: COLORS.textPrimary,
@@ -714,15 +720,28 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.s,
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: COLORS.divider,
+    backgroundColor: COLORS.surfaceSecondary,
+    borderWidth: 1,
+    borderColor: COLORS.divider,
+  },
+  headerSubtitleBanner: {
+    backgroundColor: COLORS.surfaceSecondary,
+    paddingVertical: SPACING.s,
+    alignItems: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.divider,
+  },
+  headerSubtitleText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
   },
   noPetContainer: {
     flex: 1,
