@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
-import { Send, RefreshCw, AlertTriangle, Stethoscope, Crown, ChevronRight, ChevronDown, Check } from 'lucide-react-native';
+import { Send, RefreshCw, AlertTriangle, Stethoscope, Crown, ChevronRight, ChevronDown, Check, Calendar } from 'lucide-react-native';
 import { useRorkAgent } from '@rork-ai/toolkit-sdk';
 import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '@/theme/tokens';
 import { useActivePetWithData } from '@/hooks/active-pet-store';
@@ -29,6 +29,8 @@ const DISCLAIMER_TEXT = "Ces conseils sont fournis à titre informatif uniquemen
 const EMERGENCY_ALERT = "Cela peut être sérieux.\nNous te recommandons de consulter un vétérinaire rapidement.";
 
 const MEDICAL_ADVICE_BLOCKED = "Je ne peux pas fournir de diagnostic, prescription ou dosage de médicaments.\n\nPour toute question médicale, consulte un vétérinaire professionnel.";
+
+
 
 function formatPetContext(pet: Pet): string {
   const age = pet.dateOfBirth ? calculateAge(pet.dateOfBirth) : 'âge inconnu';
@@ -138,9 +140,11 @@ Réponds en français.`;
 interface MessageBubbleProps {
   message: VetMessage;
   isEmergency?: boolean;
+  showBookingCTA?: boolean;
+  onBookingPress?: () => void;
 }
 
-const MessageBubble = React.memo(({ message, isEmergency }: MessageBubbleProps) => {
+const MessageBubble = React.memo(({ message, isEmergency, showBookingCTA, onBookingPress }: MessageBubbleProps) => {
   const isUser = message.role === 'user';
   
   return (
@@ -167,6 +171,19 @@ const MessageBubble = React.memo(({ message, isEmergency }: MessageBubbleProps) 
       ]}>
         {message.content}
       </Text>
+      {showBookingCTA && onBookingPress && (
+        <TouchableOpacity
+          style={[styles.bookingCTA, isEmergency && styles.bookingCTAEmergency]}
+          onPress={onBookingPress}
+          activeOpacity={0.8}
+        >
+          <Calendar size={16} color={isEmergency ? '#FFFFFF' : COLORS.textInverse} />
+          <Text style={[styles.bookingCTAText, isEmergency && styles.bookingCTATextEmergency]}>
+            Prendre rendez-vous avec un vétérinaire
+          </Text>
+          <ChevronRight size={16} color={isEmergency ? '#FFFFFF' : COLORS.textInverse} />
+        </TouchableOpacity>
+      )}
     </View>
   );
 });
@@ -194,6 +211,8 @@ export default function VetAssistantScreen() {
   const [localMessages, setLocalMessages] = useState<VetMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showPetSelector, setShowPetSelector] = useState(false);
+  const [lastMessageShowBooking, setLastMessageShowBooking] = useState(false);
+  const [isEmergencyContext, setIsEmergencyContext] = useState(false);
   
   const remainingQuestions = getRemainingVetAssistantQuestions();
   const hasReachedLimit = !isPremium && remainingQuestions === 0;
@@ -226,6 +245,19 @@ export default function VetAssistantScreen() {
     router.push('/premium');
   }, [router]);
 
+  const handleNavigateToVetBooking = useCallback(() => {
+    if (!activePet) return;
+    
+    router.push({
+      pathname: '/vet-booking',
+      params: {
+        emergency: isEmergencyContext ? 'true' : 'false',
+        petId: activePet.id,
+        petName: activePet.name,
+      },
+    });
+  }, [router, activePet, isEmergencyContext]);
+
   const handleSend = useCallback(async () => {
     if (!input.trim() || !activePet || isLoading || isLoadingQuota) return;
     
@@ -242,6 +274,10 @@ export default function VetAssistantScreen() {
     const riskAnalysis = analyzeRiskLevel(userMessage);
     const isEmergency = riskAnalysis.isEmergency;
     const requiresMedicalAdvice = riskAnalysis.requiresMedicalAdvice;
+    const suggestVetBooking = riskAnalysis.suggestVetBooking;
+    
+    setIsEmergencyContext(isEmergency);
+    setLastMessageShowBooking(suggestVetBooking);
 
     const logResponseType = isEmergency ? 'emergency' : requiresMedicalAdvice ? 'medical_blocked' : 'normal';
     
@@ -675,13 +711,22 @@ export default function VetAssistantScreen() {
             </View>
           )}
 
-          {localMessages.map((message) => (
-            <MessageBubble
-              key={message.id}
-              message={message}
-              isEmergency={message.isEmergencyAlert}
-            />
-          ))}
+          {localMessages.map((message, index) => {
+            const isLastAssistantMessage = 
+              message.role === 'assistant' && 
+              index === localMessages.length - 1;
+            const showCTA = isLastAssistantMessage && lastMessageShowBooking;
+            
+            return (
+              <MessageBubble
+                key={message.id}
+                message={message}
+                isEmergency={message.isEmergencyAlert}
+                showBookingCTA={showCTA}
+                onBookingPress={handleNavigateToVetBooking}
+              />
+            );
+          })}
 
           {isLoading && (
             <View style={styles.loadingContainer}>
@@ -1218,5 +1263,28 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: '#92400E',
     fontWeight: '500' as const,
+  },
+  bookingCTA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.s,
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.m,
+    paddingHorizontal: SPACING.l,
+    borderRadius: RADIUS.button,
+    marginTop: SPACING.m,
+  },
+  bookingCTAEmergency: {
+    backgroundColor: COLORS.danger,
+  },
+  bookingCTAText: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textInverse,
+    fontWeight: '600' as const,
+    flex: 1,
+  },
+  bookingCTATextEmergency: {
+    color: '#FFFFFF',
   },
 });

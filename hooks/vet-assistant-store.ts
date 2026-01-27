@@ -93,6 +93,7 @@ export interface RiskDetectionResult {
   isEmergency: boolean;
   detectedKeywords: string[];
   requiresMedicalAdvice: boolean;
+  suggestVetBooking: boolean;
 }
 
 export function detectEmergency(text: string): boolean {
@@ -100,10 +101,34 @@ export function detectEmergency(text: string): boolean {
   return result.isEmergency;
 }
 
+const VET_BOOKING_TRIGGERS = [
+  'voir un vétérinaire',
+  'consulter un vétérinaire',
+  'rendez-vous vétérinaire',
+  'rdv vétérinaire',
+  'prendre rendez-vous',
+  'besoin d\'un vétérinaire',
+  'trouver un vétérinaire',
+  'vétérinaire proche',
+  'vétérinaire urgence',
+  'clinique vétérinaire',
+  'aller chez le vétérinaire',
+  'emmener chez le vétérinaire',
+  'consultation vétérinaire',
+  'persiste',
+  'ne va pas mieux',
+  's\'aggrave',
+  'empire',
+  'inquiet',
+  'inquiète',
+  'préoccupé',
+];
+
 export function analyzeRiskLevel(text: string): RiskDetectionResult {
   const lowerText = text.toLowerCase();
   const detectedEmergencyKeywords: string[] = [];
   const detectedMedicalKeywords: string[] = [];
+  let suggestVetBooking = false;
   
   for (const keyword of EMERGENCY_KEYWORDS) {
     if (lowerText.includes(keyword.toLowerCase())) {
@@ -117,14 +142,26 @@ export function analyzeRiskLevel(text: string): RiskDetectionResult {
     }
   }
   
+  for (const trigger of VET_BOOKING_TRIGGERS) {
+    if (lowerText.includes(trigger.toLowerCase())) {
+      suggestVetBooking = true;
+      break;
+    }
+  }
+  
   const isEmergency = detectedEmergencyKeywords.length > 0;
   const requiresMedicalAdvice = detectedMedicalKeywords.length > 0;
   
   if (isEmergency || requiresMedicalAdvice) {
+    suggestVetBooking = true;
+  }
+  
+  if (isEmergency || requiresMedicalAdvice || suggestVetBooking) {
     logRiskDetection({
       isEmergency,
       emergencyKeywords: detectedEmergencyKeywords,
       medicalKeywords: detectedMedicalKeywords,
+      suggestVetBooking,
       timestamp: Date.now(),
     });
   }
@@ -133,6 +170,7 @@ export function analyzeRiskLevel(text: string): RiskDetectionResult {
     isEmergency,
     detectedKeywords: [...detectedEmergencyKeywords, ...detectedMedicalKeywords],
     requiresMedicalAdvice,
+    suggestVetBooking,
   };
 }
 
@@ -140,12 +178,14 @@ function logRiskDetection(data: {
   isEmergency: boolean;
   emergencyKeywords: string[];
   medicalKeywords: string[];
+  suggestVetBooking: boolean;
   timestamp: number;
 }) {
   console.log('[VetAssistant][RISK] Risk detection triggered:', {
     isEmergency: data.isEmergency,
     emergencyKeywordsCount: data.emergencyKeywords.length,
     medicalKeywordsCount: data.medicalKeywords.length,
+    suggestVetBooking: data.suggestVetBooking,
     keywords: [...data.emergencyKeywords, ...data.medicalKeywords],
     timestamp: new Date(data.timestamp).toISOString(),
   });
