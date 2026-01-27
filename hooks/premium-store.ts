@@ -1,9 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Alert, Platform } from 'react-native';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useAuth } from './user-store';
 import { safeJsonParse } from '@/lib/safe-json';
+import { db } from '@/services/firebase';
 
 export interface PremiumFeatures {
   unlimitedMessages: boolean;
@@ -67,6 +69,7 @@ export const [PremiumContext, usePremium] = createContextHook(() => {
   const [animalCount, setAnimalCount] = useState(0);
   const [vetAssistantDailyCount, setVetAssistantDailyCount] = useState(0);
   const [vetAssistantLastResetDate, setVetAssistantLastResetDate] = useState<string>('');
+  const [isLoadingQuota, setIsLoadingQuota] = useState(true);
 
   // Update premium status based on user
   useEffect(() => {
@@ -120,7 +123,7 @@ export const [PremiumContext, usePremium] = createContextHook(() => {
     }
   }, [user]);
 
-  // Load usage counts from storage
+  // Load usage counts from storage (non-vet assistant)
   useEffect(() => {
     const loadUsageCounts = async () => {
       try {
@@ -129,21 +132,10 @@ export const [PremiumContext, usePremium] = createContextHook(() => {
           messageCount: 0, 
           animalCount: 0, 
           actionCount: 0,
-          vetAssistantDailyCount: 0,
-          vetAssistantLastResetDate: '',
         });
         setMessageCount(parsed.messageCount || 0);
         setAnimalCount(parsed.animalCount || 0);
         setActionCount(parsed.actionCount || 0);
-        
-        const today = new Date().toDateString();
-        if (parsed.vetAssistantLastResetDate !== today) {
-          setVetAssistantDailyCount(0);
-          setVetAssistantLastResetDate(today);
-        } else {
-          setVetAssistantDailyCount(parsed.vetAssistantDailyCount || 0);
-          setVetAssistantLastResetDate(parsed.vetAssistantLastResetDate || today);
-        }
       } catch (error) {
         console.error('Error loading usage counts:', error);
       }
@@ -152,15 +144,90 @@ export const [PremiumContext, usePremium] = createContextHook(() => {
     loadUsageCounts();
   }, []);
 
-  // Save usage counts to storage
+  // Load vet assistant quota from Firestore
+  useEffect(() => {
+    const loadVetAssistantQuota = async () => {
+      if (!user?.id) {
+        setIsLoadingQuota(false);
+        return;
+      }
+
+      try {
+        setIsLoadingQuota(true);
+        const userDocRef = doc(db, 'users', user.id);
+        const userDoc = await getDoc(userDocRef);
+        
+        const today = new Date().toDateString();
+        
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          const aiUsage = data?.aiUsage;
+          
+          if (aiUsage) {
+            const lastResetAt = aiUsage.lastResetAt?.toDate?.()?.toDateString?.() || aiUsage.lastResetAt || '';
+            
+            if (lastResetAt !== today) {
+              // Reset quota for new day
+              console.log('[Premium] New day detected, resetting vet assistant quota');
+              setVetAssistantDailyCount(0);
+              setVetAssistantLastResetDate(today);
+              // Update Firestore with reset
+              await setDoc(userDocRef, {
+                aiUsage: {
+                  count: 0,
+                  lastResetAt: new Date(),
+                },
+              }, { merge: true });
+            } else {
+              console.log('[Premium] Loading existing quota:', aiUsage.count);
+              setVetAssistantDailyCount(aiUsage.count || 0);
+              setVetAssistantLastResetDate(lastResetAt);
+            }
+          } else {
+            // No aiUsage yet, initialize
+            console.log('[Premium] No aiUsage found, initializing');
+            setVetAssistantDailyCount(0);
+            setVetAssistantLastResetDate(today);
+          }
+        } else {
+          // User document doesn't exist yet
+          console.log('[Premium] User document not found');
+          setVetAssistantDailyCount(0);
+          setVetAssistantLastResetDate(today);
+        }
+      } catch (error) {
+        console.error('[Premium] Error loading vet assistant quota:', error);
+        // Fallback to AsyncStorage
+        try {
+          const counts = await AsyncStorage.getItem('usage_counts');
+          const parsed = safeJsonParse(counts, { vetAssistantDailyCount: 0, vetAssistantLastResetDate: '' });
+          const today = new Date().toDateString();
+          if (parsed.vetAssistantLastResetDate !== today) {
+            setVetAssistantDailyCount(0);
+            setVetAssistantLastResetDate(today);
+          } else {
+            setVetAssistantDailyCount(parsed.vetAssistantDailyCount || 0);
+            setVetAssistantLastResetDate(parsed.vetAssistantLastResetDate || today);
+          }
+        } catch {
+          setVetAssistantDailyCount(0);
+          setVetAssistantLastResetDate(new Date().toDateString());
+        }
+      } finally {
+        setIsLoadingQuota(false);
+      }
+    };
+
+    loadVetAssistantQuota();
+  }, [user?.id]);
+
+  // Save non-vet usage counts to storage
   const saveUsageCounts = async () => {
     try {
       await AsyncStorage.setItem('usage_counts', JSON.stringify({
         messageCount,
         animalCount,
         actionCount,
-        vetAssistantDailyCount,
-        vetAssistantLastResetDate,
       }));
     } catch (error) {
       console.error('Error saving usage counts:', error);
@@ -169,7 +236,32 @@ export const [PremiumContext, usePremium] = createContextHook(() => {
 
   useEffect(() => {
     saveUsageCounts();
-  }, [messageCount, animalCount, actionCount, vetAssistantDailyCount, vetAssistantLastResetDate]);
+  }, [messageCount, animalCount, actionCount]);
+
+  // Save vet assistant quota to Firestore
+  const saveVetAssistantQuotaToFirestore = useCallback(async (count: number) => {
+    if (!user?.id) return;
+    
+    try {
+      const userDocRef = doc(db, 'users', user.id);
+      await setDoc(userDocRef, {
+        aiUsage: {
+          count,
+          lastResetAt: new Date(),
+        },
+      }, { merge: true });
+      console.log('[Premium] Saved vet assistant quota to Firestore:', count);
+    } catch (error) {
+      console.error('[Premium] Error saving vet assistant quota to Firestore:', error);
+      // Fallback: save to AsyncStorage
+      try {
+        await AsyncStorage.setItem('vet_assistant_quota', JSON.stringify({
+          count,
+          lastResetAt: new Date().toDateString(),
+        }));
+      } catch {}
+    }
+  }, [user?.id]);
 
   const checkMessageLimit = (): boolean => {
     if (isPremium) return true;
@@ -268,7 +360,7 @@ export const [PremiumContext, usePremium] = createContextHook(() => {
     return Math.max(0, 1 - animalCount);
   };
 
-  const VET_ASSISTANT_DAILY_LIMIT = 5;
+  const VET_ASSISTANT_DAILY_LIMIT = 3;
 
   const checkVetAssistantLimit = (): boolean => {
     if (isPremium) return true;
@@ -286,17 +378,24 @@ export const [PremiumContext, usePremium] = createContextHook(() => {
     return true;
   };
 
-  const incrementVetAssistantCount = () => {
+  const incrementVetAssistantCount = useCallback(() => {
     if (!isPremium) {
       const today = new Date().toDateString();
+      let newCount: number;
+      
       if (vetAssistantLastResetDate !== today) {
+        newCount = 1;
         setVetAssistantDailyCount(1);
         setVetAssistantLastResetDate(today);
       } else {
-        setVetAssistantDailyCount(prev => prev + 1);
+        newCount = vetAssistantDailyCount + 1;
+        setVetAssistantDailyCount(newCount);
       }
+      
+      // Save to Firestore
+      saveVetAssistantQuotaToFirestore(newCount);
     }
-  };
+  }, [isPremium, vetAssistantLastResetDate, vetAssistantDailyCount, saveVetAssistantQuotaToFirestore]);
 
   const getRemainingVetAssistantQuestions = (): number => {
     if (isPremium) return -1; // Unlimited
@@ -335,6 +434,7 @@ export const [PremiumContext, usePremium] = createContextHook(() => {
     animalCount,
     actionCount,
     vetAssistantDailyCount,
+    isLoadingQuota,
     checkMessageLimit,
     checkAnimalLimit,
     checkGalleryLimit,

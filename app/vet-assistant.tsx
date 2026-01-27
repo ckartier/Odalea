@@ -184,6 +184,7 @@ export default function VetAssistantScreen() {
     incrementVetAssistantCount, 
     getRemainingVetAssistantQuestions,
     VET_ASSISTANT_DAILY_LIMIT,
+    isLoadingQuota,
   } = usePremium();
   
   const [input, setInput] = useState('');
@@ -221,7 +222,7 @@ export default function VetAssistantScreen() {
   }, [router]);
 
   const handleSend = useCallback(async () => {
-    if (!input.trim() || !activePet || isLoading) return;
+    if (!input.trim() || !activePet || isLoading || isLoadingQuota) return;
     
     if (!checkVetAssistantLimit()) {
       return;
@@ -316,7 +317,7 @@ export default function VetAssistantScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [input, activePet, isLoading, systemPrompt, sendMessage, agentMessages, addMessage, checkVetAssistantLimit, incrementVetAssistantCount]);
+  }, [input, activePet, isLoading, isLoadingQuota, systemPrompt, sendMessage, agentMessages, addMessage, checkVetAssistantLimit, incrementVetAssistantCount]);
 
   const handleNewConversation = useCallback(() => {
     if (!activePet) return;
@@ -560,8 +561,8 @@ export default function VetAssistantScreen() {
               </View>
               <Text style={styles.limitReachedTitle}>Limite journalière atteinte</Text>
               <Text style={styles.limitReachedSubtitle}>
-                Vous avez utilisé vos {VET_ASSISTANT_DAILY_LIMIT} questions gratuites aujourd&apos;hui. 
-                Accéder aux conseils avancés pour des questions illimitées et des conseils plus personnalisés.
+                Tu as utilisé tes {VET_ASSISTANT_DAILY_LIMIT} questions gratuites aujourd&apos;hui. 
+                Passe Premium pour des questions illimitées et des conseils plus personnalisés.
               </Text>
               <TouchableOpacity
                 style={styles.upgradePremiumButton}
@@ -572,7 +573,7 @@ export default function VetAssistantScreen() {
                 <Text style={styles.upgradePremiumButtonText}>Passer Premium</Text>
               </TouchableOpacity>
               <Text style={styles.limitResetHint}>
-                Vos questions se réinitialisent chaque jour à minuit.
+                Tes questions se réinitialisent toutes les 24h.
               </Text>
             </View>
           )}
@@ -661,7 +662,7 @@ export default function VetAssistantScreen() {
                   (!input.trim() || isLoading) && styles.sendButtonDisabled,
                 ]}
                 onPress={handleSend}
-                disabled={!input.trim() || isLoading}
+                disabled={!input.trim() || isLoading || isLoadingQuota}
                 activeOpacity={0.8}
               >
                 <Send size={20} color={input.trim() && !isLoading ? COLORS.textInverse : COLORS.textSecondary} />
