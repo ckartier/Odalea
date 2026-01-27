@@ -170,9 +170,27 @@ export const [BookingContext, useBooking] = createContextHook(() => {
       if (!user?.id) throw new Error('User not authenticated');
       
       try {
+        // Ensure catSitterId is the Firebase UID, not a business key
+        let catSitterUID = booking.catSitterId;
+        
+        // Check if catSitterId looks like a business key (e.g., "paris-1")
+        if (catSitterUID && /^[a-z]+-\d+$/i.test(catSitterUID)) {
+          console.warn(`⚠️ [Booking] catSitterId "${catSitterUID}" looks like a business key`);
+          // Try to find the actual user ID from cat sitters list
+          const sitter = catSittersQuery.data?.find(s => s.id === catSitterUID);
+          if (sitter?.userId) {
+            catSitterUID = sitter.userId;
+            console.log(`📝 [Booking] Resolved to userId: ${catSitterUID}`);
+          }
+        }
+        
         const bookingData = {
           userId: user.id,
-          catSitterId: booking.catSitterId,
+          clientId: user.id,
+          catSitterId: catSitterUID,
+          sitterUserId: catSitterUID,
+          // Store original ID as business key if different
+          catSitterKey: catSitterUID !== booking.catSitterId ? booking.catSitterId : undefined,
           petIds: booking.petIds,
           date: booking.date,
           timeSlot: booking.timeSlot,

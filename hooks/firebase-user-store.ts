@@ -96,14 +96,52 @@ export const [FirebaseUserContext, useFirebaseUser] = createContextHook(() => {
               initializing: false,
             });
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('❌ Error loading user data:', error);
-          setAuthState({
-            user: null,
-            firebaseUser,
-            loading: false,
-            initializing: false,
-          });
+          // IMPORTANT: Don't set user to null on Firestore errors
+          // This prevents unwanted redirects to login screen
+          const isPermissionError = error?.code?.includes('permission-denied');
+          const isNetworkError = error?.code?.includes('unavailable') || error?.message?.includes('network');
+          
+          if (isPermissionError || isNetworkError) {
+            console.warn('⚠️ Firestore error - keeping user authenticated:', error.code);
+            // Create minimal user from Firebase Auth data to keep session alive
+            const fallbackUser: User = {
+              id: firebaseUser.uid,
+              firstName: firebaseUser.displayName?.split(' ')[0] || '',
+              lastName: firebaseUser.displayName?.split(' ')[1] || '',
+              name: firebaseUser.displayName || '',
+              pseudo: firebaseUser.displayName?.replace(/\s+/g, '') || firebaseUser.email?.split('@')[0] || '',
+              email: firebaseUser.email || '',
+              phoneNumber: firebaseUser.phoneNumber || '',
+              countryCode: 'FR',
+              address: '',
+              zipCode: '',
+              city: '',
+              isCatSitter: false,
+              isPremium: false,
+              createdAt: Date.now(),
+              pets: [],
+              photo: firebaseUser.photoURL || undefined,
+              isProfessional: false,
+              isActive: true,
+              profileComplete: false,
+            };
+            setAuthState({
+              user: fallbackUser,
+              firebaseUser,
+              loading: false,
+              initializing: false,
+            });
+          } else {
+            // For other errors, still keep the firebase user to avoid logout
+            setAuthState({
+              user: null,
+              firebaseUser,
+              loading: false,
+              initializing: false,
+            });
+          }
         }
       } else {
         setAuthState({

@@ -2284,17 +2284,38 @@ export const bookingService = {
         throw new Error('User not authenticated');
       }
       
+      const clientId = auth.currentUser.uid;
+      
+      // Validate catSitterId - must be a valid Firebase UID
+      let catSitterId = booking.catSitterId;
+      if (catSitterId && typeof catSitterId === 'string') {
+        // Check if it looks like a business key (e.g., "paris-1")
+        if (/^[a-z]+-\d+$/i.test(catSitterId)) {
+          console.warn(`⚠️ catSitterId "${catSitterId}" looks like a business key, not a Firebase UID`);
+          // Try to use sitterUserId if available
+          if (booking.sitterUserId) {
+            catSitterId = booking.sitterUserId;
+            console.log(`📝 Using sitterUserId instead: ${catSitterId}`);
+          }
+        }
+      }
+      
       const bookingsRef = collection(db, COLLECTIONS.BOOKINGS);
       const bookingData = sanitizeForFirestore({
         ...booking,
-        userId: booking.userId || auth.currentUser.uid,
-        clientId: booking.clientId || booking.userId || auth.currentUser.uid,
+        userId: clientId,
+        clientId: clientId,
+        ownerId: clientId,
+        catSitterId: catSitterId || booking.catSitterId,
+        sitterId: catSitterId || booking.catSitterId,
+        // Store business key separately if needed
+        catSitterKey: booking.catSitterKey || (booking.catSitterId !== catSitterId ? booking.catSitterId : undefined),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         status: 'pending'
       });
       const docRef = await addDoc(bookingsRef, bookingData);
-      console.log('✅ Booking created successfully');
+      console.log('✅ Booking created successfully with clientId:', clientId);
       return docRef.id;
     } catch (error) {
       console.error('❌ Error creating booking:', error);
