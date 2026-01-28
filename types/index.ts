@@ -62,6 +62,7 @@ export interface User {
   roles?: UserRoles;
   createdAt: number;
   pets: Pet[];
+  activePetId?: string;
   animalType?: string;
   animalName?: string;
   animalGender?: Gender;

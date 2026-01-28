@@ -9,8 +9,9 @@ import {
   updateProfile,
   sendEmailVerification,
 } from 'firebase/auth';
-import { auth } from '@/services/firebase';
-import { databaseService } from '@/services/database';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '@/services/firebase';
+import { databaseService, petService } from '@/services/database';
 import { User, Pet } from '@/types';
 
 interface AuthState {
@@ -58,7 +59,27 @@ export const [FirebaseUserContext, useFirebaseUser] = createContextHook(() => {
       }
       if (firebaseUser) {
         try {
-          const userData = await databaseService.user.getUser(firebaseUser.uid);
+          let userData = await databaseService.user.getUser(firebaseUser.uid);
+          
+          // Auto-set activePetId if null but user has pets
+          if (userData && !userData.activePetId) {
+            try {
+              const userPets = await petService.getPetsByOwner(firebaseUser.uid);
+              if (userPets.length > 0) {
+                const firstPetId = userPets[0].id;
+                console.log('[Auth] Auto-setting activePetId to first pet:', firstPetId);
+                const userRef = doc(db, 'users', firebaseUser.uid);
+                await updateDoc(userRef, {
+                  activePetId: firstPetId,
+                  updatedAt: serverTimestamp(),
+                });
+                userData = { ...userData, activePetId: firstPetId } as User;
+              }
+            } catch (petErr) {
+              console.warn('[Auth] Could not auto-set activePetId:', petErr);
+            }
+          }
+          
           if (userData) {
             setAuthState({
               user: userData,

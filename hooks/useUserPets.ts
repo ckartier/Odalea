@@ -122,15 +122,25 @@ export function useUserPets(): UseUserPetsReturn {
       const petId = `pet-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
       const petRef = doc(db, 'pets', petId);
 
-      const newPet = sanitizeForFirestore({
+      // Ensure compatibility fields are written (species/photoURL alongside type/mainPhoto)
+      const compatiblePetData = {
         ...petData,
+        // Write both field names for compatibility
+        type: petData.type || 'cat',
+        species: petData.type || 'cat', // Alias for type
+        mainPhoto: petData.mainPhoto || '',
+        photoURL: petData.mainPhoto || '', // Alias for mainPhoto
+      };
+
+      const newPet = sanitizeForFirestore({
+        ...compatiblePetData,
         id: petId,
         ownerId: userId,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
 
-      console.log('[useUserPets] Creating pet:', petId);
+      console.log('[useUserPets] Creating pet with compat fields:', petId);
       await setDoc(petRef, newPet);
       console.log('[useUserPets] Pet created successfully:', petId);
 
@@ -152,12 +162,22 @@ export function useUserPets(): UseUserPetsReturn {
       }
 
       const petRef = doc(db, 'pets', petId);
+      
+      // Ensure compatibility fields are updated (species/photoURL alongside type/mainPhoto)
+      const compatiblePetData: Record<string, unknown> = { ...petData };
+      if (petData.type !== undefined) {
+        compatiblePetData.species = petData.type; // Keep species in sync
+      }
+      if (petData.mainPhoto !== undefined) {
+        compatiblePetData.photoURL = petData.mainPhoto; // Keep photoURL in sync
+      }
+      
       const updateData = sanitizeForFirestore({
-        ...petData,
+        ...compatiblePetData,
         updatedAt: serverTimestamp(),
       });
 
-      console.log('[useUserPets] Updating pet:', petId);
+      console.log('[useUserPets] Updating pet with compat fields:', petId);
       await updateDoc(petRef, updateData);
       console.log('[useUserPets] Pet updated successfully:', petId);
     },

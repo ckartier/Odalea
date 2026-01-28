@@ -2,7 +2,7 @@ import { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { databaseService } from '@/services/database';
+import { databaseService, validateFirebaseUid, isBusinessKey } from '@/services/database';
 import { useUser } from './user-store';
 import { safeJsonParse } from '@/lib/safe-json';
 
@@ -170,27 +170,43 @@ export const [BookingContext, useBooking] = createContextHook(() => {
       if (!user?.id) throw new Error('User not authenticated');
       
       try {
-        // Ensure catSitterId is the Firebase UID, not a business key
+        // CRITICAL: Resolve catSitterId to a valid Firebase UID
         let catSitterUID = booking.catSitterId;
+        let catSitterKey: string | undefined;
         
         // Check if catSitterId looks like a business key (e.g., "paris-1")
-        if (catSitterUID && /^[a-z]+-\d+$/i.test(catSitterUID)) {
-          console.warn(`⚠️ [Booking] catSitterId "${catSitterUID}" looks like a business key`);
+        if (isBusinessKey(catSitterUID)) {
+          console.warn(`⚠️ [Booking] catSitterId "${catSitterUID}" is a business key, not a Firebase UID`);
+          catSitterKey = catSitterUID; // Store the business key separately
+          
           // Try to find the actual user ID from cat sitters list
           const sitter = catSittersQuery.data?.find(s => s.id === catSitterUID);
-          if (sitter?.userId) {
+          if (sitter?.userId && validateFirebaseUid(sitter.userId)) {
             catSitterUID = sitter.userId;
-            console.log(`📝 [Booking] Resolved to userId: ${catSitterUID}`);
+            console.log(`📝 [Booking] Resolved business key to Firebase UID: ${catSitterUID}`);
+          } else {
+            console.error(`❌ [Booking] Could not resolve business key "${catSitterKey}" to a valid Firebase UID`);
+            throw new Error(`Invalid cat sitter ID: ${catSitterKey}. Unable to resolve to Firebase UID.`);
           }
         }
+        
+        // Final validation: ensure catSitterId is a valid Firebase UID
+        if (!validateFirebaseUid(catSitterUID)) {
+          console.error(`❌ [Booking] catSitterId "${catSitterUID}" is not a valid Firebase UID`);
+          throw new Error(`Invalid cat sitter ID format: ${catSitterUID}`);
+        }
+        
+        console.log(`✅ [Booking] Using validated UIDs - clientId: ${user.id}, catSitterId: ${catSitterUID}`);
         
         const bookingData = {
           userId: user.id,
           clientId: user.id,
+          ownerId: user.id,
           catSitterId: catSitterUID,
+          sitterId: catSitterUID,
           sitterUserId: catSitterUID,
-          // Store original ID as business key if different
-          catSitterKey: catSitterUID !== booking.catSitterId ? booking.catSitterId : undefined,
+          // Store business key separately for reference (not used for queries)
+          catSitterKey: catSitterKey,
           petIds: booking.petIds,
           date: booking.date,
           timeSlot: booking.timeSlot,
@@ -204,6 +220,8 @@ export const [BookingContext, useBooking] = createContextHook(() => {
         const newBooking: BookingRequest = {
           ...booking,
           id: bookingId,
+          clientId: user.id,
+          catSitterId: catSitterUID,
           status: 'pending',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -219,6 +237,7 @@ export const [BookingContext, useBooking] = createContextHook(() => {
         const newBooking: BookingRequest = {
           ...booking,
           id: Date.now().toString(),
+          clientId: user.id,
           status: 'pending',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),

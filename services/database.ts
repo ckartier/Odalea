@@ -20,7 +20,7 @@ import {
   runTransaction
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, storage } from './firebase';
+import { db, storage, auth } from './firebase';
 import { 
   User, Pet, Message, Post, Comment, Product, ProfessionalProduct, Order,
   Badge, Challenge, Notification, FriendRequest,
@@ -29,6 +29,29 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { safeJsonParse } from '@/lib/safe-json';
 import { sanitizeForFirestore, sanitizeAndLog } from '@/lib/firestore-sanitizer';
+
+/**
+ * Validates that a string looks like a Firebase UID (not a business key like "paris-1")
+ * Firebase UIDs are typically 28 characters, alphanumeric
+ */
+export function validateFirebaseUid(id: string | undefined | null): boolean {
+  if (!id || typeof id !== 'string') return false;
+  const trimmed = id.trim();
+  if (trimmed.length < 20 || trimmed.length > 128) return false;
+  // Business keys typically have patterns like "paris-1", "lyon-2", etc.
+  if (/^[a-z]+-\d+$/i.test(trimmed)) return false;
+  // Firebase UIDs are alphanumeric (may include some special chars)
+  if (!/^[a-zA-Z0-9_-]+$/.test(trimmed)) return false;
+  return true;
+}
+
+/**
+ * Checks if a value looks like a business key (e.g., "paris-1", "lyon-2")
+ */
+export function isBusinessKey(id: string | undefined | null): boolean {
+  if (!id || typeof id !== 'string') return false;
+  return /^[a-z]+-\d+$/i.test(id.trim());
+}
 
 // Collections
 const COLLECTIONS = {
@@ -1527,26 +1550,49 @@ export const messagingService = {
   // Send message
   async sendMessage(message: { senderId: string; receiverId: string; content: string; conversationId: string }): Promise<string> {
     try {
+      // CRITICAL: Force senderId to be the current authenticated user's UID
+      const currentUserId = auth.currentUser?.uid;
+      if (!currentUserId) {
+        throw new Error('User not authenticated');
+      }
+      
+      // Validate receiverId is a valid Firebase UID (not a business key)
+      if (!validateFirebaseUid(message.receiverId)) {
+        console.error('❌ Invalid receiverId - not a valid Firebase UID:', message.receiverId);
+        throw new Error(`Invalid receiverId: ${message.receiverId}. Must be a valid Firebase UID, not a business key.`);
+      }
+      
+      // Create sanitized message with forced senderId
+      const sanitizedMessage = {
+        senderId: currentUserId, // Always use auth.currentUser.uid
+        receiverId: message.receiverId,
+        content: message.content,
+        conversationId: message.conversationId,
+      };
+      
+      console.log('📤 Sending message with UIDs:', { senderId: currentUserId, receiverId: message.receiverId });
+      
       const messagesRef = collection(db, COLLECTIONS.MESSAGES);
       const docRef = await addDoc(messagesRef, {
-        ...message,
+        ...sanitizedMessage,
         timestamp: serverTimestamp(),
         read: false
       });
       
       // Update conversation with last message and increment unread count for receiver
+      // Use validated UID for unreadCount key
       const conversationRef = doc(db, COLLECTIONS.CONVERSATIONS, message.conversationId);
       await updateDoc(conversationRef, {
         lastMessage: {
-          ...message,
+          ...sanitizedMessage,
           id: docRef.id,
           timestamp: Date.now()
         },
-        [`unreadCount.${message.receiverId}`]: increment(1),
+        [`unreadCount.${sanitizedMessage.receiverId}`]: increment(1),
         updatedAt: serverTimestamp()
       } as any);
       
-      console.log('✅ Message sent successfully');
+      console.log('✅ Message sent successfully with validated UIDs');
       
       // Send push notification to receiver
       try {
