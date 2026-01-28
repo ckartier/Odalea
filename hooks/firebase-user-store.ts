@@ -9,7 +9,7 @@ import {
   updateProfile,
   sendEmailVerification,
 } from 'firebase/auth';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/services/firebase';
 import { databaseService, petService } from '@/services/database';
 import { User, Pet } from '@/types';
@@ -538,16 +538,20 @@ export const [FirebaseUserContext, useFirebaseUser] = createContextHook(() => {
           loading: false,
         }));
       } else {
-        // User document doesn't exist yet - just update activePetId via direct write
-        console.log('⚠️ addPet: User document not found, setting activePetId directly');
+        // User document doesn't exist yet - create minimal doc with activePetId
+        console.log('⚠️ addPet: User document not found, creating with activePetId');
         const userRef = doc(db, 'users', uid);
-        await updateDoc(userRef, {
-          activePetId: petId,
-          updatedAt: serverTimestamp(),
-        }).catch(() => {
-          // Document might not exist, ignore error
-          console.log('Note: Could not update activePetId, user doc may not exist yet');
-        });
+        try {
+          await setDoc(userRef, {
+            id: uid,
+            activePetId: petId,
+            createdAt: Date.now(),
+            updatedAt: serverTimestamp(),
+          }, { merge: true });
+          console.log('✅ Created user doc with activePetId:', petId);
+        } catch (err) {
+          console.error('❌ Failed to create user doc with activePetId:', err);
+        }
         
         setAuthState((prev) => ({ ...prev, loading: false }));
       }

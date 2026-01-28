@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -27,22 +27,11 @@ import { useI18n } from '@/hooks/i18n-store';
 import { StorageService } from '@/services/storage';
 import { 
   ArrowLeft, 
-  Mail, 
-  User, 
-  Phone, 
-  MapPin, 
-  Hash, 
-  Building2, 
-  Gift,
-  Heart,
   Info,
-  CreditCard,
-  FileText,
   CheckCircle2,
   XCircle
 } from 'lucide-react-native';
 import GlassView from '@/components/GlassView';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { isPseudoTaken, isEmailTaken } from '@/services/user-validation';
 import { trpc } from '@/lib/trpc';
@@ -71,7 +60,7 @@ export default function SignUpScreen() {
   const [city, setCity] = useState('');
   const [isCatSitter, setIsCatSitter] = useState(false);
   const [referralCode, setReferralCode] = useState('');
-  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [profilePhoto] = useState<string | null>(null);
 
   const [isAddressVerified, setIsAddressVerified] = useState<boolean>(false);
   const [normalizedAddress, setNormalizedAddress] = useState<string | null>(null);
