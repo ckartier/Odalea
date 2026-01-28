@@ -482,7 +482,7 @@ export default function SignUpScreen() {
         }
         
         console.log('💾 Saving user data to Firestore...');
-        await updateUser({
+        const updateResult = await updateUser({
           pseudo: pseudo.trim(),
           pseudoLower: pseudo.trim().toLowerCase(),
           email: email.trim(),
@@ -528,6 +528,16 @@ export default function SignUpScreen() {
           animalGender: isProfessional ? undefined : animalGender,
           animalPhoto: isProfessional ? undefined : (uploadedAnimalPhotoUrl || undefined),
         });
+        
+        if (!updateResult.success) {
+          console.error('❌ Failed to save user profile:', updateResult.error);
+          Alert.alert(
+            'Erreur de sauvegarde',
+            'Impossible de sauvegarder votre profil. Veuillez réessayer.',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
         console.log('✅ User data saved to Firestore');
 
         // Create cat-sitter profile if needed
@@ -567,52 +577,60 @@ export default function SignUpScreen() {
         }
 
         if (!isProfessional) {
+          let coords: { latitude: number; longitude: number } | null = null;
+          const fullAddress = [address, zipCode, city].filter(Boolean).join(', ');
           try {
-            let coords: { latitude: number; longitude: number } | null = null;
-            const fullAddress = [address, zipCode, city].filter(Boolean).join(', ');
-            try {
-              const Location = await import('expo-location');
-              const results = await Location.geocodeAsync(fullAddress);
-              if (results && results.length > 0) {
-                const first = results[0] as any;
-                if (typeof first?.latitude === 'number' && typeof first?.longitude === 'number') {
-                  coords = { latitude: first.latitude, longitude: first.longitude };
-                }
+            const Location = await import('expo-location');
+            const results = await Location.geocodeAsync(fullAddress);
+            if (results && results.length > 0) {
+              const first = results[0] as any;
+              if (typeof first?.latitude === 'number' && typeof first?.longitude === 'number') {
+                coords = { latitude: first.latitude, longitude: first.longitude };
               }
-            } catch (geoErr) {
-              console.log('Geocode failed or not available on this platform, fallback by city', geoErr);
             }
-            if (!coords) {
-              const cityLower = city.trim().toLowerCase();
-              if (cityLower.includes('paris')) coords = { latitude: 48.8566, longitude: 2.3522 };
-              else if (cityLower.includes('lyon')) coords = { latitude: 45.7640, longitude: 4.8357 };
-              else if (cityLower.includes('marseille')) coords = { latitude: 43.2965, longitude: 5.3698 };
-            }
+          } catch (geoErr) {
+            console.log('Geocode failed or not available on this platform, fallback by city', geoErr);
+          }
+          if (!coords) {
+            const cityLower = city.trim().toLowerCase();
+            if (cityLower.includes('paris')) coords = { latitude: 48.8566, longitude: 2.3522 };
+            else if (cityLower.includes('lyon')) coords = { latitude: 45.7640, longitude: 4.8357 };
+            else if (cityLower.includes('marseille')) coords = { latitude: 43.2965, longitude: 5.3698 };
+          }
 
-            console.log('🐾 Creating pet profile...');
-            const petPhoto = uploadedAnimalPhotoUrl || uploadedProfilePhotoUrl || 'https://images.unsplash.com/photo-1555685812-4b943f1cb0eb?q=80&w=800&auto=format&fit=crop';
-            const petData = {
-              name: animalName.trim() || 'Mon Animal',
-              type: animalType || 'chat',
-              breed: animalBreed || 'Race non définie',
-              gender: animalGender,
-              dateOfBirth: new Date().toISOString().slice(0, 10),
-              color: animalColor || 'autre',
-              character: animalCharacter ? [animalCharacter] : [],
-              distinctiveSign: animalSpecialSign || undefined,
-              vaccinationDates: [],
-              microchipNumber: undefined,
-              mainPhoto: petPhoto,
-              galleryPhotos: petPhoto ? [petPhoto] : [],
-              vet: undefined,
-              walkTimes: [],
-              isPrimary: true,
-              location: coords ?? undefined,
-            } as const;
-            const addRes = await addPet(petData as any);
-            console.log('✅ Pet profile created:', addRes);
-          } catch (petErr) {
-            console.log('Unable to add pet at signup', petErr);
+          console.log('🐾 Creating pet profile...');
+          const petPhoto = uploadedAnimalPhotoUrl || uploadedProfilePhotoUrl || 'https://images.unsplash.com/photo-1555685812-4b943f1cb0eb?q=80&w=800&auto=format&fit=crop';
+          const petData = {
+            name: animalName.trim() || 'Mon Animal',
+            type: animalType || 'chat',
+            breed: animalBreed || 'Race non définie',
+            gender: animalGender,
+            dateOfBirth: new Date().toISOString().slice(0, 10),
+            color: animalColor || 'autre',
+            character: animalCharacter ? [animalCharacter] : [],
+            distinctiveSign: animalSpecialSign || undefined,
+            vaccinationDates: [],
+            microchipNumber: undefined,
+            mainPhoto: petPhoto,
+            galleryPhotos: petPhoto ? [petPhoto] : [],
+            vet: undefined,
+            walkTimes: [],
+            isPrimary: true,
+            location: coords ?? undefined,
+          } as const;
+          
+          const addPetResult = await addPet(petData as any);
+          
+          if (!addPetResult.success) {
+            console.error('❌ Failed to create pet:', addPetResult.error);
+            Alert.alert(
+              'Erreur de création',
+              'Impossible de créer le profil de votre animal. Veuillez réessayer depuis votre profil.',
+              [{ text: 'OK' }]
+            );
+            // Don't block navigation - user profile was saved, they can add pet later
+          } else {
+            console.log('✅ Pet profile created:', addPetResult.pet?.id);
           }
         }
 

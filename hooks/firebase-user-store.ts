@@ -330,14 +330,54 @@ export const [FirebaseUserContext, useFirebaseUser] = createContextHook(() => {
   };
 
   const updateUser = async (userData: Partial<User>) => {
-    if (!authState.user || !authState.firebaseUser) {
+    // Robust fallback: use auth.currentUser if authState not yet populated (race condition after signup)
+    const currentFirebaseUser = authState.firebaseUser || auth.currentUser;
+    
+    if (!currentFirebaseUser) {
+      console.error('❌ updateUser: No Firebase user available');
       return { success: false, error: 'No user is signed in' } as const;
     }
 
     setAuthState((prev) => ({ ...prev, loading: true }));
 
     try {
-      const updatedUser = { ...authState.user, ...userData } as User;
+      // If authState.user is null, fetch or create user document first
+      let baseUser = authState.user;
+      if (!baseUser) {
+        console.log('⚠️ updateUser: authState.user is null, fetching/creating user document...');
+        const uid = currentFirebaseUser.uid;
+        const existingUser = await databaseService.user.getUser(uid);
+        
+        if (existingUser) {
+          baseUser = existingUser;
+        } else {
+          // Create minimal user document
+          baseUser = {
+            id: uid,
+            firstName: currentFirebaseUser.displayName?.split(' ')[0] || '',
+            lastName: currentFirebaseUser.displayName?.split(' ')[1] || '',
+            name: currentFirebaseUser.displayName || '',
+            pseudo: currentFirebaseUser.displayName?.replace(/\s+/g, '') || currentFirebaseUser.email?.split('@')[0] || '',
+            email: currentFirebaseUser.email || '',
+            phoneNumber: currentFirebaseUser.phoneNumber || '',
+            countryCode: 'FR',
+            address: '',
+            zipCode: '',
+            city: '',
+            isCatSitter: false,
+            isPremium: false,
+            createdAt: Date.now(),
+            pets: [],
+            isProfessional: false,
+            isActive: true,
+            profileComplete: false,
+          };
+          await databaseService.user.saveUser(baseUser);
+          console.log('✅ Created minimal user document for:', uid);
+        }
+      }
+
+      const updatedUser = { ...baseUser, ...userData } as User;
 
       if (userData.firstName || userData.lastName || userData.photo) {
         const profileUpdates: { displayName?: string; photoURL?: string } = {};
@@ -350,7 +390,7 @@ export const [FirebaseUserContext, useFirebaseUser] = createContextHook(() => {
           profileUpdates.photoURL = userData.photo;
         }
 
-        await updateProfile(authState.firebaseUser, profileUpdates);
+        await updateProfile(currentFirebaseUser, profileUpdates);
       }
 
       await databaseService.user.saveUser(updatedUser);
@@ -448,31 +488,71 @@ export const [FirebaseUserContext, useFirebaseUser] = createContextHook(() => {
   };
 
   const addPet = async (petData: Omit<Pet, 'id' | 'ownerId'>) => {
-    if (!authState.user) {
+    // Robust fallback: use auth.currentUser if authState not yet populated (race condition after signup)
+    const currentFirebaseUser = authState.firebaseUser || auth.currentUser;
+    
+    if (!currentFirebaseUser) {
+      console.error('❌ addPet: No Firebase user available');
       return { success: false, error: 'No user is signed in' } as const;
     }
 
     setAuthState((prev) => ({ ...prev, loading: true }));
 
     try {
+      const uid = currentFirebaseUser.uid;
+      const petId = `pet-${Date.now()}`;
+      
       const newPet: Pet = {
         ...petData,
-        id: `pet-${Date.now()}`,
-        ownerId: authState.user.id,
+        id: petId,
+        ownerId: uid,
       } as Pet;
 
+      // Save pet to Firestore
       await databaseService.pet.savePet(newPet);
+      console.log('✅ Pet saved to Firestore:', petId);
 
-      const updatedUser = { ...authState.user, pets: [...authState.user.pets, newPet] } as User;
-      await databaseService.user.saveUser(updatedUser);
+      // Fetch or use current user data
+      let baseUser = authState.user;
+      if (!baseUser) {
+        console.log('⚠️ addPet: authState.user is null, fetching user document...');
+        baseUser = await databaseService.user.getUser(uid);
+      }
 
-      setAuthState((prev) => ({
-        ...prev,
-        user: updatedUser,
-        loading: false,
-      }));
+      if (baseUser) {
+        const updatedPets = [...(baseUser.pets || []), newPet];
+        const userUpdates: Partial<User> = { pets: updatedPets };
+        
+        // Auto-set activePetId if null
+        if (!baseUser.activePetId) {
+          userUpdates.activePetId = petId;
+          console.log('✅ Auto-setting activePetId to:', petId);
+        }
+        
+        const updatedUser = { ...baseUser, ...userUpdates } as User;
+        await databaseService.user.saveUser(updatedUser);
 
-      console.log('✅ Pet added successfully');
+        setAuthState((prev) => ({
+          ...prev,
+          user: updatedUser,
+          loading: false,
+        }));
+      } else {
+        // User document doesn't exist yet - just update activePetId via direct write
+        console.log('⚠️ addPet: User document not found, setting activePetId directly');
+        const userRef = doc(db, 'users', uid);
+        await updateDoc(userRef, {
+          activePetId: petId,
+          updatedAt: serverTimestamp(),
+        }).catch(() => {
+          // Document might not exist, ignore error
+          console.log('Note: Could not update activePetId, user doc may not exist yet');
+        });
+        
+        setAuthState((prev) => ({ ...prev, loading: false }));
+      }
+
+      console.log('✅ Pet added successfully:', petId);
       return { success: true, pet: newPet } as const;
     } catch (error) {
       console.error('❌ Add pet error:', error);
