@@ -11,6 +11,7 @@ import {
   Pressable,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { getPetImageUrl, getUserAvatarUrl, DEFAULT_PET_PLACEHOLDER, DEFAULT_USER_PLACEHOLDER } from '@/lib/image-helpers';
 import { Href, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -55,9 +56,11 @@ export default function HomeScreen() {
   const [menuVisible, setMenuVisible] = useState(false);
 
   const petsSubtitle = useMemo(() => {
+    if (petsLoading) return 'Chargement...';
     if (userPets.length === 0) return 'Ajoutez votre premier compagnon';
-    return userPets.map(p => p.name).join(' · ');
-  }, [userPets]);
+    if (userPets.length > 0 && userPets.length <= 3) return userPets.map(p => p.name).join(' · ');
+    return `${userPets.length} animaux`;
+  }, [userPets, petsLoading]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -181,7 +184,7 @@ export default function HomeScreen() {
           activeOpacity={0.8}
         >
           <Image
-            source={{ uri: user.photo || 'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=200' }}
+            source={{ uri: getUserAvatarUrl(user) || DEFAULT_USER_PLACEHOLDER }}
             style={styles.avatar}
             contentFit="cover"
           />
@@ -279,7 +282,7 @@ export default function HomeScreen() {
                         disabled={isDeletingPet}
                       >
                         <Image
-                          source={{ uri: pet.mainPhoto || 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=300' }}
+                          source={{ uri: getPetImageUrl(pet) || DEFAULT_PET_PLACEHOLDER }}
                           style={styles.petImage}
                           contentFit="cover"
                           placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4"

@@ -19,7 +19,7 @@ import BreedSelector from '@/components/BreedSelector';
 import GenderSelector from '@/components/GenderSelector';
 import DatePicker from '@/components/DatePicker';
 import { useFirebaseUser } from '@/hooks/firebase-user-store';
-import { usePets } from '@/hooks/pets-store';
+import { useUserPets } from '@/hooks/useUserPets';
 import { StorageService } from '@/services/storage';
 import { Gender, Pet } from '@/types';
 import { Plus, Trash2, Palette, Tag } from 'lucide-react-native';
@@ -30,7 +30,7 @@ export default function EditPetScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { user, updatePet } = useFirebaseUser();
-  const { getPet } = usePets();
+  const { pets, isLoading } = useUserPets();
   
   const [loading, setLoading] = useState(false);
   const [uploadingMainPhoto, setUploadingMainPhoto] = useState(false);
@@ -59,8 +59,8 @@ export default function EditPetScreen() {
   
   // Load pet data
   useEffect(() => {
-    if (id) {
-      const petData = getPet(id as string);
+    if (id && pets.length > 0) {
+      const petData = pets.find(p => p.id === id);
       if (petData) {
         setPet(petData);
         setName(petData.name);
@@ -78,11 +78,14 @@ export default function EditPetScreen() {
         setVetPhone(petData.vet?.phoneNumber || '');
         setWalkTimes(petData.walkTimes.length > 0 ? petData.walkTimes : ['']);
       } else {
-        Alert.alert('Error', 'Pet not found');
-        router.back();
+        // Only show error if we are sure it's not loading
+        if (!isLoading) {
+          Alert.alert('Error', 'Pet not found');
+          router.back();
+        }
       }
     }
-  }, [id, getPet, router]);
+  }, [id, pets, isLoading, router]);
   
   const validate = () => {
     const newErrors: Record<string, string> = {};

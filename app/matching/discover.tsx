@@ -134,12 +134,17 @@ export default function PetDiscoveryScreen() {
     forceSwipe('left');
   };
 
+  const { selectedPetId, setSelectedPetId } = useMatching();
+  
   React.useEffect(() => {
     if (userPets.length > 0 && !selectedPetId) {
-      const primaryPet = userPets.find(p => p.isPrimary) || userPets[0];
-      setSelectedPetId(primaryPet.id);
+      // Find active pet first, otherwise use first pet
+      const activePet = userPets.find(p => p.id === user?.activePetId) || userPets[0];
+      if (activePet) {
+        setSelectedPetId(activePet.id);
+      }
     }
-  }, [userPets, selectedPetId, setSelectedPetId]);
+  }, [userPets, user?.activePetId, selectedPetId, setSelectedPetId]);
 
   const renderCard = (pet: Pet, index: number) => {
     if (index < currentIndex) {

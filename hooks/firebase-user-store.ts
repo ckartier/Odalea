@@ -343,15 +343,20 @@ export const [FirebaseUserContext, useFirebaseUser] = createContextHook(() => {
     try {
       // If authState.user is null, fetch or create user document first
       let baseUser = authState.user;
-      if (!baseUser) {
-        console.log('⚠️ updateUser: authState.user is null, fetching/creating user document...');
+      
+      // If baseUser is missing or ID mismatch, try to fetch fresh from DB
+      if (!baseUser || baseUser.id !== currentFirebaseUser.uid) {
+        console.log('⚠️ updateUser: authState.user is null or mismatch, fetching user document...');
         const uid = currentFirebaseUser.uid;
-        const existingUser = await databaseService.user.getUser(uid);
+        try {
+          baseUser = await databaseService.user.getUser(uid);
+        } catch (fetchErr) {
+          console.warn('⚠️ updateUser: failed to fetch user, will create minimal', fetchErr);
+        }
         
-        if (existingUser) {
-          baseUser = existingUser;
-        } else {
-          // Create minimal user document
+        if (!baseUser) {
+          // Create minimal user document if it doesn't exist
+          console.log('⚠️ updateUser: User doc not found, creating minimal user for:', uid);
           baseUser = {
             id: uid,
             firstName: currentFirebaseUser.displayName?.split(' ')[0] || '',
@@ -372,8 +377,8 @@ export const [FirebaseUserContext, useFirebaseUser] = createContextHook(() => {
             isActive: true,
             profileComplete: false,
           };
+          // Save the minimal user first to ensure document exists
           await databaseService.user.saveUser(baseUser);
-          console.log('✅ Created minimal user document for:', uid);
         }
       }
 
@@ -512,11 +517,17 @@ export const [FirebaseUserContext, useFirebaseUser] = createContextHook(() => {
       await databaseService.pet.savePet(newPet);
       console.log('✅ Pet saved to Firestore:', petId);
 
-      // Fetch or use current user data
+      // Update user document with new pet and activePetId
+      // Fetch fresh user data to ensure we have latest state
       let baseUser = authState.user;
-      if (!baseUser) {
-        console.log('⚠️ addPet: authState.user is null, fetching user document...');
-        baseUser = await databaseService.user.getUser(uid);
+      
+      if (!baseUser || baseUser.id !== uid) {
+        console.log('⚠️ addPet: authState.user is null/stale, fetching user document...');
+        try {
+          baseUser = await databaseService.user.getUser(uid);
+        } catch (e) {
+          console.warn('⚠️ addPet: failed to fetch user', e);
+        }
       }
 
       if (baseUser) {
@@ -539,6 +550,7 @@ export const [FirebaseUserContext, useFirebaseUser] = createContextHook(() => {
         }));
       } else {
         // User document doesn't exist yet - create minimal doc with activePetId
+        // This handles the extreme race condition where user doc creation failed or is lagging
         console.log('⚠️ addPet: User document not found, creating with activePetId');
         const userRef = doc(db, 'users', uid);
         try {
@@ -547,10 +559,15 @@ export const [FirebaseUserContext, useFirebaseUser] = createContextHook(() => {
             activePetId: petId,
             createdAt: Date.now(),
             updatedAt: serverTimestamp(),
+            // Minimal required fields to avoid validation errors elsewhere
+            pets: [newPet],
+            email: currentFirebaseUser.email,
+            pseudo: currentFirebaseUser.displayName || 'User',
           }, { merge: true });
           console.log('✅ Created user doc with activePetId:', petId);
         } catch (err) {
           console.error('❌ Failed to create user doc with activePetId:', err);
+          throw err;
         }
         
         setAuthState((prev) => ({ ...prev, loading: false }));

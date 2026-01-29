@@ -614,10 +614,11 @@ export default function SignUpScreen() {
             console.error('❌ Failed to create pet:', addPetResult.error);
             Alert.alert(
               'Erreur de création',
-              'Impossible de créer le profil de votre animal. Veuillez réessayer depuis votre profil.',
+              'Impossible de créer le profil de votre animal. Veuillez réessayer.',
               [{ text: 'OK' }]
             );
-            // Don't block navigation - user profile was saved, they can add pet later
+            // STOP NAVIGATION if pet creation failed
+            return;
           } else {
             console.log('✅ Pet profile created:', addPetResult.pet?.id);
           }

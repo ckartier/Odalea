@@ -19,21 +19,8 @@ import { useFirebaseUser } from '@/hooks/firebase-user-store';
 import { StorageService } from '@/services/storage';
 import { usePremium } from '@/hooks/premium-store';
 import { useActivePet } from '@/hooks/active-pet-store';
-import { usePets } from '@/hooks/pets-store';
-import { useQueryClient } from '@tanstack/react-query';
-import { useSocial } from '@/hooks/social-store';
-import { PostCard } from '@/components/PostCard';
-import { Post } from '@/types';
-import { useFriends } from '@/hooks/friends-store';
-import { 
-  LogOut, 
-  Plus, 
-  Settings, 
-  Shield,
-  Star,
-  ChevronRight,
-  MessageCircle,
-} from 'lucide-react-native';
+import { useUserPets } from '@/hooks/useUserPets';
+import { getPetImageUrl, getUserAvatarUrl, DEFAULT_USER_PLACEHOLDER, DEFAULT_PET_PLACEHOLDER } from '@/lib/image-helpers';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -42,16 +29,11 @@ export default function ProfileScreen() {
   const { friends } = useFriends();
   const { isPremium } = usePremium();
   const { activePetId, setActivePet } = useActivePet();
-  const { syncUserPets } = usePets();
+  const { pets: userPets, deletePet: deletePetHook } = useUserPets();
   const queryClient = useQueryClient();
   
-  const userPets = user?.pets || [];
-  
-  useEffect(() => {
-    if (user?.pets) {
-      syncUserPets(user.pets);
-    }
-  }, [user?.pets, syncUserPets]);
+  // const userPets = user?.pets || []; // OLD: relying on user object
+
   const { 
     getUserPosts, 
     deletePost, 
@@ -78,6 +60,48 @@ export default function ProfileScreen() {
   useEffect(() => {
     setProfilePhoto(user?.photo);
   }, [user?.photo]);
+
+  const handleEditPet = (petId: string) => {
+    router.push(toHref(`/pet/edit/${petId}`));
+  };
+
+  const handlePetLongPress = (petId: string, petName: string) => {
+    Alert.alert(
+      petName,
+      'Que souhaitez-vous faire ?',
+      [
+        {
+          text: 'Modifier',
+          onPress: () => handleEditPet(petId),
+        },
+        {
+          text: 'Définir comme actif',
+          onPress: () => setActivePet(petId),
+        },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Supprimer',
+              `Êtes-vous sûr de vouloir supprimer ${petName} ?`,
+              [
+                { text: 'Annuler', style: 'cancel' },
+                { 
+                  text: 'Supprimer', 
+                  style: 'destructive', 
+                  onPress: async () => {
+                    await deletePetHook(petId);
+                  }
+                },
+              ]
+            );
+          },
+        },
+        { text: 'Annuler', style: 'cancel' },
+      ]
+    );
+  };
   
   const loadUserPosts = useCallback(async () => {
     if (!user) return;
@@ -228,7 +252,7 @@ export default function ProfileScreen() {
             onPress={() => handlePhotoChange(null)}
           >
             <Image
-              source={{ uri: profilePhoto || 'https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?q=80&w=500' }}
+              source={{ uri: getUserAvatarUrl(user) || DEFAULT_USER_PLACEHOLDER }}
               style={styles.profilePhoto}
               contentFit="cover"
             />
@@ -286,10 +310,11 @@ export default function ProfileScreen() {
                     key={pet.id}
                     style={[styles.petCard, isActive && styles.petCardActive]}
                     onPress={() => setActivePet(pet.id)}
+                    onLongPress={() => handlePetLongPress(pet.id, pet.name)}
                     activeOpacity={0.9}
                   >
                     <Image
-                      source={{ uri: pet.mainPhoto || 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131' }}
+                      source={{ uri: getPetImageUrl(pet) || DEFAULT_PET_PLACEHOLDER }}
                       style={styles.petImage}
                       contentFit="cover"
                     />
@@ -302,6 +327,12 @@ export default function ProfileScreen() {
                         <Text style={styles.activeBadgeText}>✓</Text>
                       </View>
                     )}
+                    <TouchableOpacity 
+                      style={styles.editPetBadge}
+                      onPress={() => handleEditPet(pet.id)}
+                    >
+                      <Settings size={12} color={COLORS.surface} />
+                    </TouchableOpacity>
                   </TouchableOpacity>
                 );
               })}
@@ -575,6 +606,17 @@ const styles = StyleSheet.create({
     color: COLORS.surface,
     fontSize: 14,
     fontWeight: '600' as const,
+  },
+  editPetBadge: {
+    position: 'absolute',
+    bottom: SPACING.sm + 40, 
+    right: SPACING.sm,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyCard: {
     backgroundColor: COLORS.surface,
