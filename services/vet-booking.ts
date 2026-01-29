@@ -31,7 +31,7 @@ export interface CreateVetBookingData {
   notes?: string;
 }
 
-const COLLECTION_NAME = 'vet_bookings';
+const COLLECTION_NAME = 'vetBookings';
 
 export const vetBookingService = {
   async createBooking(data: CreateVetBookingData): Promise<string> {
