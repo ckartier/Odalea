@@ -134,7 +134,6 @@ export default function PetDiscoveryScreen() {
     forceSwipe('left');
   };
 
-  const { selectedPetId, setSelectedPetId } = useMatching();
   
   React.useEffect(() => {
     if (userPets.length > 0 && !selectedPetId) {

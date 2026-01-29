@@ -21,6 +21,12 @@ import { usePremium } from '@/hooks/premium-store';
 import { useActivePet } from '@/hooks/active-pet-store';
 import { useUserPets } from '@/hooks/useUserPets';
 import { getPetImageUrl, getUserAvatarUrl, DEFAULT_USER_PLACEHOLDER, DEFAULT_PET_PLACEHOLDER } from '@/lib/image-helpers';
+import { useFriends } from '@/hooks/friends-store';
+import { useSocial } from '@/hooks/social-store';
+import { useQueryClient } from '@tanstack/react-query';
+import { Post } from '@/types';
+import { Plus, Settings, ChevronRight, Star, Shield, LogOut, MessageCircle } from 'lucide-react-native';
+import { PostCard } from '@/components/PostCard';
 
 export default function ProfileScreen() {
   const router = useRouter();
