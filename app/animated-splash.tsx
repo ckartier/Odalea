@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Dimensions,
   View,
-  Image,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
@@ -17,6 +16,7 @@ import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
 import { useAuth } from '@/hooks/auth-store';
 import { useI18n } from '@/hooks/i18n-store';
 import { useOnboarding } from '@/hooks/onboarding-store';
+import { DESIGN } from '@/constants/design';
 
 const VIDEO_URL = 'https://firebasestorage.googleapis.com/v0/b/copattes.firebasestorage.app/o/Coppet%2Flogo%20splash.m4v?alt=media&token=896a8261-2dbd-4700-b206-0be8f0848616';
 const LOGO_URL = 'https://firebasestorage.googleapis.com/v0/b/copattes.firebasestorage.app/o/Coppet%2Flogo%2FOdalea%20Logo.png?alt=media&token=e36e5c80-f424-4c96-9243-d99e499f9652';
@@ -166,22 +166,24 @@ export default function AnimatedSplashScreen() {
   const runWebFallback = useCallback(() => {
     console.log('[AnimatedSplash] running web fallback animation');
     
-    Animated.parallel([
-      Animated.timing(logoOpacity, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.spring(logoScale, {
-        toValue: 1,
-        friction: 8,
-        tension: 40,
-        useNativeDriver: true,
-      }),
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(logoOpacity, {
+          toValue: 1,
+          duration: 800,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.spring(logoScale, {
+          toValue: 1,
+          friction: 6,
+          tension: 50,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.delay(800),
     ]).start(() => {
-      setTimeout(() => {
-        setVideoFinished(true);
-      }, 1500);
+      setVideoFinished(true);
     });
   }, [logoOpacity, logoScale]);
 
@@ -258,18 +260,25 @@ export default function AnimatedSplashScreen() {
 
       {Platform.OS === 'web' ? (
         <View style={styles.webFallback}>
-          <Animated.Image
-            source={{ uri: LOGO_URL }}
+          <Animated.View
             style={[
-              styles.logo,
+              styles.logoContainer,
               {
                 opacity: logoOpacity,
                 transform: [{ scale: logoScale }],
               },
             ]}
-            resizeMode="contain"
-            testID="animated-splash-logo"
-          />
+          >
+            <Animated.Image
+              source={{ uri: LOGO_URL }}
+              style={styles.logo}
+              resizeMode="contain"
+              testID="animated-splash-logo"
+            />
+            <Animated.Text style={[styles.brandName, { opacity: logoOpacity }]}>
+              Odalea
+            </Animated.Text>
+          </Animated.View>
         </View>
       ) : (
         <Video
@@ -293,7 +302,7 @@ export default function AnimatedSplashScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: DESIGN.colors.background,
   },
   video: {
     position: 'absolute',
@@ -306,10 +315,23 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000000',
+    backgroundColor: DESIGN.colors.background,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   logo: {
-    width: 200,
-    height: 200,
+    width: 120,
+    height: 120,
+    tintColor: DESIGN.colors.primary,
+  },
+  brandName: {
+    marginTop: 16,
+    fontSize: 28,
+    fontWeight: '300' as const,
+    letterSpacing: 4,
+    color: DESIGN.colors.primary,
+    textTransform: 'uppercase',
   },
 });

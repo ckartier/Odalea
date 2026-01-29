@@ -25,21 +25,21 @@ const SLIDES = [
   {
     title: 'Des rencontres pour eux',
     subtitle: 'Aide ton animal à créer des liens adaptés à sa personnalité.',
-    image: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/0jfm5p4d0r89ncjsaotfp',
+    image: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=80',
   },
   {
     title: 'Des profils pensés avec soin',
     subtitle: 'Personnalité, affinités et intentions claires pour chaque animal.',
-    image: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/ayd7i3n82e16n6rm741nx',
+    image: 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&q=80',
   },
   {
     title: 'Des rencontres à leur rythme',
     subtitle: 'Découvre, échange et organise des rencontres adaptées.',
-    image: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/wt8feih18zrif56a2wkih',
+    image: 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=800&q=80',
   },
 ];
 
-const MODAL_HEIGHT = 260;
+const MODAL_HEIGHT = 280;
 const ODALEA_LOGO = 'https://firebasestorage.googleapis.com/v0/b/copattes.firebasestorage.app/o/Coppet%2Flogo%2FOdalea%20Logo.png?alt=media&token=e36e5c80-f424-4c96-9243-d99e499f9652';
 
 export default function OnboardingScreen() {
