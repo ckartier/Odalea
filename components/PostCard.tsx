@@ -4,13 +4,13 @@ import {
   Text,
   View,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
   TextInput,
   Alert,
   Platform,
   Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { COLORS, SHADOWS } from '@/constants/colors';
@@ -179,7 +179,9 @@ const PostCardComponent: React.FC<PostCardProps> = ({
             uri: post.authorPhoto || 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=100&h=100&fit=crop&crop=face' 
           }} 
           style={styles.avatar}
-          resizeMode="cover"
+          contentFit="cover"
+          placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4"
+          transition={150}
         />
         <View style={styles.authorInfo}>
           <Text style={styles.authorName}>{post.authorName || 'Animal'}</Text>
@@ -207,17 +209,25 @@ const PostCardComponent: React.FC<PostCardProps> = ({
 
       {displayImages && displayImages.length > 0 && (
         <View style={styles.imagesContainer}>
-          {displayImages.map((img: string, idx: number) => (
-            <Image 
-              key={idx}
-              source={{ uri: img }} 
-              style={[
-                styles.postImage,
-                displayImages.length > 1 && styles.multipleImages
-              ]}
-              resizeMode="cover"
-            />
-          ))}
+          {displayImages.map((img: string, idx: number) => {
+            const imageUri = img && img.trim() !== '' 
+              ? img 
+              : 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&h=300&fit=crop';
+            return (
+              <Image 
+                key={idx}
+                source={{ uri: imageUri }} 
+                style={[
+                  styles.postImage,
+                  displayImages.length > 1 && styles.multipleImages
+                ]}
+                contentFit="cover"
+                placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4"
+                transition={200}
+                onError={() => console.log('[PostCard] Image load error:', img)}
+              />
+            );
+          })}
         </View>
       )}
 

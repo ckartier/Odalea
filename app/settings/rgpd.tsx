@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,23 +6,52 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SHADOWS } from '@/constants/colors';
 import { useI18n } from '@/hooks/i18n-store';
 import { Shield, Download, Trash2, Eye, Edit } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { deleteUserAccount, exportUserData } from '@/services/account-deletion';
 
 export default function RGPDScreen() {
   const { t } = useI18n();
+  const router = useRouter();
+  const [isExporting, setIsExporting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDataExport = () => {
+  const handleDataExport = async () => {
     Alert.alert(
       'Exporter mes données',
-      'Nous vous enverrons un fichier contenant toutes vos données par email dans les 48h.',
+      'Nous allons générer un fichier contenant toutes vos données.',
       [
         { text: 'Annuler', style: 'cancel' },
-        { text: 'Confirmer', onPress: () => Alert.alert('Demande envoyée', 'Vous recevrez vos données par email.') },
+        { 
+          text: 'Exporter', 
+          onPress: async () => {
+            setIsExporting(true);
+            try {
+              const result = await exportUserData();
+              if (result.success && result.data) {
+                console.log('[RGPD] Data exported:', JSON.stringify(result.data, null, 2));
+                Alert.alert(
+                  'Export réussi',
+                  'Vos données ont été exportées. Contactez dpo@coppet.com pour recevoir le fichier complet.',
+                  [{ text: 'OK' }]
+                );
+              } else {
+                Alert.alert('Erreur', result.error || 'Impossible d\'exporter les données.');
+              }
+            } catch (error) {
+              console.error('[RGPD] Export error:', error);
+              Alert.alert('Erreur', 'Une erreur est survenue lors de l\'export.');
+            } finally {
+              setIsExporting(false);
+            }
+          }
+        },
       ]
     );
   };
@@ -30,13 +59,45 @@ export default function RGPDScreen() {
   const handleDataDeletion = () => {
     Alert.alert(
       'Supprimer mes données',
-      'Cette action supprimera définitivement toutes vos données. Cette action est irréversible.',
+      'Cette action supprimera définitivement toutes vos données (profil, animaux, messages, photos). Cette action est IRRÉVERSIBLE.',
       [
         { text: 'Annuler', style: 'cancel' },
         { 
-          text: 'Supprimer', 
+          text: 'Je comprends, supprimer', 
           style: 'destructive',
-          onPress: () => Alert.alert('Demande envoyée', 'Votre demande de suppression a été enregistrée.') 
+          onPress: () => {
+            Alert.alert(
+              'Confirmation finale',
+              'Êtes-vous absolument sûr ? Toutes vos données seront perdues.',
+              [
+                { text: 'Non, annuler', style: 'cancel' },
+                {
+                  text: 'Oui, tout supprimer',
+                  style: 'destructive',
+                  onPress: async () => {
+                    setIsDeleting(true);
+                    try {
+                      const result = await deleteUserAccount();
+                      if (result.success) {
+                        Alert.alert(
+                          'Données supprimées',
+                          'Votre compte et toutes vos données ont été définitivement supprimés.',
+                          [{ text: 'OK', onPress: () => router.replace('/onboarding') }]
+                        );
+                      } else {
+                        Alert.alert('Erreur', result.error || 'Impossible de supprimer les données.');
+                      }
+                    } catch (error) {
+                      console.error('[RGPD] Deletion error:', error);
+                      Alert.alert('Erreur', 'Une erreur est survenue.');
+                    } finally {
+                      setIsDeleting(false);
+                    }
+                  },
+                },
+              ]
+            );
+          }
         },
       ]
     );
@@ -76,6 +137,17 @@ export default function RGPDScreen() {
       onPress: handleDataDeletion,
     },
   ];
+
+  if (isDeleting || isExporting) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>
+          {isDeleting ? 'Suppression en cours...' : 'Export en cours...'}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -181,6 +253,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.screenBackground,
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: COLORS.screenBackground,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  loadingText: {
+    fontSize: 16,
+    fontWeight: '500' as const,
+    color: COLORS.black,
+    marginTop: 16,
+    textAlign: 'center' as const,
   },
   content: {
     flex: 1,

@@ -72,30 +72,39 @@ export const [ActivePetContext, useActivePet] = createContextHook(() => {
 // Helper hook to get the active pet with pets data - use this in components
 export function useActivePetWithData() {
   const { activePetId, setActivePet, isLoading: activePetLoading } = useActivePet();
-  const { pets: userPets, isLoading: petsLoading } = useUserPets();
+  const { pets: userPets, isLoading: petsLoading, error: petsError, refetch: refetchPets } = useUserPets();
 
   // Auto-select first pet if no active pet is set
   useEffect(() => {
-    if (petsLoading || activePetLoading) return;
+    // Don't auto-select while still loading
+    if (petsLoading || activePetLoading) {
+      console.log('[useActivePetWithData] Still loading, skipping auto-select');
+      return;
+    }
     
-    const petExists = userPets.some(p => p.id === activePetId);
+    const petExists = activePetId ? userPets.some(p => p.id === activePetId) : false;
     
     if (userPets.length > 0 && (!activePetId || !petExists)) {
-      console.log('[useActivePetWithData] Auto-selecting first pet');
+      console.log('[useActivePetWithData] Auto-selecting first pet:', userPets[0].id);
       setActivePet(userPets[0].id);
     } else if (userPets.length === 0 && activePetId) {
-      console.log('[useActivePetWithData] No pets, clearing active pet');
+      console.log('[useActivePetWithData] No pets found, clearing active pet');
       setActivePet(null);
     }
   }, [userPets, activePetId, petsLoading, activePetLoading, setActivePet]);
 
-  const activePet: Pet | undefined = userPets.find(p => p.id === activePetId);
+  // Find active pet - ensure we always check current pets array
+  const activePet: Pet | undefined = activePetId 
+    ? userPets.find(p => p.id === activePetId) 
+    : (userPets.length > 0 ? userPets[0] : undefined);
 
   return {
-    activePetId,
+    activePetId: activePet?.id ?? activePetId,
     activePet,
     setActivePet,
     isLoading: activePetLoading || petsLoading,
     userPets,
+    petsError,
+    refetchPets,
   };
 }

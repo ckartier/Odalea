@@ -12,9 +12,9 @@ import {
   ListRenderItem,
   TextInput,
   ScrollView,
-  Image,
   Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -372,7 +372,12 @@ export default function CommunityScreen() {
               onPress={() => router.push(`/pet/${pet.id}`)}
             >
               <View style={[styles.storyRing, activePet?.id === pet.id && styles.storyRingActive]}>
-                <Image source={{ uri: pet.mainPhoto }} style={styles.storyImage} />
+                <Image 
+                source={{ uri: pet.mainPhoto || 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=100' }} 
+                style={styles.storyImage}
+                contentFit="cover"
+                placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4"
+              />
               </View>
               <Text style={styles.storyName} numberOfLines={1}>{pet.name}</Text>
             </TouchableOpacity>
@@ -401,7 +406,9 @@ export default function CommunityScreen() {
                   <Image 
                     source={{ uri: pet.photos[0] }} 
                     style={styles.urgentImage}
-                    resizeMode="cover"
+                    contentFit="cover"
+                    placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4"
+                    transition={150}
                     onError={() => console.log('[UrgentCarousel] Image load error:', pet.photos[0])}
                   />
                 ) : (

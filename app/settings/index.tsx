@@ -8,6 +8,7 @@ import {
   Alert,
   Modal,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -33,6 +34,7 @@ import {
   Stethoscope,
 } from 'lucide-react-native';
 import { useVetAssistant } from '@/hooks/vet-assistant-store';
+import { deleteUserAccount } from '@/services/account-deletion';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -40,6 +42,7 @@ export default function SettingsScreen() {
   const { signOut } = useFirebaseUser();
   const { chatHistories, startNewConversation } = useVetAssistant();
   const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const handleLanguageChange = async (lang: 'en' | 'fr' | 'es' | 'de' | 'it') => {
     await changeLanguage(lang);
@@ -69,15 +72,41 @@ export default function SettingsScreen() {
   const handleDeleteAccount = () => {
     Alert.alert(
       'Supprimer le compte',
-      'Cette action est irréversible. Toutes vos données seront définitivement supprimées.',
+      'Cette action est irréversible. Toutes vos données (profil, animaux, messages, photos) seront définitivement supprimées.',
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Supprimer',
+          text: 'Supprimer définitivement',
           style: 'destructive',
-          onPress: () => {
-            Alert.alert('Compte supprimé', 'Votre compte a été supprimé avec succès.');
-            router.replace('/');
+          onPress: async () => {
+            setIsDeletingAccount(true);
+            try {
+              console.log('[Settings] Starting account deletion...');
+              const result = await deleteUserAccount();
+              
+              if (result.success) {
+                Alert.alert(
+                  'Compte supprimé',
+                  'Votre compte et toutes vos données ont été supprimés avec succès.',
+                  [{ text: 'OK', onPress: () => router.replace('/onboarding') }]
+                );
+              } else {
+                Alert.alert(
+                  'Erreur',
+                  result.error || 'Impossible de supprimer le compte. Veuillez réessayer.',
+                  [{ text: 'OK' }]
+                );
+              }
+            } catch (error) {
+              console.error('[Settings] Account deletion error:', error);
+              Alert.alert(
+                'Erreur',
+                'Une erreur inattendue est survenue. Veuillez réessayer.',
+                [{ text: 'OK' }]
+              );
+            } finally {
+              setIsDeletingAccount(false);
+            }
           },
         },
       ]
@@ -260,6 +289,16 @@ export default function SettingsScreen() {
     { code: 'it' as const, name: 'Italiano', flag: '🇮🇹' },
   ];
 
+  if (isDeletingAccount) {
+    return (
+      <View style={styles.deletingContainer}>
+        <ActivityIndicator size="large" color={COLORS.black} />
+        <Text style={styles.deletingText}>Suppression de votre compte...</Text>
+        <Text style={styles.deletingSubtext}>Cela peut prendre quelques instants</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Stack.Screen
@@ -346,6 +385,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F2F2F7',
+  },
+  deletingContainer: {
+    flex: 1,
+    backgroundColor: '#F2F2F7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  deletingText: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    color: COLORS.black,
+    marginTop: 24,
+    textAlign: 'center' as const,
+  },
+  deletingSubtext: {
+    fontSize: 14,
+    color: '#6D6D72',
+    marginTop: 8,
+    textAlign: 'center' as const,
   },
   content: {
     flex: 1,
