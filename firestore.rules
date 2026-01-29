@@ -315,10 +315,99 @@ service cloud.firestore {
       );
     }
     
-    // ============================================
-    // VACCINATIONS
-    // ============================================
     match /vaccinations/{vaccinationId} {
+      allow read: if isAuth() && (
+        resource.data.petOwnerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+      allow create: if isAuth() && (
+        request.resource.data.petOwnerId == request.auth.uid ||
+        request.resource.data.ownerId == request.auth.uid ||
+        request.resource.data.userId == request.auth.uid
+      );
+      allow update: if isAuth() && (
+        resource.data.petOwnerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+      allow delete: if isAuth() && (
+        resource.data.petOwnerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+    }
+
+    match /treatments/{treatmentId} {
+      allow read: if isAuth() && (
+        resource.data.petOwnerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+      allow create: if isAuth() && (
+        request.resource.data.petOwnerId == request.auth.uid ||
+        request.resource.data.ownerId == request.auth.uid ||
+        request.resource.data.userId == request.auth.uid
+      );
+      allow update: if isAuth() && (
+        resource.data.petOwnerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+      allow delete: if isAuth() && (
+        resource.data.petOwnerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+    }
+
+    match /medications/{medicationId} {
+      allow read: if isAuth() && (
+        resource.data.petOwnerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+      allow create: if isAuth() && (
+        request.resource.data.petOwnerId == request.auth.uid ||
+        request.resource.data.ownerId == request.auth.uid ||
+        request.resource.data.userId == request.auth.uid
+      );
+      allow update: if isAuth() && (
+        resource.data.petOwnerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+      allow delete: if isAuth() && (
+        resource.data.petOwnerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+    }
+
+    match /healthDocuments/{documentId} {
+      allow read: if isAuth() && (
+        resource.data.petOwnerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+      allow create: if isAuth() && (
+        request.resource.data.petOwnerId == request.auth.uid ||
+        request.resource.data.ownerId == request.auth.uid ||
+        request.resource.data.userId == request.auth.uid
+      );
+      allow update: if isAuth() && (
+        resource.data.petOwnerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+      allow delete: if isAuth() && (
+        resource.data.petOwnerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+    }
+
+    match /healthReminders/{reminderId} {
       allow read: if isAuth() && (
         resource.data.petOwnerId == request.auth.uid ||
         resource.data.ownerId == request.auth.uid ||
