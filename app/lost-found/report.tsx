@@ -15,7 +15,7 @@ import { useI18n } from '@/hooks/i18n-store';
 import { useLostFound } from '@/hooks/lost-found-store';
 import { useTheme } from '@/hooks/theme-store';
 import { useAuth } from '@/hooks/auth-store';
-import { Camera, MapPin, Calendar, DollarSign, Plus, X } from 'lucide-react-native';
+import { Camera, MapPin, Calendar, DollarSign, X } from 'lucide-react-native';
 import Button from '@/components/Button';
 import PhotoUploader from '@/components/PhotoUploader';
 import DatePicker from '@/components/DatePicker';

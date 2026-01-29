@@ -47,8 +47,9 @@ const socialContextHook = createContextHook(() => {
         const petName = r?.petName || r?.animalName || 'Animal';
         const image = r?.photo || r?.imageUrl || undefined;
         const content = r?.description || `Animal ${r?.type === 'found' ? 'trouvé' : 'perdu'}: ${petName}`;
+        const locName = typeof r?.address === 'string' ? r.address : (typeof r?.city === 'string' ? r.city : undefined);
         const loc = r?.location && r.location.latitude && r.location.longitude ? {
-          name: r?.address || r?.city || undefined,
+          name: locName,
           latitude: Number(r.location.latitude),
           longitude: Number(r.location.longitude)
         } : undefined;

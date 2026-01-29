@@ -79,9 +79,15 @@ export const [LostFoundContext, useLostFound] = createContextHook(() => {
           breed: r.breed,
           description: r.description || '',
           lastSeenLocation: {
-            latitude: r.lastSeenLocation?.latitude || r.location?.latitude || 48.8566,
-            longitude: r.lastSeenLocation?.longitude || r.location?.longitude || 2.3522,
-            address: r.lastSeenLocation?.address || r.address || 'Paris, France'
+            latitude: Number(r.lastSeenLocation?.latitude || r.location?.latitude || 48.8566),
+            longitude: Number(r.lastSeenLocation?.longitude || r.location?.longitude || 2.3522),
+            address: typeof r.lastSeenLocation === 'string'
+              ? r.lastSeenLocation
+              : typeof r.lastSeenLocation?.address === 'string' 
+                ? r.lastSeenLocation.address 
+                : typeof r.address === 'string' 
+                  ? r.address 
+                  : 'Paris, France'
           },
           lastSeenDate: r.lastSeenDate || r.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
           photos: r.photos || [],
