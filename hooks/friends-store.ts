@@ -5,7 +5,7 @@ import { databaseService } from '@/services/database';
 import { User, FriendRequest } from '@/types';
 import { useFirebaseUser } from './firebase-user-store';
 
-export const [FriendsContext, useFriends] = createContextHook(() => {
+const friendsContextHook = createContextHook(() => {
   const { user } = useFirebaseUser();
   const queryClient = useQueryClient();
   
@@ -268,3 +268,6 @@ export const [FriendsContext, useFriends] = createContextHook(() => {
     isRespondingToRequest: respondToRequestMutation.isPending,
   };
 });
+
+export const FriendsContext = friendsContextHook[0];
+export const useFriends = friendsContextHook[1];

@@ -24,7 +24,7 @@ import { getPetImageUrl, getUserAvatarUrl, DEFAULT_USER_PLACEHOLDER, DEFAULT_PET
 import { useFriends } from '@/hooks/friends-store';
 import { useSocial } from '@/hooks/social-store';
 import { useQueryClient } from '@tanstack/react-query';
-import { Post } from '@/types';
+import { Post, Comment } from '@/types';
 import { Plus, Settings, ChevronRight, Star, Shield, LogOut, MessageCircle } from 'lucide-react-native';
 import { PostCard } from '@/components/PostCard';
 
@@ -196,7 +196,7 @@ export default function ProfileScreen() {
         newSet.add(postId);
         if (!commentsMap[postId]) {
           setLoadingComments(prev => ({ ...prev, [postId]: true }));
-          getComments(postId).then(comments => {
+          getComments(postId).then((comments: Comment[]) => {
             setCommentsMap(prev => ({ ...prev, [postId]: comments }));
             setLoadingComments(prev => ({ ...prev, [postId]: false }));
           });

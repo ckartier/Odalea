@@ -10,7 +10,7 @@ import { StorageService, sanitizeForFirestore, generateUUID } from '@/services/s
 import { Alert } from 'react-native';
 import { ModerationService } from '@/services/moderation';
 
-export const [SocialContext, useSocial] = createContextHook(() => {
+const socialContextHook = createContextHook(() => {
   const { user: firebaseUser } = useFirebaseUser();
   const { user: mockUser } = useUser();
   const { isPremium, showPremiumPrompt } = usePremium();
@@ -518,3 +518,6 @@ export const [SocialContext, useSocial] = createContextHook(() => {
     blockedUsers,
   };
 });
+
+export const SocialContext = socialContextHook[0];
+export const useSocial = socialContextHook[1];
