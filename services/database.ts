@@ -1408,9 +1408,9 @@ export const petSitterService = {
       const qs = await getDocs(qy);
       const items = qs.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
       return items.sort((a: any, b: any) => {
-         const tA = a.createdAt?.toMillis?.() || 0;
-         const tB = b.createdAt?.toMillis?.() || 0;
-         return tB - tA;
+          const tA = a.createdAt?.toMillis?.() || 0;
+          const tB = b.createdAt?.toMillis?.() || 0;
+          return tB - tA;
       });
     } catch (error) {
       console.error('❌ Error listing bookings:', error);
@@ -1722,8 +1722,16 @@ export const friendRequestService = {
   // Send friend request (idempotent)
   async sendFriendRequest(senderId: string, receiverId: string): Promise<string> {
     try {
+      // --- SECURITY CORRECTION ---
+      const currentUser = auth.currentUser;
+      if (!currentUser) throw new Error("User not authenticated");
+
+      // Force use of real current user ID to match Security Rules
+      // (request.resource.data.senderId == request.auth.uid)
+      const realSenderId = currentUser.uid;
+      
       // Create idempotent docId: alphabetically sorted UIDs
-      const docId = [senderId, receiverId].sort().join('_');
+      const docId = [realSenderId, receiverId].sort().join('_');
       const friendRequestRef = doc(db, COLLECTIONS.FRIEND_REQUESTS, docId);
       
       console.log('🔄 Sending friend request with docId:', docId);
@@ -1734,20 +1742,24 @@ export const friendRequestService = {
         const data = existingRequest.data();
         if (data.status === 'pending') {
           console.log('⚠️ Friend request already exists (pending)');
-          throw new Error('Demande d\'ami déjà envoyée');
+          // Return docId without error to prevent UI block
+          return docId; 
         } else if (data.status === 'accepted') {
           console.log('⚠️ Users are already friends');
-          throw new Error('Vous êtes déjà amis');
+          return docId;
         }
-        // If rejected, allow to re-send by updating
+        // If rejected, allow re-sending by updating
       }
       
       // Create or update request
       await setDoc(friendRequestRef, {
-        senderId,
+        senderId: realSenderId, // Matches Security Rule
         receiverId,
         status: 'pending',
-        timestamp: serverTimestamp()
+        timestamp: serverTimestamp(),
+        // Optional: sender info for immediate display
+        senderName: currentUser.displayName || "Utilisateur",
+        senderPhoto: currentUser.photoURL || null
       }, { merge: true });
       
       console.log('✅ Friend request sent successfully (idempotent)');
