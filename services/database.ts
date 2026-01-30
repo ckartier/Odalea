@@ -20,7 +20,7 @@ import {
   runTransaction
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, storage, auth } from './firebase'; // Assurez-vous que le chemin est correct
+import { db, storage, auth } from './firebase'; 
 import { 
   User, Pet, Message, Post, Comment, Product, ProfessionalProduct, Order,
   Badge, Challenge, Notification, FriendRequest,
@@ -36,7 +36,7 @@ export function validateFirebaseUid(id: string | undefined | null): boolean {
   if (!id || typeof id !== 'string') return false;
   const trimmed = id.trim();
   if (trimmed.length < 20 || trimmed.length > 128) return false;
-  if (/^[a-z]+-\d+$/i.test(trimmed)) return false; // Rejet des clés business type "paris-1"
+  if (/^[a-z]+-\d+$/i.test(trimmed)) return false; 
   if (!/^[a-zA-Z0-9_-]+$/.test(trimmed)) return false;
   return true;
 }
@@ -47,7 +47,7 @@ const COLLECTIONS = {
   USERS: 'users',
   PETS: 'pets',
   PROFESSIONALS: 'professionals',
-  PET_SITTER_PROFILES: 'petSitterProfiles', // Unifié
+  PET_SITTER_PROFILES: 'petSitterProfiles',
   POSTS: 'posts',
   COMMENTS: 'comments',
   LIKES: 'likes',
@@ -103,12 +103,11 @@ export const userService = {
   async saveUser(user: User): Promise<void> {
     try {
       const uid = getCurrentUserId();
-      // Sécurité : on force l'ID du document à être l'UID de l'auth
       const userRef = doc(db, COLLECTIONS.USERS, uid);
       
       const cleanData = sanitizeAndLog({
         ...user,
-        id: uid, // Force l'ID
+        id: uid, 
         updatedAt: serverTimestamp()
       }, 'User');
       
@@ -135,7 +134,6 @@ export const userService = {
     }
   },
   
-  // Note: searchUsers et getAllUsers restent identiques à votre version précédente
   async searchUsers(searchTerm: string, limitCount = 20): Promise<User[]> {
     try {
         const usersRef = collection(db, COLLECTIONS.USERS);
@@ -143,6 +141,23 @@ export const userService = {
         const qs = await getDocs(q);
         return qs.docs.map(doc => ({ id: doc.id, ...doc.data() })) as User[];
     } catch (error) { console.error(error); return []; }
+  },
+
+  // AJOUT : Fonction manquante demandée par l'erreur
+  async getAllUsers(limitCount = 200): Promise<User[]> {
+    try {
+      const usersRef = collection(db, COLLECTIONS.USERS);
+      const q = query(usersRef, limit(limitCount));
+      const qs = await getDocs(q);
+      return qs.docs.map(d => ({ id: d.id, ...d.data() })) as User[];
+    } catch (error) {
+      if (isPermissionDenied(error)) {
+        console.log('🔒 getAllUsers: Permission denied (expected)');
+        return [];
+      }
+      console.error('❌ Error getting all users:', error);
+      return [];
+    }
   }
 };
 
@@ -150,12 +165,11 @@ export const petService = {
   async savePet(pet: Pet): Promise<void> {
     try {
       const uid = getCurrentUserId();
-      // Si c'est un nouvel animal (pas d'ID), Firestore en génère un
       const petRef = pet.id ? doc(db, COLLECTIONS.PETS, pet.id) : doc(collection(db, COLLECTIONS.PETS));
       
       const cleanData = sanitizeAndLog({
         ...pet,
-        ownerId: uid, // SÉCURITÉ : Force le propriétaire
+        ownerId: uid, 
         updatedAt: serverTimestamp()
       }, 'Pet');
       
@@ -193,12 +207,11 @@ export const postService = {
         const uid = getCurrentUserId();
         const postsRef = collection(db, COLLECTIONS.POSTS);
         
-        // Nettoyage des undefined
         const cleanPost = Object.fromEntries(Object.entries(post).filter(([_, v]) => v !== undefined));
 
         const postData = sanitizeForFirestore({
             ...cleanPost,
-            authorId: uid, // SÉCURITÉ
+            authorId: uid, 
             visibility: cleanPost.visibility || 'public',
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
@@ -207,7 +220,6 @@ export const postService = {
         });
         
         const docRef = await addDoc(postsRef, postData);
-        console.log('✅ Post created');
         return docRef.id;
     } catch (error) {
         console.error('❌ Error creating post:', error);
@@ -218,7 +230,6 @@ export const postService = {
   async getPostsFeed(lastPostId?: string, limitCount = 20): Promise<Post[]> {
     try {
         const postsRef = collection(db, COLLECTIONS.POSTS);
-        // Requête standard pour le feed public
         let q = query(
             postsRef, 
             where('visibility', '==', 'public'), 
@@ -277,10 +288,9 @@ export const commentService = {
             const ref = collection(db, COLLECTIONS.COMMENTS);
             const docRef = await addDoc(ref, {
                 ...comment,
-                authorId: uid, // SÉCURITÉ
+                authorId: uid, 
                 createdAt: serverTimestamp()
             });
-            // Mise à jour compteur
             const postRef = doc(db, COLLECTIONS.POSTS, comment.postId);
             await updateDoc(postRef, { commentsCount: increment(1) });
             return docRef.id;
@@ -290,7 +300,6 @@ export const commentService = {
     async getComments(postId: string): Promise<Comment[]> {
         const q = query(collection(db, COLLECTIONS.COMMENTS), where('postId', '==', postId));
         const qs = await getDocs(q);
-        // Tri client-side simple
         const comments = qs.docs.map(d => ({ id: d.id, ...d.data() })) as Comment[];
         return comments.sort((a: any, b: any) => a.createdAt - b.createdAt);
     }
@@ -300,12 +309,11 @@ export const messagingService = {
     async sendMessage(params: { receiverId: string, content: string, conversationId: string }): Promise<string> {
         try {
             const uid = getCurrentUserId();
-            // Validation simple
             if (!params.content.trim()) throw new Error("Message vide");
 
             const msgData = {
                 conversationId: params.conversationId,
-                senderId: uid, // SÉCURITÉ
+                senderId: uid, 
                 receiverId: params.receiverId,
                 content: params.content,
                 timestamp: serverTimestamp(),
@@ -316,7 +324,6 @@ export const messagingService = {
             const ref = collection(db, COLLECTIONS.MESSAGES);
             const docRef = await addDoc(ref, msgData);
 
-            // Mise à jour conversation
             const convRef = doc(db, COLLECTIONS.CONVERSATIONS, params.conversationId);
             await updateDoc(convRef, {
                 lastMessage: { ...msgData, id: docRef.id, timestamp: Date.now() },
@@ -335,11 +342,9 @@ export const messagingService = {
         const q = query(collection(db, COLLECTIONS.MESSAGES), where('conversationId', '==', conversationId));
         const qs = await getDocs(q);
         const msgs = qs.docs.map(d => ({ id: d.id, ...d.data() })) as Message[];
-        // Tri par date
         return msgs.sort((a: any, b: any) => (a.timestamp?.toMillis?.() || 0) - (b.timestamp?.toMillis?.() || 0));
     },
 
-    // Crée une conv ou retourne l'existante entre 2 users
     async createOrGetConversation(otherUserId: string): Promise<string> {
         const uid = getCurrentUserId();
         const participants = [uid, otherUserId].sort();
@@ -368,7 +373,7 @@ export const friendRequestService = {
             const ref = doc(db, COLLECTIONS.FRIEND_REQUESTS, docId);
             
             await setDoc(ref, {
-                senderId: uid, // SÉCURITÉ: Indispensable pour la règle Firestore
+                senderId: uid, 
                 receiverId,
                 status: 'pending',
                 timestamp: serverTimestamp()
@@ -401,11 +406,10 @@ export const bookingService = {
     async createBooking(bookingData: any): Promise<string> {
         try {
             const uid = getCurrentUserId();
-            // Nettoyage et sécurité
             const cleanData = sanitizeForFirestore({
                 ...bookingData,
-                userId: uid,     // SÉCURITÉ : Le client est forcément celui connecté
-                clientId: uid,   // Compatibilité
+                userId: uid,     
+                clientId: uid,   
                 status: 'pending',
                 createdAt: serverTimestamp()
             });
@@ -427,7 +431,112 @@ export const bookingService = {
     }
 };
 
-// Export global simplifié
+// --- NOUVEAUX SERVICES AJOUTÉS POUR CORRIGER LES ERREURS ---
+
+export const reviewService = {
+  // Corrige "Error fetching reviews"
+  async getReviewsByTarget(targetId: string, targetType: string): Promise<any[]> {
+    try {
+      const ref = collection(db, COLLECTIONS.REVIEWS);
+      const constraints = [where('targetType', '==', targetType)];
+      if (targetId !== 'all') {
+          constraints.push(where('targetId', '==', targetId));
+      }
+      // Nécessite l'index composite (targetId ASC, createdAt DESC) créé précédemment
+      const q = query(ref, ...constraints, orderBy('createdAt', 'desc'));
+      const qs = await getDocs(q);
+      return qs.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (error) {
+      console.error('❌ Error getting reviews:', error);
+      return [];
+    }
+  },
+
+  async createReview(review: any): Promise<string> {
+    try {
+      const uid = getCurrentUserId();
+      const docRef = await addDoc(collection(db, COLLECTIONS.REVIEWS), {
+        ...review,
+        authorId: uid,
+        createdAt: serverTimestamp()
+      });
+      return docRef.id;
+    } catch (e) { throw e; }
+  }
+};
+
+export const lostFoundService = {
+  // Corrige "Error fetching lost pets"
+  async listReports(): Promise<any[]> {
+    try {
+      const q = query(collection(db, COLLECTIONS.LOST_FOUND_REPORTS), orderBy('createdAt', 'desc'));
+      const qs = await getDocs(q);
+      return qs.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (error) {
+      console.error('❌ Error listing reports:', error);
+      return [];
+    }
+  },
+
+  async createReport(report: any): Promise<string> {
+    try {
+      const uid = getCurrentUserId();
+      const docRef = await addDoc(collection(db, COLLECTIONS.LOST_FOUND_REPORTS), {
+        ...report,
+        reporterId: uid,
+        createdAt: serverTimestamp(),
+        responses: []
+      });
+      return docRef.id;
+    } catch (e) { throw e; }
+  }
+};
+
+export const petSitterService = {
+  // Corrige "Error fetching cat sitters"
+  async getAllProfiles(limitCount = 100): Promise<any[]> {
+    try {
+      const q = query(collection(db, COLLECTIONS.PET_SITTER_PROFILES), limit(limitCount));
+      const qs = await getDocs(q);
+      return qs.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (error) {
+      console.error('❌ Error getting sitters:', error);
+      return [];
+    }
+  },
+
+  async getProfile(userId: string): Promise<any | null> {
+    try {
+      const snap = await getDoc(doc(db, COLLECTIONS.PET_SITTER_PROFILES, userId));
+      return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+    } catch (e) { return null; }
+  },
+
+  async saveProfile(userId: string, profile: any): Promise<void> {
+     try {
+       const uid = getCurrentUserId();
+       if (userId !== uid) throw new Error("Vous ne pouvez modifier que votre propre profil");
+       await setDoc(doc(db, COLLECTIONS.PET_SITTER_PROFILES, uid), { 
+         ...profile, 
+         userId: uid, 
+         updatedAt: serverTimestamp() 
+       }, { merge: true });
+     } catch (e) { throw e; }
+  }
+};
+
+export const professionalService = {
+    async getVerifiedProfessionals(): Promise<ProfessionalData[]> {
+        try {
+            const q = query(collection(db, COLLECTIONS.PROFESSIONALS), where('isVerified', '==', true));
+            const qs = await getDocs(q);
+            return qs.docs.map(d => d.data() as ProfessionalData);
+        } catch (e) { return []; }
+    }
+};
+
+// --- EXPORT GLOBAL FINAL ---
+
 export const databaseService = {
     user: userService,
     pet: petService,
@@ -436,7 +545,11 @@ export const databaseService = {
     messaging: messagingService,
     friendRequest: friendRequestService,
     booking: bookingService,
-    // Ajoutez ici les autres services si nécessaires (health, etc.) en suivant le modèle sécurisé ci-dessus
+    // Services ajoutés et nécessaires
+    review: reviewService,
+    lostFound: lostFoundService,
+    petSitter: petSitterService,
+    professional: professionalService,
 };
 
 export default databaseService;
