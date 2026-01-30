@@ -26,8 +26,6 @@ import {
   Badge, Challenge, Notification, FriendRequest,
   Conversation, ProfessionalData, AnimalSpecies, AnimalBreed
 } from '@/types';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { safeJsonParse } from '@/lib/safe-json';
 import { sanitizeForFirestore, sanitizeAndLog } from '@/lib/firestore-sanitizer';
 
 // --- VALIDATION HELPERS ---
@@ -84,14 +82,6 @@ const getCurrentUserId = () => {
   return user.uid;
 };
 
-const isFirebaseAvailable = () => {
-  try {
-    return !!db && !!storage;
-  } catch {
-    return false;
-  }
-};
-
 const isPermissionDenied = (e: unknown): boolean => {
   const code = (e as any)?.code ?? '';
   return typeof code === 'string' && code.includes('permission-denied');
@@ -104,19 +94,9 @@ export const userService = {
     try {
       const uid = getCurrentUserId();
       const userRef = doc(db, COLLECTIONS.USERS, uid);
-      
-      const cleanData = sanitizeAndLog({
-        ...user,
-        id: uid, 
-        updatedAt: serverTimestamp()
-      }, 'User');
-      
+      const cleanData = sanitizeAndLog({ ...user, id: uid, updatedAt: serverTimestamp() }, 'User');
       await setDoc(userRef, cleanData, { merge: true });
-      console.log('✅ User saved successfully');
-    } catch (error) {
-      console.error('❌ Error saving user:', error);
-      throw error;
-    }
+    } catch (error) { console.error(error); throw error; }
   },
 
   async getUser(userId: string): Promise<User | null> {
@@ -124,40 +104,32 @@ export const userService = {
       const userRef = doc(db, COLLECTIONS.USERS, userId);
       const userSnap = await getDoc(userRef);
       if (userSnap.exists()) {
-        const data = userSnap.data();
-        return { id: userSnap.id, ...data, pets: Array.isArray(data.pets) ? data.pets : [] } as User;
+        const userData = userSnap.data();
+        // Récupérer les animaux associés pour l'affichage
+        const petsQuery = query(collection(db, COLLECTIONS.PETS), where('ownerId', '==', userId));
+        const petsSnap = await getDocs(petsQuery);
+        const realPets = petsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        return { id: userSnap.id, ...userData, pets: realPets } as User;
       }
       return null;
-    } catch (error) {
-      console.error('❌ Error getting user:', error);
-      throw error;
-    }
+    } catch (error) { console.error(error); throw error; }
   },
   
   async searchUsers(searchTerm: string, limitCount = 20): Promise<User[]> {
     try {
-        const usersRef = collection(db, COLLECTIONS.USERS);
-        const q = query(usersRef, where('name', '>=', searchTerm), where('name', '<=', searchTerm + '\uf8ff'), limit(limitCount));
+        const q = query(collection(db, COLLECTIONS.USERS), where('name', '>=', searchTerm), where('name', '<=', searchTerm + '\uf8ff'), limit(limitCount));
         const qs = await getDocs(q);
         return qs.docs.map(doc => ({ id: doc.id, ...doc.data() })) as User[];
-    } catch (error) { console.error(error); return []; }
+    } catch (error) { return []; }
   },
 
-  // AJOUT : Fonction manquante demandée par l'erreur
   async getAllUsers(limitCount = 200): Promise<User[]> {
     try {
-      const usersRef = collection(db, COLLECTIONS.USERS);
-      const q = query(usersRef, limit(limitCount));
+      const q = query(collection(db, COLLECTIONS.USERS), limit(limitCount));
       const qs = await getDocs(q);
       return qs.docs.map(d => ({ id: d.id, ...d.data() })) as User[];
-    } catch (error) {
-      if (isPermissionDenied(error)) {
-        console.log('🔒 getAllUsers: Permission denied (expected)');
-        return [];
-      }
-      console.error('❌ Error getting all users:', error);
-      return [];
-    }
+    } catch (error) { return []; }
   }
 };
 
@@ -166,31 +138,17 @@ export const petService = {
     try {
       const uid = getCurrentUserId();
       const petRef = pet.id ? doc(db, COLLECTIONS.PETS, pet.id) : doc(collection(db, COLLECTIONS.PETS));
-      
-      const cleanData = sanitizeAndLog({
-        ...pet,
-        ownerId: uid, 
-        updatedAt: serverTimestamp()
-      }, 'Pet');
-      
+      const cleanData = sanitizeAndLog({ ...pet, ownerId: uid, updatedAt: serverTimestamp() }, 'Pet');
       await setDoc(petRef, cleanData, { merge: true });
-      console.log('✅ Pet saved successfully');
-    } catch (error) {
-      console.error('❌ Error saving pet:', error);
-      throw error;
-    }
+    } catch (error) { console.error(error); throw error; }
   },
 
   async getPetsByOwner(ownerId: string): Promise<Pet[]> {
     try {
-      const petsRef = collection(db, COLLECTIONS.PETS);
-      const q = query(petsRef, where('ownerId', '==', ownerId));
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Pet[];
-    } catch (error) {
-      console.error('❌ Error getting pets:', error);
-      throw error;
-    }
+      const q = query(collection(db, COLLECTIONS.PETS), where('ownerId', '==', ownerId));
+      const qs = await getDocs(q);
+      return qs.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Pet[];
+    } catch (error) { throw error; }
   },
   
   async getPet(petId: string): Promise<Pet | null> {
@@ -205,10 +163,7 @@ export const postService = {
   async createPost(post: Omit<Post, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     try {
         const uid = getCurrentUserId();
-        const postsRef = collection(db, COLLECTIONS.POSTS);
-        
         const cleanPost = Object.fromEntries(Object.entries(post).filter(([_, v]) => v !== undefined));
-
         const postData = sanitizeForFirestore({
             ...cleanPost,
             authorId: uid, 
@@ -218,24 +173,15 @@ export const postService = {
             likesCount: 0,
             commentsCount: 0
         });
-        
-        const docRef = await addDoc(postsRef, postData);
+        const docRef = await addDoc(collection(db, COLLECTIONS.POSTS), postData);
         return docRef.id;
-    } catch (error) {
-        console.error('❌ Error creating post:', error);
-        throw error;
-    }
+    } catch (error) { console.error(error); throw error; }
   },
 
   async getPostsFeed(lastPostId?: string, limitCount = 20): Promise<Post[]> {
     try {
         const postsRef = collection(db, COLLECTIONS.POSTS);
-        let q = query(
-            postsRef, 
-            where('visibility', '==', 'public'), 
-            orderBy('createdAt', 'desc'), 
-            limit(limitCount)
-        );
+        let q = query(postsRef, where('visibility', '==', 'public'), orderBy('createdAt', 'desc'), limit(limitCount));
 
         if (lastPostId) {
             const lastDoc = await getDoc(doc(db, COLLECTIONS.POSTS, lastPostId));
@@ -243,18 +189,13 @@ export const postService = {
                 q = query(postsRef, where('visibility', '==', 'public'), orderBy('createdAt', 'desc'), startAfter(lastDoc), limit(limitCount));
             }
         }
-
         const qs = await getDocs(q);
         return qs.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
+            id: doc.id, ...doc.data(),
             createdAt: doc.data().createdAt?.toDate?.() || new Date(),
             updatedAt: doc.data().updatedAt?.toDate?.() || new Date()
         })) as Post[];
-    } catch (error) {
-        console.error('❌ Error getting feed:', error);
-        throw error;
-    }
+    } catch (error) { console.error(error); throw error; }
   },
 
   async toggleLike(postId: string): Promise<boolean> {
@@ -274,10 +215,38 @@ export const postService = {
               }
           });
           return true;
-      } catch (e) {
-          console.error(e);
-          throw e;
-      }
+      } catch (e) { console.error(e); throw e; }
+  }
+};
+
+// --- REALTIME SERVICE (Ajouté pour corriger les erreurs de listener) ---
+export const realtimeService = {
+  listenToPostsFeed(callback: (posts: Post[]) => void, limitCount = 20) {
+    const q = query(collection(db, COLLECTIONS.POSTS), orderBy('createdAt', 'desc'), limit(limitCount));
+    return onSnapshot(q, (snapshot) => {
+      const posts = snapshot.docs.map(doc => ({
+        id: doc.id, ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.() || new Date(),
+        updatedAt: doc.data().updatedAt?.toDate?.() || new Date()
+      })) as Post[];
+      callback(posts);
+    });
+  },
+
+  listenToConversations(userId: string, callback: (conversations: Conversation[]) => void) {
+    const q = query(collection(db, COLLECTIONS.CONVERSATIONS), where('participants', 'array-contains', userId));
+    return onSnapshot(q, (snapshot) => {
+      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Conversation[];
+      callback(items.sort((a:any, b:any) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0)));
+    });
+  },
+
+  listenToMessages(conversationId: string, callback: (messages: Message[]) => void) {
+    const q = query(collection(db, COLLECTIONS.MESSAGES), where('conversationId', '==', conversationId));
+    return onSnapshot(q, (snapshot) => {
+      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Message[];
+      callback(items.sort((a:any, b:any) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0)));
+    });
   }
 };
 
@@ -285,18 +254,13 @@ export const commentService = {
     async addComment(comment: any): Promise<string> {
         try {
             const uid = getCurrentUserId();
-            const ref = collection(db, COLLECTIONS.COMMENTS);
-            const docRef = await addDoc(ref, {
-                ...comment,
-                authorId: uid, 
-                createdAt: serverTimestamp()
+            const docRef = await addDoc(collection(db, COLLECTIONS.COMMENTS), {
+                ...comment, authorId: uid, createdAt: serverTimestamp()
             });
-            const postRef = doc(db, COLLECTIONS.POSTS, comment.postId);
-            await updateDoc(postRef, { commentsCount: increment(1) });
+            await updateDoc(doc(db, COLLECTIONS.POSTS, comment.postId), { commentsCount: increment(1) });
             return docRef.id;
         } catch (e) { throw e; }
     },
-    
     async getComments(postId: string): Promise<Comment[]> {
         const q = query(collection(db, COLLECTIONS.COMMENTS), where('postId', '==', postId));
         const qs = await getDocs(q);
@@ -321,24 +285,17 @@ export const messagingService = {
                 type: 'text'
             };
 
-            const ref = collection(db, COLLECTIONS.MESSAGES);
-            const docRef = await addDoc(ref, msgData);
-
-            const convRef = doc(db, COLLECTIONS.CONVERSATIONS, params.conversationId);
-            await updateDoc(convRef, {
+            const docRef = await addDoc(collection(db, COLLECTIONS.MESSAGES), msgData);
+            await updateDoc(doc(db, COLLECTIONS.CONVERSATIONS, params.conversationId), {
                 lastMessage: { ...msgData, id: docRef.id, timestamp: Date.now() },
                 [`unreadCount.${params.receiverId}`]: increment(1),
                 updatedAt: serverTimestamp()
             });
-
             return docRef.id;
-        } catch (e) {
-            console.error(e);
-            throw e;
-        }
+        } catch (e) { throw e; }
     },
 
-    async getMessages(conversationId: string, limitCount = 50): Promise<Message[]> {
+    async getMessages(conversationId: string): Promise<Message[]> {
         const q = query(collection(db, COLLECTIONS.MESSAGES), where('conversationId', '==', conversationId));
         const qs = await getDocs(q);
         const msgs = qs.docs.map(d => ({ id: d.id, ...d.data() })) as Message[];
@@ -349,7 +306,6 @@ export const messagingService = {
         const uid = getCurrentUserId();
         const participants = [uid, otherUserId].sort();
         const convId = participants.join('_');
-        
         const convRef = doc(db, COLLECTIONS.CONVERSATIONS, convId);
         const snap = await getDoc(convRef);
         
@@ -365,35 +321,48 @@ export const messagingService = {
     }
 };
 
+// --- ORDER SERVICE (Ajouté pour corriger Error fetching orders) ---
+export const orderService = {
+  async createOrder(order: any): Promise<string> {
+    try {
+      const uid = getCurrentUserId();
+      const docRef = await addDoc(collection(db, COLLECTIONS.ORDERS), {
+        ...order, customerId: uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+      });
+      return docRef.id;
+    } catch (e) { throw e; }
+  },
+  
+  async getOrdersByCustomer(customerId: string): Promise<Order[]> {
+    try {
+      const q = query(collection(db, COLLECTIONS.ORDERS), where('customerId', '==', customerId));
+      const qs = await getDocs(q);
+      return qs.docs.map(d => ({ id: d.id, ...d.data() })) as Order[];
+    } catch (e) { console.error(e); return []; }
+  }
+};
+
 export const friendRequestService = {
     async sendFriendRequest(receiverId: string): Promise<string> {
         try {
             const uid = getCurrentUserId();
             const docId = [uid, receiverId].sort().join('_');
             const ref = doc(db, COLLECTIONS.FRIEND_REQUESTS, docId);
-            
             await setDoc(ref, {
                 senderId: uid, 
                 receiverId,
                 status: 'pending',
                 timestamp: serverTimestamp()
             }, { merge: true });
-            
-            console.log('✅ Friend request sent');
             return docId;
-        } catch (e) {
-            console.error(e);
-            throw e;
-        }
+        } catch (e) { throw e; }
     },
-    
     async respondToRequest(requestId: string, accept: boolean): Promise<void> {
         await updateDoc(doc(db, COLLECTIONS.FRIEND_REQUESTS, requestId), {
             status: accept ? 'accepted' : 'rejected',
             respondedAt: serverTimestamp()
         });
     },
-
     async getReceivedRequests(): Promise<FriendRequest[]> {
         const uid = getCurrentUserId();
         const q = query(collection(db, COLLECTIONS.FRIEND_REQUESTS), where('receiverId', '==', uid), where('status', '==', 'pending'));
@@ -413,17 +382,14 @@ export const bookingService = {
                 status: 'pending',
                 createdAt: serverTimestamp()
             });
-            
-            const ref = collection(db, COLLECTIONS.BOOKINGS);
-            const docRef = await addDoc(ref, cleanData);
+            const docRef = await addDoc(collection(db, COLLECTIONS.BOOKINGS), cleanData);
             return docRef.id;
-        } catch (e) {
-            console.error("Booking error", e);
-            throw e;
-        }
+        } catch (e) { console.error("Booking error", e); throw e; }
     },
 
-    async getUserBookings(): Promise<any[]> {
+    // --- RENOMMÉ pour corriger "getBookingsByUser is not a function" ---
+    async getBookingsByUser(userId: string): Promise<any[]> {
+        // userId param is ignored for security, using current auth user
         const uid = getCurrentUserId();
         const q = query(collection(db, COLLECTIONS.BOOKINGS), where('userId', '==', uid));
         const qs = await getDocs(q);
@@ -431,34 +397,21 @@ export const bookingService = {
     }
 };
 
-// --- NOUVEAUX SERVICES AJOUTÉS POUR CORRIGER LES ERREURS ---
-
 export const reviewService = {
-  // Corrige "Error fetching reviews"
   async getReviewsByTarget(targetId: string, targetType: string): Promise<any[]> {
     try {
-      const ref = collection(db, COLLECTIONS.REVIEWS);
       const constraints = [where('targetType', '==', targetType)];
-      if (targetId !== 'all') {
-          constraints.push(where('targetId', '==', targetId));
-      }
-      // Nécessite l'index composite (targetId ASC, createdAt DESC) créé précédemment
-      const q = query(ref, ...constraints, orderBy('createdAt', 'desc'));
+      if (targetId !== 'all') constraints.push(where('targetId', '==', targetId));
+      const q = query(collection(db, COLLECTIONS.REVIEWS), ...constraints, orderBy('createdAt', 'desc'));
       const qs = await getDocs(q);
       return qs.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (error) {
-      console.error('❌ Error getting reviews:', error);
-      return [];
-    }
+    } catch (error) { return []; }
   },
-
   async createReview(review: any): Promise<string> {
     try {
       const uid = getCurrentUserId();
       const docRef = await addDoc(collection(db, COLLECTIONS.REVIEWS), {
-        ...review,
-        authorId: uid,
-        createdAt: serverTimestamp()
+        ...review, authorId: uid, createdAt: serverTimestamp()
       });
       return docRef.id;
     } catch (e) { throw e; }
@@ -466,26 +419,18 @@ export const reviewService = {
 };
 
 export const lostFoundService = {
-  // Corrige "Error fetching lost pets"
   async listReports(): Promise<any[]> {
     try {
       const q = query(collection(db, COLLECTIONS.LOST_FOUND_REPORTS), orderBy('createdAt', 'desc'));
       const qs = await getDocs(q);
       return qs.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (error) {
-      console.error('❌ Error listing reports:', error);
-      return [];
-    }
+    } catch (error) { return []; }
   },
-
   async createReport(report: any): Promise<string> {
     try {
       const uid = getCurrentUserId();
       const docRef = await addDoc(collection(db, COLLECTIONS.LOST_FOUND_REPORTS), {
-        ...report,
-        reporterId: uid,
-        createdAt: serverTimestamp(),
-        responses: []
+        ...report, reporterId: uid, createdAt: serverTimestamp(), responses: []
       });
       return docRef.id;
     } catch (e) { throw e; }
@@ -493,33 +438,25 @@ export const lostFoundService = {
 };
 
 export const petSitterService = {
-  // Corrige "Error fetching cat sitters"
   async getAllProfiles(limitCount = 100): Promise<any[]> {
     try {
       const q = query(collection(db, COLLECTIONS.PET_SITTER_PROFILES), limit(limitCount));
       const qs = await getDocs(q);
       return qs.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (error) {
-      console.error('❌ Error getting sitters:', error);
-      return [];
-    }
+    } catch (error) { return []; }
   },
-
   async getProfile(userId: string): Promise<any | null> {
     try {
       const snap = await getDoc(doc(db, COLLECTIONS.PET_SITTER_PROFILES, userId));
       return snap.exists() ? { id: snap.id, ...snap.data() } : null;
     } catch (e) { return null; }
   },
-
   async saveProfile(userId: string, profile: any): Promise<void> {
      try {
        const uid = getCurrentUserId();
-       if (userId !== uid) throw new Error("Vous ne pouvez modifier que votre propre profil");
+       if (userId !== uid) throw new Error("Modification interdite");
        await setDoc(doc(db, COLLECTIONS.PET_SITTER_PROFILES, uid), { 
-         ...profile, 
-         userId: uid, 
-         updatedAt: serverTimestamp() 
+         ...profile, userId: uid, updatedAt: serverTimestamp() 
        }, { merge: true });
      } catch (e) { throw e; }
   }
@@ -536,7 +473,6 @@ export const professionalService = {
 };
 
 // --- EXPORT GLOBAL FINAL ---
-
 export const databaseService = {
     user: userService,
     pet: petService,
@@ -545,11 +481,12 @@ export const databaseService = {
     messaging: messagingService,
     friendRequest: friendRequestService,
     booking: bookingService,
-    // Services ajoutés et nécessaires
     review: reviewService,
     lostFound: lostFoundService,
     petSitter: petSitterService,
     professional: professionalService,
+    order: orderService,
+    realtime: realtimeService, // Indispensable pour éviter le crash
 };
 
 export default databaseService;
